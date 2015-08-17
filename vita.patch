@@ -1,0 +1,23 @@
+diff -r ./binutils/ld/scripttempl/elf.sc ../toolchain/gcc-arm-none-eabi-4_9-2015q2-20150609/src/binutils/ld/scripttempl/elf.sc
+536,538c536,540
+<   ${CREATE_SHLIB-${CREATE_PIE-${RELOCATING+. = ${DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}}
+<   ${CREATE_SHLIB+${RELOCATING+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}
+<   ${CREATE_PIE+${RELOCATING+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}
+---
+>   ${CREATE_SHLIB-${CREATE_PIE-${RELOCATING+. = ${DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}} 
+>   ${CREATE_SHLIB+${RELOCATING+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}} 
+>   ${CREATE_PIE+${RELOCATING+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}} 
+>   /* Hacky hackity hack. Need this because otherwise data segment is not aligned enough. */
+>   . = ALIGN(0x10000);
+diff -r ./gcc/gcc/gcc.c ../toolchain/gcc-arm-none-eabi-4_9-2015q2-20150609/src/gcc/gcc/gcc.c
+527a528
+> #undef LIB_SPEC
+529c530
+< #define LIB_SPEC "%{!shared:%{g*:-lg} %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}}"
+---
+> #define LIB_SPEC "%{!shared:%{g*:-lg} %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p} -lSceKernel_stub}"
+diff -r ./libelf-0.8.13/configure ../toolchain/gcc-arm-none-eabi-4_9-2015q2-20150609/src/libelf-0.8.13/configure
+1598c1598
+<   ac_cv_sizeof_long_long=0
+---
+>   ac_cv_sizeof_long_long=8
