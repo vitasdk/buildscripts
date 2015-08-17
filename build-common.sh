@@ -250,9 +250,9 @@ SRCDIR=$ROOT/src
 BUILDDIR_NATIVE=$ROOT/build-native
 BUILDDIR_MINGW=$ROOT/build-mingw
 INSTALLDIR_NATIVE=$ROOT/install-native
-INSTALLDIR_NATIVE_DOC=$ROOT/install-native/share/doc/gcc-arm-none-eabi
+INSTALLDIR_NATIVE_DOC=$ROOT/install-native/share/doc/gcc-arm-vita-eabi
 INSTALLDIR_MINGW=$ROOT/install-mingw
-INSTALLDIR_MINGW_DOC=$ROOT/install-mingw/share/doc/gcc-arm-none-eabi
+INSTALLDIR_MINGW_DOC=$ROOT/install-mingw/share/doc/gcc-arm-vita-eabi
 
 PACKAGEDIR=$ROOT/pkg
 
@@ -274,6 +274,10 @@ ZLIB=zlib-1.2.8
 INSTALLATION=installation
 SAMPLES=samples
 BUILD_MANUAL=build-manual
+JANSSON=jansson-2.7
+LIBELF=libelf-0.8.13
+VITA_TOOLCHAIN=vita-toolchain
+VITA_HEADERS=vita-headers
 
 CLOOG_PACK=$CLOOG.tar.gz
 EXPAT_PACK=$EXPAT.tar.gz
@@ -313,7 +317,7 @@ GCC_VER_NAME=`echo $GCC_VER | cut -d'.' -f1,2 | sed -e 's/\./_/g'`
 GCC_VER_SHORT=`echo $GCC_VER_NAME | sed -e 's/_/\./g'`
 HOST_MINGW=i686-w64-mingw32
 HOST_MINGW_TOOL=i686-w64-mingw32
-TARGET=arm-none-eabi
+TARGET=arm-vita-eabi
 ENV_CFLAGS=
 ENV_CPPFLAGS=
 ENV_LDFLAGS=

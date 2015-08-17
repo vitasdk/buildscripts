@@ -89,7 +89,7 @@ skip_mingw32_gdb_with_python=no
 build_type=
 build_tools=
 
-MULTILIB_LIST="--with-multilib-list=armv6-m,armv7-m,armv7e-m,cortex-m7,armv7-r"
+MULTILIB_LIST="--disable-multilib --with-arch=armv7-a --with-tune=cortex-a9 --with-fpu=neon --with-float=hard --with-mode=thumb"
 
 for ac_arg; do
     case $ac_arg in
@@ -233,6 +233,32 @@ rm -rf $PACKAGEDIR && mkdir -p $PACKAGEDIR
 
 cd $SRCDIR
 
+echo Task [Vita-0] /$HOST_NATIVE/vita-toolchain/
+rm -rf $BUILDDIR_NATIVE/vita-toolchain && mkdir -p $BUILDDIR_NATIVE/vita-toolchain
+pushd $BUILDDIR_NATIVE/vita-toolchain
+mkdir install
+mkdir build-jansson && cd build-jansson
+$SRCDIR/$JANSSON/configure --disable-shared --enable-static --prefix=$BUILDDIR_NATIVE/vita-toolchain/install
+make
+make install
+cd ..
+mkdir build-libelf && cd build-libelf
+$SRCDIR/$LIBELF/configure --disable-shared --enable-static --prefix=$BUILDDIR_NATIVE/vita-toolchain/install
+make
+make install
+cd ..
+mkdir build-vita-toolchain && cd build-vita-toolchain
+cmake $SRCDIR/$VITA_TOOLCHAIN \
+	-DJansson_INCLUDE_DIR=$BUILDDIR_NATIVE/vita-toolchain/install/include/ \
+	-DJansson_LIBRARY=$BUILDDIR_NATIVE/vita-toolchain/install/lib/libjansson.a \
+	-Dlibelf_INCLUDE_DIR=$BUILDDIR_NATIVE/vita-toolchain/install/include/ \
+	-Dlibelf_LIBRARY=$BUILDDIR_NATIVE/vita-toolchain/install/lib/libelf.a \
+	-DUSE_BUNDLED_ENDIAN_H=ON \
+	-DCMAKE_INSTALL_PREFIX=$INSTALLDIR_NATIVE
+make
+make install
+popd
+
 echo Task [III-0] /$HOST_NATIVE/binutils/
 rm -rf $BUILDDIR_NATIVE/binutils && mkdir -p $BUILDDIR_NATIVE/binutils
 pushd $BUILDDIR_NATIVE/binutils
@@ -252,7 +278,7 @@ $SRCDIR/$BINUTILS/configure  \
     --disable-werror \
     --enable-interwork \
     --enable-plugins \
-    --with-sysroot=$INSTALLDIR_NATIVE/arm-none-eabi \
+    --with-sysroot=$INSTALLDIR_NATIVE/$TARGET \
     "--with-pkgversion=$PKGVERSION"
 
 if [ "x$DEBUG_BUILD_OPTIONS" != "x" ] ; then
@@ -301,8 +327,8 @@ $SRCDIR/$GCC/configure --target=$TARGET \
     --without-headers \
     --with-gnu-as \
     --with-gnu-ld \
-    --with-python-dir=share/gcc-arm-none-eabi \
-    --with-sysroot=$INSTALLDIR_NATIVE/arm-none-eabi \
+    --with-python-dir=share/gcc-$TARGET \
+    --with-sysroot=$INSTALLDIR_NATIVE/$TARGET \
     ${GCC_CONFIG_OPTS}                              \
     "${GCC_CONFIG_OPTS_LCPP}"                              \
     "--with-pkgversion=$PKGVERSION" \
@@ -315,7 +341,7 @@ make install-gcc
 popd
 
 pushd $INSTALLDIR_NATIVE
-rm -rf bin/arm-none-eabi-gccbug
+rm -rf bin/$TARGET-gccbug
 rm -rf ./lib/libiberty.a
 rmdir include
 popd
@@ -347,50 +373,24 @@ make install
 if [ "x$skip_manual" != "xyes" ]; then
 make pdf
 mkdir -p $INSTALLDIR_NATIVE_DOC/pdf
-cp $BUILDDIR_NATIVE/newlib/arm-none-eabi/newlib/libc/libc.pdf $INSTALLDIR_NATIVE_DOC/pdf/libc.pdf
-cp $BUILDDIR_NATIVE/newlib/arm-none-eabi/newlib/libm/libm.pdf $INSTALLDIR_NATIVE_DOC/pdf/libm.pdf
+cp $BUILDDIR_NATIVE/newlib/$TARGET/newlib/libc/libc.pdf $INSTALLDIR_NATIVE_DOC/pdf/libc.pdf
+cp $BUILDDIR_NATIVE/newlib/$TARGET/newlib/libm/libm.pdf $INSTALLDIR_NATIVE_DOC/pdf/libm.pdf
 
 make html
 mkdir -p $INSTALLDIR_NATIVE_DOC/html
-copy_dir $BUILDDIR_NATIVE/newlib/arm-none-eabi/newlib/libc/libc.html $INSTALLDIR_NATIVE_DOC/html/libc
-copy_dir $BUILDDIR_NATIVE/newlib/arm-none-eabi/newlib/libm/libm.html $INSTALLDIR_NATIVE_DOC/html/libm
+copy_dir $BUILDDIR_NATIVE/newlib/$TARGET/newlib/libc/libc.html $INSTALLDIR_NATIVE_DOC/html/libc
+copy_dir $BUILDDIR_NATIVE/newlib/$TARGET/newlib/libm/libm.html $INSTALLDIR_NATIVE_DOC/html/libm
 fi
 
 popd
 restoreenv
 
 echo Task [III-3] /$HOST_NATIVE/newlib-nano/
-saveenv
-prepend_path PATH $INSTALLDIR_NATIVE/bin
-saveenvvar CFLAGS_FOR_TARGET '-g -Os -ffunction-sections -fdata-sections'
-rm -rf $BUILDDIR_NATIVE/newlib-nano && mkdir -p $BUILDDIR_NATIVE/newlib-nano
-pushd $BUILDDIR_NATIVE/newlib-nano
-
-$SRCDIR/$NEWLIB_NANO/configure  \
-    $NEWLIB_CONFIG_OPTS \
-    --target=$TARGET \
-    --prefix=$BUILDDIR_NATIVE/target-libs \
-    --disable-newlib-supplied-syscalls    \
-    --enable-newlib-reent-small           \
-    --disable-newlib-fvwrite-in-streamio  \
-    --disable-newlib-fseek-optimization   \
-    --disable-newlib-wide-orient          \
-    --enable-newlib-nano-malloc           \
-    --disable-newlib-unbuf-stream-opt     \
-    --enable-lite-exit                    \
-    --enable-newlib-global-atexit         \
-    --enable-newlib-nano-formatted-io     \
-    --disable-nls
-
-make -j$JOBS
-make install
-
-popd
-restoreenv
+echo [Vita] Skipped
 
 echo Task [III-4] /$HOST_NATIVE/gcc-final/
-rm -f $INSTALLDIR_NATIVE/arm-none-eabi/usr
-ln -s . $INSTALLDIR_NATIVE/arm-none-eabi/usr
+rm -f $INSTALLDIR_NATIVE/$TARGET/usr
+ln -s . $INSTALLDIR_NATIVE/$TARGET/usr
 
 rm -rf $BUILDDIR_NATIVE/gcc-final && mkdir -p $BUILDDIR_NATIVE/gcc-final
 pushd $BUILDDIR_NATIVE/gcc-final
@@ -419,8 +419,8 @@ $SRCDIR/$GCC/configure --target=$TARGET \
     --with-gnu-ld \
     --with-newlib \
     --with-headers=yes \
-    --with-python-dir=share/gcc-arm-none-eabi \
-    --with-sysroot=$INSTALLDIR_NATIVE/arm-none-eabi \
+    --with-python-dir=share/gcc-$TARGET \
+    --with-sysroot=$INSTALLDIR_NATIVE/$TARGET \
     $GCC_CONFIG_OPTS                                \
     "${GCC_CONFIG_OPTS_LCPP}"                              \
     "--with-pkgversion=$PKGVERSION" \
@@ -444,8 +444,8 @@ if [ "x$skip_manual" != "xyes" ]; then
 fi
 
 pushd $INSTALLDIR_NATIVE
-rm -rf bin/arm-none-eabi-gccbug
-LIBIBERTY_LIBRARIES=`find $INSTALLDIR_NATIVE/arm-none-eabi/lib -name libiberty.a`
+rm -rf bin/$TARGET-gccbug
+LIBIBERTY_LIBRARIES=`find $INSTALLDIR_NATIVE/$TARGET/lib -name libiberty.a`
 for libiberty_lib in $LIBIBERTY_LIBRARIES ; do
     rm -rf $libiberty_lib
 done
@@ -453,127 +453,23 @@ rm -rf ./lib/libiberty.a
 rmdir include
 popd
 
-rm -f $INSTALLDIR_NATIVE/arm-none-eabi/usr
+rm -f $INSTALLDIR_NATIVE/$TARGET/usr
+popd
+
+echo Task [Vita-1]: Deploy headers/generate libs
+rm -rf $BUILDDIR_NATIVE/vitalibs && mkdir -p $BUILDDIR_NATIVE/vitalibs
+pushd $BUILDDIR_NATIVE/vitalibs
+$INSTALLDIR_NATIVE/bin/vita-libs-gen $SRCDIR/$VITA_HEADERS/db.json .
+make ARCH=$INSTALLDIR_NATIVE/bin/arm-vita-eabi
+cp *.a $INSTALLDIR_NATIVE/arm-vita-eabi/lib/
+cp -r $SRCDIR/$VITA_HEADERS/include $INSTALLDIR_NATIVE/arm-vita-eabi/
 popd
 
 echo Task [III-5] /$HOST_NATIVE/gcc-size-libstdcxx/
-rm -f $BUILDDIR_NATIVE/target-libs/arm-none-eabi/usr
-ln -s . $BUILDDIR_NATIVE/target-libs/arm-none-eabi/usr
-
-rm -rf $BUILDDIR_NATIVE/gcc-size-libstdcxx && mkdir -p $BUILDDIR_NATIVE/gcc-size-libstdcxx
-pushd $BUILDDIR_NATIVE/gcc-size-libstdcxx
-
-$SRCDIR/$GCC/configure --target=$TARGET \
-    --prefix=$BUILDDIR_NATIVE/target-libs \
-    --enable-languages=c,c++ \
-    --disable-decimal-float \
-    --disable-libffi \
-    --disable-libgomp \
-    --disable-libmudflap \
-    --disable-libquadmath \
-    --disable-libssp \
-    --disable-libstdcxx-pch \
-    --disable-nls \
-    --disable-shared \
-    --disable-threads \
-    --disable-tls \
-    --with-gnu-as \
-    --with-gnu-ld \
-    --with-newlib \
-    --with-headers=yes \
-    --with-python-dir=share/gcc-arm-none-eabi \
-    --with-sysroot=$BUILDDIR_NATIVE/target-libs/arm-none-eabi \
-    $GCC_CONFIG_OPTS \
-    "${GCC_CONFIG_OPTS_LCPP}"                              \
-    "--with-pkgversion=$PKGVERSION" \
-    ${MULTILIB_LIST}
-
-make -j$JOBS CXXFLAGS_FOR_TARGET="-g -Os -ffunction-sections -fdata-sections -fno-exceptions"
-make install
-
-copy_multi_libs src_prefix="$BUILDDIR_NATIVE/target-libs/arm-none-eabi/lib" \
-                dst_prefix="$INSTALLDIR_NATIVE/arm-none-eabi/lib"           \
-                target_gcc="$BUILDDIR_NATIVE/target-libs/bin/arm-none-eabi-gcc"
-popd
+echo [Vita] Skipped
 
 echo Task [III-6] /$HOST_NATIVE/gdb/
-build_gdb()
-{
-	GDB_EXTRA_CONFIG_OPTS=$1
-
-	rm -rf $BUILDDIR_NATIVE/gdb && mkdir -p $BUILDDIR_NATIVE/gdb
-	pushd $BUILDDIR_NATIVE/gdb
-	saveenv
-	saveenvvar CFLAGS "$ENV_CFLAGS"
-	saveenvvar CPPFLAGS "$ENV_CPPFLAGS"
-	saveenvvar LDFLAGS "$ENV_LDFLAGS"
-
-	$SRCDIR/$GDB/configure  \
-	    --target=$TARGET \
-	    --prefix=$INSTALLDIR_NATIVE \
-	    --infodir=$INSTALLDIR_NATIVE_DOC/info \
-	    --mandir=$INSTALLDIR_NATIVE_DOC/man \
-	    --htmldir=$INSTALLDIR_NATIVE_DOC/html \
-	    --pdfdir=$INSTALLDIR_NATIVE_DOC/pdf \
-	    --disable-nls \
-	    --disable-sim \
-	    --disable-gas \
-	    --disable-binutils \
-	    --disable-ld \
-	    --disable-gprof \
-	    --with-libexpat \
-	    --with-lzma=no \
-	    --with-system-gdbinit=$INSTALLDIR_NATIVE/$HOST_NATIVE/arm-none-eabi/lib/gdbinit \
-	    $GDB_CONFIG_OPTS \
-	    $GDB_EXTRA_CONFIG_OPTS \
-	    '--with-gdb-datadir='\''${prefix}'\''/arm-none-eabi/share/gdb' \
-	    "--with-pkgversion=$PKGVERSION"
-
-	if [ "x$DEBUG_BUILD_OPTIONS" != "x" ] ; then
-	    make CFLAGS="-I$BUILDDIR_NATIVE/host-libs/zlib/include $DEBUG_BUILD_OPTIONS" -j$JOBS
-	else
-	    make -j$JOBS
-	fi
-
-	make install
-
-	if [ "x$skip_manual" != "xyes" ]; then
-		make install-html install-pdf
-	fi
-
-	restoreenv
-	popd
-}
-
-
-#Always enable python support in GDB for PPA build.
-if [ "x$is_ppa_release" == "xyes" ]; then
-	build_gdb "--with-python=yes"
-else
-        #First we build GDB without python support.
-	build_gdb "--with-python=no"
-
-	#Then build gdb with python support.
-	if [ "x$skip_gdb_with_python" == "xno" ]; then
-		build_gdb "--with-python=yes --program-prefix=$TARGET-  --program-suffix=-py"
-	fi
-fi
-
-if [ "x$is_ppa_release" != "xyes" -a "x$skip_manual" != "xyes" ]; then
-echo TASK [III-7] /$HOST_NATIVE/build-manual
-rm -rf $BUILDDIR_NATIVE/build-manual && mkdir -p $BUILDDIR_NATIVE/build-manual
-pushd $BUILDDIR_NATIVE/build-manual
-cp -r $SRCDIR/$BUILD_MANUAL/* .
-echo "@set VERSION_PACKAGE ($PKGVERSION)" > version.texi
-echo "@set CURRENT_YEAR  $release_year" >> version.texi
-echo "@set CURRENT_MONTH $release_month" >> version.texi
-echo "@set PKG_NAME $PACKAGE_NAME" >> version.texi
-make clean
-make
-rm -rf $ROOT/How-to-build-toolchain.pdf
-cp How-to-build-toolchain.pdf $ROOT
-popd
-fi
+echo [Vita] Skipped
 
 echo Task [III-8] /$HOST_NATIVE/pretidy/
 rm -rf $INSTALLDIR_NATIVE/lib/libiberty.a
@@ -581,17 +477,17 @@ find $INSTALLDIR_NATIVE -name '*.la' -exec rm '{}' ';'
 
 echo Task [III-9] /$HOST_NATIVE/strip_host_objects/
 if [ "x$DEBUG_BUILD_OPTIONS" = "x" ] ; then
-    STRIP_BINARIES=`find $INSTALLDIR_NATIVE/bin/ -name arm-none-eabi-\*`
+    STRIP_BINARIES=`find $INSTALLDIR_NATIVE/bin/ -name $TARGET-\*`
     for bin in $STRIP_BINARIES ; do
         strip_binary strip $bin
     done
 
-    STRIP_BINARIES=`find $INSTALLDIR_NATIVE/arm-none-eabi/bin/ -maxdepth 1 -mindepth 1 -name \*`
+    STRIP_BINARIES=`find $INSTALLDIR_NATIVE/$TARGET/bin/ -maxdepth 1 -mindepth 1 -name \*`
     for bin in $STRIP_BINARIES ; do
         strip_binary strip $bin
     done
 
-    STRIP_BINARIES=`find $INSTALLDIR_NATIVE/lib/gcc/arm-none-eabi/$GCC_VER/ -maxdepth 1 -name \* -perm +111 -and ! -type d`
+    STRIP_BINARIES=`find $INSTALLDIR_NATIVE/lib/gcc/$TARGET/$GCC_VER/ -maxdepth 1 -name \* -perm +111 -and ! -type d`
     for bin in $STRIP_BINARIES ; do
         strip_binary strip $bin
     done
@@ -600,24 +496,24 @@ fi
 echo Task [III-10] /$HOST_NATIVE/strip_target_objects/
 saveenv
 prepend_path PATH $INSTALLDIR_NATIVE/bin
-TARGET_LIBRARIES=`find $INSTALLDIR_NATIVE/arm-none-eabi/lib -name \*.a`
+TARGET_LIBRARIES=`find $INSTALLDIR_NATIVE/$TARGET/lib -name \*.a`
 for target_lib in $TARGET_LIBRARIES ; do
-    arm-none-eabi-objcopy -R .comment -R .note -R .debug_info -R .debug_aranges -R .debug_pubnames -R .debug_pubtypes -R .debug_abbrev -R .debug_line -R .debug_str -R .debug_ranges -R .debug_loc $target_lib || true
+    $TARGET-objcopy -R .comment -R .note -R .debug_info -R .debug_aranges -R .debug_pubnames -R .debug_pubtypes -R .debug_abbrev -R .debug_line -R .debug_str -R .debug_ranges -R .debug_loc $target_lib || true
 done
 
-TARGET_OBJECTS=`find $INSTALLDIR_NATIVE/arm-none-eabi/lib -name \*.o`
+TARGET_OBJECTS=`find $INSTALLDIR_NATIVE/$TARGET/lib -name \*.o`
 for target_obj in $TARGET_OBJECTS ; do
-    arm-none-eabi-objcopy -R .comment -R .note -R .debug_info -R .debug_aranges -R .debug_pubnames -R .debug_pubtypes -R .debug_abbrev -R .debug_line -R .debug_str -R .debug_ranges -R .debug_loc $target_obj || true
+    $TARGET-objcopy -R .comment -R .note -R .debug_info -R .debug_aranges -R .debug_pubnames -R .debug_pubtypes -R .debug_abbrev -R .debug_line -R .debug_str -R .debug_ranges -R .debug_loc $target_obj || true
 done
 
-TARGET_LIBRARIES=`find $INSTALLDIR_NATIVE/lib/gcc/arm-none-eabi/$GCC_VER -name \*.a`
+TARGET_LIBRARIES=`find $INSTALLDIR_NATIVE/lib/gcc/$TARGET/$GCC_VER -name \*.a`
 for target_lib in $TARGET_LIBRARIES ; do
-    arm-none-eabi-objcopy -R .comment -R .note -R .debug_info -R .debug_aranges -R .debug_pubnames -R .debug_pubtypes -R .debug_abbrev -R .debug_line -R .debug_str -R .debug_ranges -R .debug_loc $target_lib || true
+    $TARGET-objcopy -R .comment -R .note -R .debug_info -R .debug_aranges -R .debug_pubnames -R .debug_pubtypes -R .debug_abbrev -R .debug_line -R .debug_str -R .debug_ranges -R .debug_loc $target_lib || true
 done
 
-TARGET_OBJECTS=`find $INSTALLDIR_NATIVE/lib/gcc/arm-none-eabi/$GCC_VER -name \*.o`
+TARGET_OBJECTS=`find $INSTALLDIR_NATIVE/lib/gcc/$TARGET/$GCC_VER -name \*.o`
 for target_obj in $TARGET_OBJECTS ; do
-    arm-none-eabi-objcopy -R .comment -R .note -R .debug_info -R .debug_aranges -R .debug_pubnames -R .debug_pubtypes -R .debug_abbrev -R .debug_line -R .debug_str -R .debug_ranges -R .debug_loc $target_obj || true
+    $TARGET-objcopy -R .comment -R .note -R .debug_info -R .debug_aranges -R .debug_pubnames -R .debug_pubtypes -R .debug_abbrev -R .debug_line -R .debug_str -R .debug_ranges -R .debug_loc $target_obj || true
 done
 restoreenv
 
@@ -633,14 +529,14 @@ rm -f $INSTALL_PACKAGE_NAME
 cp $ROOT/$RELEASE_FILE $INSTALLDIR_NATIVE_DOC/
 cp $ROOT/$README_FILE $INSTALLDIR_NATIVE_DOC/
 cp $ROOT/$LICENSE_FILE $INSTALLDIR_NATIVE_DOC/
-copy_dir_clean $SRCDIR/$SAMPLES $INSTALLDIR_NATIVE/share/gcc-arm-none-eabi/$SAMPLES
+copy_dir_clean $SRCDIR/$SAMPLES $INSTALLDIR_NATIVE/share/gcc-$TARGET/$SAMPLES
 ln -s $INSTALLDIR_NATIVE $INSTALL_PACKAGE_NAME
 ${TAR} cjf $PACKAGEDIR/$PACKAGE_NAME_NATIVE.tar.bz2   \
     --owner=0                               \
     --group=0                               \
     --exclude=host-$HOST_NATIVE             \
     --exclude=host-$HOST_MINGW              \
-    $INSTALL_PACKAGE_NAME/arm-none-eabi     \
+    $INSTALL_PACKAGE_NAME/$TARGET     \
     $INSTALL_PACKAGE_NAME/bin               \
     $INSTALL_PACKAGE_NAME/lib               \
     $INSTALL_PACKAGE_NAME/share             
@@ -667,6 +563,35 @@ tar xf $PACKAGEDIR/$PACKAGE_NAME_NATIVE.tar.bz2 --bzip2
 rm $INSTALL_PACKAGE_NAME
 popd
 
+echo Task [Vita-2] /$HOST_MINGW/vita-toolchain/
+rm -rf $BUILDDIR_MINGW/vita-toolchain && mkdir -p $BUILDDIR_MINGW/vita-toolchain
+pushd $BUILDDIR_MINGW/vita-toolchain
+mkdir install
+mkdir build-jansson && cd build-jansson
+$SRCDIR/$JANSSON/configure --disable-shared --enable-static --build=$BUILD --host=$HOST_MINGW --prefix=$BUILDDIR_MINGW/vita-toolchain/install
+make
+make install
+cd ..
+mkdir build-libelf && cd build-libelf
+# need to explicitly specify CC because configure script is broken
+CC=$HOST_MINGW-gcc $SRCDIR/$LIBELF/configure --disable-shared --enable-static --build=$BUILD --host=$HOST_MINGW --prefix=$BUILDDIR_MINGW/vita-toolchain/install
+make
+make install
+# need to run ranlib manually
+$HOST_MINGW-ranlib $BUILDDIR_MINGW/vita-toolchain/install/lib/libelf.a
+cd ..
+mkdir build-vita-toolchain && cd build-vita-toolchain
+cmake $SRCDIR/$VITA_TOOLCHAIN \
+	-DCMAKE_TOOLCHAIN_FILE=$SRCDIR/mingw-toolchain.cmake \
+        -DJansson_INCLUDE_DIR=$BUILDDIR_MINGW/vita-toolchain/install/include/ \
+        -DJansson_LIBRARY=$BUILDDIR_MINGW/vita-toolchain/install/lib/libjansson.a \
+        -Dlibelf_INCLUDE_DIR=$BUILDDIR_MINGW/vita-toolchain/install/include/ \
+        -Dlibelf_LIBRARY=$BUILDDIR_MINGW/vita-toolchain/install/lib/libelf.a \
+        -DCMAKE_INSTALL_PREFIX=$INSTALLDIR_MINGW
+make
+make install
+popd
+
 echo Task [IV-1] /$HOST_MINGW/binutils/
 prepend_path PATH $BUILDDIR_MINGW/tools-$OBJ_SUFFIX_NATIVE/bin
 rm -rf $BUILDDIR_MINGW/binutils && mkdir -p $BUILDDIR_MINGW/binutils
@@ -685,7 +610,7 @@ $SRCDIR/$BINUTILS/configure --build=$BUILD \
     --pdfdir=$INSTALLDIR_MINGW_DOC/pdf \
     --disable-nls \
     --enable-plugins \
-    --with-sysroot=$INSTALLDIR_MINGW/arm-none-eabi \
+    --with-sysroot=$INSTALLDIR_MINGW/$TARGET \
     "--with-pkgversion=$PKGVERSION"
 
 if [ "x$DEBUG_BUILD_OPTIONS" != "x" ] ; then
@@ -709,13 +634,13 @@ popd
 
 echo Task [IV-2] /$HOST_MINGW/copy_libs/
 if [ "x$skip_manual" != "xyes" ]; then
-copy_dir $BUILDDIR_MINGW/tools-$OBJ_SUFFIX_NATIVE/share/doc/gcc-arm-none-eabi/html $INSTALLDIR_MINGW_DOC/html
-copy_dir $BUILDDIR_MINGW/tools-$OBJ_SUFFIX_NATIVE/share/doc/gcc-arm-none-eabi/pdf $INSTALLDIR_MINGW_DOC/pdf
+copy_dir $BUILDDIR_MINGW/tools-$OBJ_SUFFIX_NATIVE/share/doc/gcc-$TARGET/html $INSTALLDIR_MINGW_DOC/html
+copy_dir $BUILDDIR_MINGW/tools-$OBJ_SUFFIX_NATIVE/share/doc/gcc-$TARGET/pdf $INSTALLDIR_MINGW_DOC/pdf
 fi
-copy_dir $BUILDDIR_MINGW/tools-$OBJ_SUFFIX_NATIVE/arm-none-eabi/lib $INSTALLDIR_MINGW/arm-none-eabi/lib
-copy_dir $BUILDDIR_MINGW/tools-$OBJ_SUFFIX_NATIVE/arm-none-eabi/include $INSTALLDIR_MINGW/arm-none-eabi/include
-copy_dir $BUILDDIR_MINGW/tools-$OBJ_SUFFIX_NATIVE/arm-none-eabi/include/c++ $INSTALLDIR_MINGW/arm-none-eabi/include/c++
-copy_dir $BUILDDIR_MINGW/tools-$OBJ_SUFFIX_NATIVE/lib/gcc/arm-none-eabi $INSTALLDIR_MINGW/lib/gcc/arm-none-eabi
+copy_dir $BUILDDIR_MINGW/tools-$OBJ_SUFFIX_NATIVE/$TARGET/lib $INSTALLDIR_MINGW/$TARGET/lib
+copy_dir $BUILDDIR_MINGW/tools-$OBJ_SUFFIX_NATIVE/$TARGET/include $INSTALLDIR_MINGW/$TARGET/include
+copy_dir $BUILDDIR_MINGW/tools-$OBJ_SUFFIX_NATIVE/$TARGET/include/c++ $INSTALLDIR_MINGW/$TARGET/include/c++
+copy_dir $BUILDDIR_MINGW/tools-$OBJ_SUFFIX_NATIVE/lib/gcc/$TARGET $INSTALLDIR_MINGW/lib/gcc/$TARGET
 
 echo Task [IV-3] /$HOST_MINGW/gcc-final/
 saveenv
@@ -727,7 +652,7 @@ saveenvvar CC_FOR_TARGET $TARGET-gcc
 saveenvvar GCC_FOR_TARGET $TARGET-gcc
 saveenvvar CXX_FOR_TARGET $TARGET-g++
 
-pushd $INSTALLDIR_MINGW/arm-none-eabi/
+pushd $INSTALLDIR_MINGW/$TARGET/
 rm -f usr
 ln -s . usr
 popd
@@ -756,8 +681,8 @@ $SRCDIR/$GCC/configure --build=$BUILD --host=$HOST_MINGW --target=$TARGET \
     --with-gnu-ld \
     --with-headers=yes \
     --with-newlib \
-    --with-python-dir=share/gcc-arm-none-eabi \
-    --with-sysroot=$INSTALLDIR_MINGW/arm-none-eabi \
+    --with-python-dir=share/gcc-$TARGET \
+    --with-sysroot=$INSTALLDIR_MINGW/$TARGET \
     --with-libiconv-prefix=$BUILDDIR_MINGW/host-libs/usr \
     --with-gmp=$BUILDDIR_MINGW/host-libs/usr \
     --with-mpfr=$BUILDDIR_MINGW/host-libs/usr \
@@ -783,69 +708,19 @@ fi
 popd
 
 pushd $INSTALLDIR_MINGW
-rm -rf bin/arm-none-eabi-gccbug
+rm -rf bin/$TARGET-gccbug
 rmdir include
 popd
 
-copy_dir $BUILDDIR_MINGW/tools-$OBJ_SUFFIX_NATIVE/lib/gcc/arm-none-eabi $INSTALLDIR_MINGW/lib/gcc/arm-none-eabi
-rm -rf $INSTALLDIR_MINGW/arm-none-eabi/usr
-rm -rf $INSTALLDIR_MINGW/lib/gcc/arm-none-eabi/*/plugin
+copy_dir $BUILDDIR_MINGW/tools-$OBJ_SUFFIX_NATIVE/lib/gcc/$TARGET $INSTALLDIR_MINGW/lib/gcc/$TARGET
+rm -rf $INSTALLDIR_MINGW/$TARGET/usr
+rm -rf $INSTALLDIR_MINGW/lib/gcc/$TARGET/*/plugin
 find $INSTALLDIR_MINGW -executable -and -not -type d -and -not -name \*.exe \
   -and -not -name liblto_plugin-0.dll -exec rm -f \{\} \;
 restoreenv
 
 echo Task [IV-4] /$HOST_MINGW/gdb/
-build_mingw_gdb()
-{
-	MINGW_GDB_CONF_OPTS=$1
-	rm -rf $BUILDDIR_MINGW/gdb && mkdir -p $BUILDDIR_MINGW/gdb
-	pushd $BUILDDIR_MINGW/gdb
-	saveenv
-	saveenvvar CFLAGS "-I$BUILDDIR_MINGW/host-libs/zlib/include -O2"
-	saveenvvar CPPFLAGS "-I$BUILDDIR_MINGW/host-libs/zlib/include"
-	saveenvvar LDFLAGS "-L$BUILDDIR_MINGW/host-libs/zlib/lib"
-	$SRCDIR/$GDB/configure --build=$BUILD \
-	    --host=$HOST_MINGW \
-	    --target=$TARGET \
-	    --prefix=$INSTALLDIR_MINGW \
-	    --infodir=$INSTALLDIR_MINGW_DOC/info \
-	    --mandir=$INSTALLDIR_MINGW_DOC/man \
-	    --htmldir=$INSTALLDIR_MINGW_DOC/html \
-	    --pdfdir=$INSTALLDIR_MINGW_DOC/pdf \
-	    --disable-nls \
-	    --disable-sim \
-	    --disable-gas \
-	    --disable-binutils \
-	    --disable-ld \
-	    --disable-gprof \
-	    --with-lzma=no \
-	    $MINGW_GDB_CONF_OPTS \
-	    --with-libexpat=$BUILDDIR_MINGW/host-libs/usr \
-	    --with-libiconv-prefix=$BUILDDIR_MINGW/host-libs/usr \
-	    --with-system-gdbinit=$INSTALLDIR_MINGW/$HOST_MINGW/arm-none-eabi/lib/gdbinit \
-	    '--with-gdb-datadir='\''${prefix}'\''/arm-none-eabi/share/gdb' \
-	    "--with-pkgversion=$PKGVERSION"
-
-	if [ "x$DEBUG_BUILD_OPTIONS" != "x" ] ; then
-	    make CFLAGS="-I$BUILDDIR_MINGW/host-libs/zlib/include $DEBUG_BUILD_OPTIONS" -j$JOBS
-	else
-	    make -j$JOBS
-	fi
-
-	make install
-	if [ "x$skip_manual" != "xyes" ]; then
-		make install-html install-pdf
-	fi
-
-	restoreenv
-	popd
-}
-
-build_mingw_gdb "--with-python=no"
-
-if [ "x$skip_mingw32_gdb_with_python" == "xno" ]; then
-	build_mingw_gdb "--with-python=$build_tools_abs_path/python-config.sh --program-suffix=-py --program-prefix=$TARGET-"
-fi
+echo [Vita] Skipped
 
 echo Task [IV-5] /$HOST_MINGW/pretidy/
 pushd $INSTALLDIR_MINGW
@@ -853,60 +728,32 @@ rm -rf ./lib/libiberty.a
 rm -rf $INSTALLDIR_MINGW_DOC/info
 rm -rf $INSTALLDIR_MINGW_DOC/man
 
+echo Task [Vita-3]: Deploy headers/generate libs [MinGW]
+cp $BUILDDIR_NATIVE/vitalibs/*.a $INSTALLDIR_MINGW/arm-vita-eabi/lib/
+cp -r $SRCDIR/$VITA_HEADERS/include $INSTALLDIR_MINGW/arm-vita-eabi/
+
 find $INSTALLDIR_MINGW -name '*.la' -exec rm '{}' ';'
 
 echo Task [IV-6] /$HOST_MINGW/strip_host_objects/
-STRIP_BINARIES=`find $INSTALLDIR_MINGW/bin/ -name arm-none-eabi-\*.exe`
+STRIP_BINARIES=`find $INSTALLDIR_MINGW/bin/ -name $TARGET-\*.exe`
 if [ "x$DEBUG_BUILD_OPTIONS" = "x" ] ; then
     for bin in $STRIP_BINARIES ; do
         strip_binary $HOST_MINGW_TOOL-strip $bin
     done
 
-    STRIP_BINARIES=`find $INSTALLDIR_MINGW/arm-none-eabi/bin/ -maxdepth 1 -mindepth 1 -name \*.exe`
+    STRIP_BINARIES=`find $INSTALLDIR_MINGW/$TARGET/bin/ -maxdepth 1 -mindepth 1 -name \*.exe`
     for bin in $STRIP_BINARIES ; do
         strip_binary $HOST_MINGW_TOOL-strip $bin
     done
 
-    STRIP_BINARIES=`find $INSTALLDIR_MINGW/lib/gcc/arm-none-eabi/$GCC_VER/ -name \*.exe`
+    STRIP_BINARIES=`find $INSTALLDIR_MINGW/lib/gcc/$TARGET/$GCC_VER/ -name \*.exe`
     for bin in $STRIP_BINARIES ; do
         strip_binary $HOST_MINGW_TOOL-strip $bin
     done
 fi
 
 echo Task [IV-7] /$HOST_MINGW/installation/
-rm -f $PACKAGEDIR/$PACKAGE_NAME_MINGW.exe
-pushd $BUILDDIR_MINGW
-rm -f $INSTALL_PACKAGE_NAME
-cp $ROOT/$RELEASE_FILE $INSTALLDIR_MINGW_DOC/
-cp $ROOT/$README_FILE $INSTALLDIR_MINGW_DOC/
-cp $ROOT/$LICENSE_FILE $INSTALLDIR_MINGW_DOC/
-copy_dir_clean $SRCDIR/$SAMPLES $INSTALLDIR_MINGW/share/gcc-arm-none-eabi/$SAMPLES
-flip -m $INSTALLDIR_MINGW_DOC/$RELEASE_FILE
-flip -m $INSTALLDIR_MINGW_DOC/$README_FILE
-flip -m -b $INSTALLDIR_MINGW_DOC/$LICENSE_FILE
-flip -m $INSTALLDIR_MINGW/share/gcc-arm-none-eabi/$SAMPLES_DOS_FILES
-rm -rf $INSTALLDIR_MINGW/include
-ln -s $INSTALLDIR_MINGW $INSTALL_PACKAGE_NAME
-
-$SRCDIR/$INSTALLATION/build_win_pkg.sh --package=$INSTALL_PACKAGE_NAME --release_ver=$RELEASEVER --date=$RELEASEDATE
-mv $SRCDIR/$INSTALLATION/build.log $SRCDIR/$INSTALLATION/build.installjammer.log
-mv $SRCDIR/$INSTALLATION/output/$PACKAGE_NAME_MINGW.exe $PACKAGEDIR/$PACKAGE_NAME_MINGW.installjammer.exe
-
-cp $SRCDIR/$INSTALLATION/gccvar.bat $INSTALLDIR_MINGW/bin
-mkdir -p $SRCDIR/$INSTALLATION/output
-makensis -DBaseDir=$INSTALLDIR_MINGW  \
-         -DAppName="$APPNAME" \
-         -DAppNameStr="$PKGVERSION"   \
-         -DPackageName=$PACKAGE_NAME_MINGW   \
-         -DInstallDirBase="$INSTALLBASE"   \
-         -DInstallDirVer="$GCC_VER_SHORT $RELEASEVER" \
-         "-XOutFile $SRCDIR/$INSTALLATION/output/$PACKAGE_NAME_MINGW.exe"    \
-         $SRCDIR/$INSTALLATION/arm-none-eabi-gnu-tools.nsi
-
-cp -rf $SRCDIR/$INSTALLATION/output/$PACKAGE_NAME_MINGW.exe $PACKAGEDIR/
-rm -f $INSTALL_PACKAGE_NAME
-popd
-restoreenv
+echo [Vita] Skipped
 
 echo Task [IV-8] /Package toolchain in zip format/
 pushd $INSTALLDIR_MINGW
