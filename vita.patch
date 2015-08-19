@@ -1,23 +1,39 @@
-diff -r ./binutils/ld/scripttempl/elf.sc ../toolchain/gcc-arm-none-eabi-4_9-2015q2-20150609/src/binutils/ld/scripttempl/elf.sc
-536,538c536,540
-<   ${CREATE_SHLIB-${CREATE_PIE-${RELOCATING+. = ${DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}}
-<   ${CREATE_SHLIB+${RELOCATING+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}
-<   ${CREATE_PIE+${RELOCATING+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}
----
->   ${CREATE_SHLIB-${CREATE_PIE-${RELOCATING+. = ${DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}} 
->   ${CREATE_SHLIB+${RELOCATING+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}} 
->   ${CREATE_PIE+${RELOCATING+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}} 
->   /* Hacky hackity hack. Need this because otherwise data segment is not aligned enough. */
->   . = ALIGN(0x10000);
-diff -r ./gcc/gcc/gcc.c ../toolchain/gcc-arm-none-eabi-4_9-2015q2-20150609/src/gcc/gcc/gcc.c
-527a528
-> #undef LIB_SPEC
-529c530
-< #define LIB_SPEC "%{!shared:%{g*:-lg} %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}}"
----
-> #define LIB_SPEC "%{!shared:%{g*:-lg} %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p} -lSceKernel_stub}"
-diff -r ./libelf-0.8.13/configure ../toolchain/gcc-arm-none-eabi-4_9-2015q2-20150609/src/libelf-0.8.13/configure
-1598c1598
-<   ac_cv_sizeof_long_long=0
----
->   ac_cv_sizeof_long_long=8
+diff -ru ../../gcc-arm-none-eabi-4_9-2015q2-20150609/src/binutils/ld/scripttempl/elf.sc ./binutils/ld/scripttempl/elf.sc
+--- ../../gcc-arm-none-eabi-4_9-2015q2-20150609/src/binutils/ld/scripttempl/elf.sc	2015-08-19 02:43:39.183906485 +0100
++++ ./binutils/ld/scripttempl/elf.sc	2015-08-19 02:46:26.363911465 +0100
+@@ -536,7 +536,8 @@
+   ${CREATE_SHLIB-${CREATE_PIE-${RELOCATING+. = ${DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}}
+   ${CREATE_SHLIB+${RELOCATING+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}
+   ${CREATE_PIE+${RELOCATING+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}
+-
++  /* Hacky hackity hack. Need this because otherwise data segment is not aligned enough. */
++  . = ALIGN(0x10000);
+   /* Exception handling  */
+   .eh_frame     ${RELOCATING-0} : ONLY_IF_RW { KEEP (*(.eh_frame)) }
+   .gcc_except_table ${RELOCATING-0} : ONLY_IF_RW { *(.gcc_except_table .gcc_except_table.*) }
+diff -ru ../../gcc-arm-none-eabi-4_9-2015q2-20150609/src/gcc/gcc/gcc.c ./gcc/gcc/gcc.c
+--- ../../gcc-arm-none-eabi-4_9-2015q2-20150609/src/gcc/gcc/gcc.c	2015-08-19 02:43:39.183906485 +0100
++++ ./gcc/gcc/gcc.c	2015-08-19 02:47:08.813912731 +0100
+@@ -525,8 +525,9 @@
+ #endif
+ 
+ /* config.h can define LIB_SPEC to override the default libraries.  */
++#undef LIB_SPEC
+ #ifndef LIB_SPEC
+-#define LIB_SPEC "%{!shared:%{g*:-lg} %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}}"
++#define LIB_SPEC "%{!shared:%{g*:-lg} %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}} -lSceKernel_stub"
+ #endif
+ 
+ /* When using -fsplit-stack we need to wrap pthread_create, in order
+diff -ru ../../gcc-arm-none-eabi-4_9-2015q2-20150609/src/libelf-0.8.13/configure ./libelf-0.8.13/configure
+--- ../../gcc-arm-none-eabi-4_9-2015q2-20150609/src/libelf-0.8.13/configure	2015-08-19 02:43:39.183906485 +0100
++++ ./libelf-0.8.13/configure	2015-08-19 02:47:24.203913188 +0100
+@@ -1595,7 +1595,7 @@
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   if test "$cross_compiling" = yes; then
+-  ac_cv_sizeof_long_long=0
++  ac_cv_sizeof_long_long=8
+ else
+   cat > conftest.$ac_ext <<EOF
+ #line 1602 "configure"
