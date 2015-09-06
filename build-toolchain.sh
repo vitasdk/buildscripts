@@ -459,7 +459,7 @@ popd
 echo Task [Vita-1]: Deploy headers/generate libs
 rm -rf $BUILDDIR_NATIVE/vitalibs && mkdir -p $BUILDDIR_NATIVE/vitalibs
 pushd $BUILDDIR_NATIVE/vitalibs
-$INSTALLDIR_NATIVE/bin/vita-libs-gen $SRCDIR/$VITA_HEADERS/db.json .
+$INSTALLDIR_NATIVE/bin/vita-libs-gen $SRCDIR/$VITA_HEADERS/db.json $SRCDIR/$VITA_HEADERS/extra.json .
 make ARCH=$INSTALLDIR_NATIVE/bin/arm-vita-eabi
 cp *.a $INSTALLDIR_NATIVE/arm-vita-eabi/lib/
 cp -r $SRCDIR/$VITA_HEADERS/include $INSTALLDIR_NATIVE/arm-vita-eabi/
