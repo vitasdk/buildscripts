@@ -529,6 +529,7 @@ rm -f $INSTALL_PACKAGE_NAME
 cp $ROOT/$RELEASE_FILE $INSTALLDIR_NATIVE_DOC/
 cp $ROOT/$README_FILE $INSTALLDIR_NATIVE_DOC/
 cp $ROOT/$LICENSE_FILE $INSTALLDIR_NATIVE_DOC/
+cp $BUILDDIR_NATIVE/newlib/arm-vita-eabi/newlib/crt0.o $INSTALLDIR_NATIVE/arm-vita-eabi/lib/crt0.o
 copy_dir_clean $SRCDIR/$SAMPLES $INSTALLDIR_NATIVE/share/gcc-$TARGET/$SAMPLES
 ln -s $INSTALLDIR_NATIVE $INSTALL_PACKAGE_NAME
 ${TAR} cjf $PACKAGEDIR/$PACKAGE_NAME_NATIVE.tar.bz2   \
@@ -731,6 +732,7 @@ rm -rf $INSTALLDIR_MINGW_DOC/man
 echo Task [Vita-3]: Deploy headers/generate libs [MinGW]
 cp $BUILDDIR_NATIVE/vitalibs/*.a $INSTALLDIR_MINGW/arm-vita-eabi/lib/
 cp -r $SRCDIR/$VITA_HEADERS/include $INSTALLDIR_MINGW/arm-vita-eabi/
+cp $BUILDDIR_NATIVE/newlib/arm-vita-eabi/newlib/crt0.o $INSTALLDIR_MINGW/arm-vita-eabi/lib/crt0.o
 
 find $INSTALLDIR_MINGW -name '*.la' -exec rm '{}' ';'
 
@@ -802,8 +804,6 @@ pushd $PACKAGEDIR
 rm -rf md5.txt
 $MD5 $PACKAGE_NAME_NATIVE.tar.bz2     >>md5.txt
 if [ "x$skip_mingw32" != "xyes" ] ; then
-    $MD5 $PACKAGE_NAME_MINGW.exe         >>md5.txt
-    $MD5 $PACKAGE_NAME_MINGW.installjammer.exe >>md5.txt
     $MD5 $PACKAGE_NAME_MINGW.zip         >>md5.txt
 fi
 $MD5 $PACKAGE_NAME-src.tar.bz2 >>md5.txt
