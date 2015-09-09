@@ -610,6 +610,7 @@ $SRCDIR/$BINUTILS/configure --build=$BUILD \
     --htmldir=$INSTALLDIR_MINGW_DOC/html \
     --pdfdir=$INSTALLDIR_MINGW_DOC/pdf \
     --disable-nls \
+    --disable-werror \
     --enable-plugins \
     --with-sysroot=$INSTALLDIR_MINGW/$TARGET \
     "--with-pkgversion=$PKGVERSION"
