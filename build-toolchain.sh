@@ -609,6 +609,7 @@ $SRCDIR/$BINUTILS/configure --build=$BUILD \
     --htmldir=$INSTALLDIR_MINGW_DOC/html \
     --pdfdir=$INSTALLDIR_MINGW_DOC/pdf \
     --disable-nls \
+    --disable-werror \
     --enable-plugins \
     --with-sysroot=$INSTALLDIR_MINGW/$TARGET \
     "--with-pkgversion=$PKGVERSION"
@@ -802,8 +803,6 @@ pushd $PACKAGEDIR
 rm -rf md5.txt
 $MD5 $PACKAGE_NAME_NATIVE.tar.bz2     >>md5.txt
 if [ "x$skip_mingw32" != "xyes" ] ; then
-    $MD5 $PACKAGE_NAME_MINGW.exe         >>md5.txt
-    $MD5 $PACKAGE_NAME_MINGW.installjammer.exe >>md5.txt
     $MD5 $PACKAGE_NAME_MINGW.zip         >>md5.txt
 fi
 $MD5 $PACKAGE_NAME-src.tar.bz2 >>md5.txt
