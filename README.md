@@ -3,7 +3,7 @@
 1. Read the pdf
 2. Download & untar all deps
 3. Apply `vita.patch`: `cd src && patch -p0 < ../vita.patch`
-4. Replace `src/newlib` with a version for the Vita: https://github.com/xyzz/vita-newlib
+4. Replace `src/newlib` with a version for the Vita: https://github.com/vitasdk/newlib
 5. Clone https://github.com/vitasdk/vita-toolchain to `src/vita-toolchain`
 6. Clone https://github.com/vitasdk/vita-headers to `src/vita-headers`
 7. Download http://www.digip.org/jansson/releases/jansson-2.7.tar.gz and untar to `src/jansson-2.7`
