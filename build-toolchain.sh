@@ -254,7 +254,8 @@ cmake $SRCDIR/$VITA_TOOLCHAIN \
 	-Dlibelf_INCLUDE_DIR=$BUILDDIR_NATIVE/vita-toolchain/install/include/ \
 	-Dlibelf_LIBRARY=$BUILDDIR_NATIVE/vita-toolchain/install/lib/libelf.a \
 	-DUSE_BUNDLED_ENDIAN_H=ON \
-	-DCMAKE_INSTALL_PREFIX=$INSTALLDIR_NATIVE
+	-DCMAKE_INSTALL_PREFIX=$INSTALLDIR_NATIVE \
+	$DEFAULT_JSON
 make
 make install
 popd
@@ -463,6 +464,8 @@ $INSTALLDIR_NATIVE/bin/vita-libs-gen $SRCDIR/$VITA_HEADERS/db.json $SRCDIR/$VITA
 make ARCH=$INSTALLDIR_NATIVE/bin/arm-vita-eabi
 cp *.a $INSTALLDIR_NATIVE/arm-vita-eabi/lib/
 cp -r $SRCDIR/$VITA_HEADERS/include $INSTALLDIR_NATIVE/arm-vita-eabi/
+mkdir -p $INSTALLDIR_NATIVE/share
+cp $SRCDIR/$VITA_HEADERS/db.json $SRCDIR/$VITA_HEADERS/extra.json $INSTALLDIR_NATIVE/share
 popd
 
 echo Task [III-5] /$HOST_NATIVE/gcc-size-libstdcxx/
@@ -587,7 +590,8 @@ cmake $SRCDIR/$VITA_TOOLCHAIN \
         -DJansson_LIBRARY=$BUILDDIR_MINGW/vita-toolchain/install/lib/libjansson.a \
         -Dlibelf_INCLUDE_DIR=$BUILDDIR_MINGW/vita-toolchain/install/include/ \
         -Dlibelf_LIBRARY=$BUILDDIR_MINGW/vita-toolchain/install/lib/libelf.a \
-        -DCMAKE_INSTALL_PREFIX=$INSTALLDIR_MINGW
+        -DCMAKE_INSTALL_PREFIX=$INSTALLDIR_MINGW \
+        $DEFAULT_JSON
 make
 make install
 popd
@@ -732,6 +736,8 @@ rm -rf $INSTALLDIR_MINGW_DOC/man
 echo Task [Vita-3]: Deploy headers/generate libs [MinGW]
 cp $BUILDDIR_NATIVE/vitalibs/*.a $INSTALLDIR_MINGW/arm-vita-eabi/lib/
 cp -r $SRCDIR/$VITA_HEADERS/include $INSTALLDIR_MINGW/arm-vita-eabi/
+mkdir -p $INSTALLDIR_MINGW/share
+cp $SRCDIR/$VITA_HEADERS/db.json $SRCDIR/$VITA_HEADERS/extra.json $INSTALLDIR_MINGW/share
 
 find $INSTALLDIR_MINGW -name '*.la' -exec rm '{}' ';'
 
