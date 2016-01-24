@@ -332,7 +332,7 @@ BUGURL=""
 
 # Set variables according to real environment to make this script can run
 # on Ubuntu and Mac OS X.
-uname_string=`uname | sed 'y/LINUXDARWIN/linuxdarwin/'`
+uname_string=`uname | sed 'y/LINUXDARWINFREEOPENPCBSD/linuxdarwinfreeopenpcbsd/'`
 host_arch=`uname -m | sed 'y/XI/xi/'`
 if [ "x$uname_string" == "xlinux" ] ; then
     BUILD="$host_arch"-linux-gnu
@@ -343,6 +343,15 @@ if [ "x$uname_string" == "xlinux" ] ; then
     TAR=tar
     MD5="md5sum -b"
     PACKAGE_NAME_SUFFIX=linux
+elif [ "x$uname_string" == "xfreebsd" ] ; then
+    BUILD="$host_arch"-freebsd
+    HOST_NATIVE="$host_arch"-freebsd
+    READLINK=readlink
+    JOBS=`sysctl kern.smp.cpus | sed 's/kern.smp.cpus: //'`
+    GCC_CONFIG_OPTS_LCPP="--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm"
+    TAR=gtar
+    MD5="md5 -r"
+    PACKAGE_NAME_SUFFIX=freebsd
 elif [ "x$uname_string" == "xdarwin" ] ; then
     BUILD=x86_64-apple-darwin10
     HOST_NATIVE=x86_64-apple-darwin10
