@@ -490,7 +490,7 @@ if [ "x$DEBUG_BUILD_OPTIONS" = "x" ] ; then
         strip_binary strip $bin
     done
 
-    STRIP_BINARIES=`find $INSTALLDIR_NATIVE/lib/gcc/$TARGET/$GCC_VER/ -maxdepth 1 -name \* -perm +111 -and ! -type d`
+    STRIP_BINARIES=`find $INSTALLDIR_NATIVE/lib/gcc/$TARGET/$GCC_VER/ -maxdepth 1 -name \* -perm /111 -and ! -type d`
     for bin in $STRIP_BINARIES ; do
         strip_binary strip $bin
     done
