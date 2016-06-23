@@ -460,12 +460,12 @@ popd
 echo Task [Vita-1]: Deploy headers/generate libs
 rm -rf $BUILDDIR_NATIVE/vitalibs && mkdir -p $BUILDDIR_NATIVE/vitalibs
 pushd $BUILDDIR_NATIVE/vitalibs
-$INSTALLDIR_NATIVE/bin/vita-libs-gen $SRCDIR/$VITA_HEADERS/db.json $SRCDIR/$VITA_HEADERS/extra.json .
+$INSTALLDIR_NATIVE/bin/vita-libs-gen $SRCDIR/$VITA_HEADERS/db.json .
 make ARCH=$INSTALLDIR_NATIVE/bin/arm-vita-eabi
 cp *.a $INSTALLDIR_NATIVE/arm-vita-eabi/lib/
 cp -r $SRCDIR/$VITA_HEADERS/include $INSTALLDIR_NATIVE/arm-vita-eabi/
 mkdir -p $INSTALLDIR_NATIVE/share
-cp $SRCDIR/$VITA_HEADERS/db.json $SRCDIR/$VITA_HEADERS/extra.json $INSTALLDIR_NATIVE/share
+cp $SRCDIR/$VITA_HEADERS/db.json $INSTALLDIR_NATIVE/share
 popd
 
 echo Task [III-5] /$HOST_NATIVE/gcc-size-libstdcxx/
@@ -737,7 +737,7 @@ echo Task [Vita-3]: Deploy headers/generate libs [MinGW]
 cp $BUILDDIR_NATIVE/vitalibs/*.a $INSTALLDIR_MINGW/arm-vita-eabi/lib/
 cp -r $SRCDIR/$VITA_HEADERS/include $INSTALLDIR_MINGW/arm-vita-eabi/
 mkdir -p $INSTALLDIR_MINGW/share
-cp $SRCDIR/$VITA_HEADERS/db.json $SRCDIR/$VITA_HEADERS/extra.json $INSTALLDIR_MINGW/share
+cp $SRCDIR/$VITA_HEADERS/db.json $INSTALLDIR_MINGW/share
 
 find $INSTALLDIR_MINGW -name '*.la' -exec rm '{}' ';'
 
