@@ -247,12 +247,26 @@ $SRCDIR/$LIBELF/configure --disable-shared --enable-static --prefix=$BUILDDIR_NA
 make
 make install
 cd ..
+mkdir build-zlib && cd build-zlib
+$SRCDIR/$ZLIB/configure --static --prefix=$BUILDDIR_NATIVE/vita-toolchain/install
+make
+make install
+cd ..
+mkdir build-libzip && cd build-libzip
+$SRCDIR/$LIBZIP/configure --disable-shared --enable-static --prefix=$BUILDDIR_NATIVE/vita-toolchain/install
+make
+make install
+cd ..
 mkdir build-vita-toolchain && cd build-vita-toolchain
 cmake $SRCDIR/$VITA_TOOLCHAIN \
 	-DJansson_INCLUDE_DIR=$BUILDDIR_NATIVE/vita-toolchain/install/include/ \
 	-DJansson_LIBRARY=$BUILDDIR_NATIVE/vita-toolchain/install/lib/libjansson.a \
 	-Dlibelf_INCLUDE_DIR=$BUILDDIR_NATIVE/vita-toolchain/install/include/ \
 	-Dlibelf_LIBRARY=$BUILDDIR_NATIVE/vita-toolchain/install/lib/libelf.a \
+	-Dzlib_INCLUDE_DIR=$BUILDDIR_NATIVE/vita-toolchain/install/include/ \
+	-Dzlib_LIBRARY=$BUILDDIR_NATIVE/vita-toolchain/install/lib/libz.a \
+	-Dlibzip_INCLUDE_DIR=$BUILDDIR_NATIVE/vita-toolchain/install/include/ \
+	-Dlibzip_LIBRARY=$BUILDDIR_NATIVE/vita-toolchain/install/lib/libzip.a \
 	-DUSE_BUNDLED_ENDIAN_H=ON \
 	-DCMAKE_INSTALL_PREFIX=$INSTALLDIR_NATIVE \
 	$DEFAULT_JSON
@@ -589,6 +603,16 @@ make install
 # need to run ranlib manually
 $HOST_MINGW-ranlib $BUILDDIR_MINGW/vita-toolchain/install/lib/libelf.a
 cd ..
+mkdir build-zlib && cd build-zlib
+CC=$HOST_MINGW-gcc $SRCDIR/$ZLIB/configure --static --prefix=$BUILDDIR_MINGW/vita-toolchain/install
+make
+make install
+cd ..
+mkdir build-libzip && cd build-libzip
+$SRCDIR/$LIBZIP/configure --disable-shared --enable-static --build=$BUILD --host=$HOST_MINGW --prefix=$BUILDDIR_MINGW/vita-toolchain/install
+make
+make install
+cd ..
 mkdir build-vita-toolchain && cd build-vita-toolchain
 cmake $SRCDIR/$VITA_TOOLCHAIN \
 	-DCMAKE_TOOLCHAIN_FILE=$SRCDIR/mingw-toolchain.cmake \
@@ -596,6 +620,10 @@ cmake $SRCDIR/$VITA_TOOLCHAIN \
         -DJansson_LIBRARY=$BUILDDIR_MINGW/vita-toolchain/install/lib/libjansson.a \
         -Dlibelf_INCLUDE_DIR=$BUILDDIR_MINGW/vita-toolchain/install/include/ \
         -Dlibelf_LIBRARY=$BUILDDIR_MINGW/vita-toolchain/install/lib/libelf.a \
+	-Dzlib_INCLUDE_DIR=$BUILDDIR_NATIVE/vita-toolchain/install/include/ \
+	-Dzlib_LIBRARY=$BUILDDIR_NATIVE/vita-toolchain/install/lib/libz.a \
+        -Dlibzip_INCLUDE_DIR=$BUILDDIR_MINGW/vita-toolchain/install/include/ \
+        -Dlibzip_LIBRARY=$BUILDDIR_MINGW/vita-toolchain/install/lib/libzip.a \
         -DCMAKE_INSTALL_PREFIX=$INSTALLDIR_MINGW \
         $DEFAULT_JSON
 make
