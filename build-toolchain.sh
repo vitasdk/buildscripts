@@ -492,6 +492,7 @@ if [ "x$DEBUG_BUILD_OPTIONS" = "x" ] ; then
 
     case "$OSTYPE" in
       darwin*)  PERM="+111" ;;
+      freebsd*) PERM="+111" ;;
       *)        PERM="/111" ;;
     esac
 
