@@ -344,7 +344,7 @@ popd
 pushd $INSTALLDIR_NATIVE
 rm -rf bin/$TARGET-gccbug
 rm -rf ./lib/libiberty.a
-rmdir include
+rm -rf include
 popd
 
 echo Task [III-2] /$HOST_NATIVE/newlib/
@@ -451,7 +451,7 @@ for libiberty_lib in $LIBIBERTY_LIBRARIES ; do
     rm -rf $libiberty_lib
 done
 rm -rf ./lib/libiberty.a
-rmdir include
+rm -rf include
 popd
 
 rm -f $INSTALLDIR_NATIVE/$TARGET/usr
@@ -720,7 +720,7 @@ popd
 
 pushd $INSTALLDIR_MINGW
 rm -rf bin/$TARGET-gccbug
-rmdir include
+rm -rf include
 popd
 
 copy_dir $BUILDDIR_MINGW/tools-$OBJ_SUFFIX_NATIVE/lib/gcc/$TARGET $INSTALLDIR_MINGW/lib/gcc/$TARGET
