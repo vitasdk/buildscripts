@@ -276,6 +276,7 @@ SAMPLES=samples
 BUILD_MANUAL=build-manual
 JANSSON=jansson-2.7
 LIBELF=libelf-0.8.13
+LIBZIP=libzip-1.1.3
 VITA_TOOLCHAIN=vita-toolchain
 VITA_HEADERS=vita-headers
 
