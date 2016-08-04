@@ -314,7 +314,13 @@ SAMPLES_DOS_FILES=$SAMPLES/readme.txt
 BUILD_MANUAL_FILE=How-to-build-toolchain.pdf
 GCC_VER=`cat $SRCDIR/$GCC/gcc/BASE-VER`
 GCC_VER_NAME=`echo $GCC_VER | cut -d'.' -f1,2 | sed -e 's/\./_/g'`
-GCC_VER_SHORT=`echo $GCC_VER_NAME | sed -e 's/_/\./g'`
+if [[ $(uname -s) == "Darwin" ]]
+then
+    SEDOPTION='-E'
+else
+    SEDOPTION='-r'
+fi
+GCC_VER_SHORT=`echo $GCC_VER_NAME | sed $SEDOPTION 's/_/\./g'`
 HOST_MINGW=i686-w64-mingw32
 HOST_MINGW_TOOL=i686-w64-mingw32
 TARGET=arm-vita-eabi
