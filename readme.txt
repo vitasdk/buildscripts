@@ -1,10 +1,10 @@
 GNU Tools for ARM Embedded Processors
-Version: 4.9
+Version: 5
 
 Table of Contents
 * Installing executables on Linux
 * Installing executables on Mac OS X
-* Installing executables on Windows 
+* Installing executables on Windows
 * Invoking GCC
 * Architecture options usage
 * C Libraries usage
@@ -18,11 +18,11 @@ $ cd $install_dir && tar xjf gcc-arm-none-eabi-*-yyyymmdd-linux.tar.bz2
 
 For 64 bit system, 32 bit libc and libncurses are required to run the tools.
 In addition, if you want to use gdb python build (arm-none-eabi-gdb-py), you'd
-install 32 bit python2.7. Please refer to
-https://answers.launchpad.net/gcc-arm-embedded/+faq/2601 
+install 32 bit python2.7. Please refer
+https://answers.launchpad.net/gcc-arm-embedded/+faq/2601
 
 For some Ubuntu releases, the toolchain can also be installed via
-Launchpad PPA at https://launchpad.net/~terry.guo/+archive/gcc-arm-embedded.
+Launchpad PPA at https://launchpad.net/~team-gcc-arm-embedded/+archive/ubuntu/ppa.
 
 * Installing executables on Mac OS X *
 Unpack the tarball to the install directory, like this:
@@ -32,12 +32,11 @@ $ cd $install_dir && tar xjf gcc-arm-none-eabi-*-yyyymmdd-mac.tar.bz2
 Run the installer (gcc-arm-none-eabi-*-yyyymmdd-win32.exe) and follow the
 instructions.
 
-The toolchain in windows zip package is an alternate solution to windows
-installer for those who cannot run the installer. The zip package needs to
-be decompressed in a proper place and then invoked, following instructions
-in next section.
+The toolchain in windows zip package is a backup to windows installer for
+those who cannot run installer.  We need decompress the zip package
+in a proper place and then invoke it following instructions in next section.
 
-To use gdb python build (arm-none-eabi-gdb-py), you need to install 32 bit
+To use gdb python build (arm-none-eabi-gdb-py), you need install 32 bit
 python2.7 no matter 32 or 64 bit Windows. Please get the package from
 https://www.python.org/download/.
 
@@ -45,20 +44,19 @@ https://www.python.org/download/.
 On Linux and Mac OS X, either invoke with the complete path like this:
 $ $install_dir/gcc-arm-none-eabi-*/bin/arm-none-eabi-gcc
 
-or set the path like this:
+Or set path like this:
 $ export PATH=$PATH:$install_dir/gcc-arm-none-eabi-*/bin
-and run it with:
 $ arm-none-eabi-gcc
 
 On Windows (although the above approaches also work), it can be more
 convenient to either have the installer register environment variables, or run
 INSTALL_DIR\bin\gccvar.bat to set environment variables for the current cmd.
 
-For windows zip package, after decompression the toolchain can be invoked
-either with complete path like this:
+For windows zip package, after decompression we can invoke toolchain either with
+complete path like this:
 TOOLCHAIN_UNZIP_DIR\bin\arm-none-eabi-gcc
-or by running TOOLCHAIN_UNZIP_DIR\bin\gccvar.bat to set environment variables
-for the current cmd.
+or run TOOLCHAIN_UNZIP_DIR\bin\gccvar.bat to set environment variables for the
+current cmd.
 
 * Architecture options usage *
 
@@ -66,78 +64,116 @@ This toolchain is built and optimized for Cortex-A/R/M bare metal development.
 the following table shows how to invoke GCC/G++ with correct command line
 options for variants of Cortex-A/R and Cortex-M architectures.
 
-+------------+--------------------------------------+--------------+
-| ARM Core   | Command Line Options                 | multilib     |
-+------------+--------------------------------------+--------------+
-| Cortex-M0+ | -mthumb -mcpu=cortex-m0plus          | armv6-m      |
-| Cortex-M0  |--------------------------------------|              |
-| Cortex-M1  | -mthumb -mcpu=cortex-m0              |              |
-|            |--------------------------------------|              |
-|            | -mthumb -mcpu=cortex-m1              |              |
-|            |--------------------------------------|              |
-|            | -mthumb -march=armv6-m               |              |
-+------------+--------------------------------------+--------------+
-| Cortex-M3  | -mthumb -mcpu=cortex-m3              | armv7-m      |
-|            |--------------------------------------|              |
-|            | -mthumb -march=armv7-m               |              |
-+------------+--------------------------------------+--------------+
-| Cortex-M4  | -mthumb -mcpu=cortex-m4              | armv7e-m     |
-| (No FP)    |--------------------------------------|              |
-|            | -mthumb -march=armv7e-m              |              |
-+------------+--------------------------------------+--------------+
-| Cortex-M4  | -mthumb -mcpu=cortex-m4              | armv7e-m     |
-| (Soft FP)  | -mfloat-abi=softfp -mfpu=fpv4-sp-d16 | /softfp      |
-|            |--------------------------------------|              |
-|            | -mthumb -march=armv7e-m              |              |
-|            | -mfloat-abi=softfp -mfpu=fpv4-sp-d16 |              |
-+------------+--------------------------------------+--------------+
-| Cortex-M4  | -mthumb -mcpu=cortex-m4              | armv7e-m     |
-| (Hard FP)  | -mfloat-abi=hard -mfpu=fpv4-sp-d16   | /fpu         |
-|            |--------------------------------------|              |
-|            | -mthumb -march=armv7e-m              |              |
-|            | -mfloat-abi=hard-mfpu=fpv4-sp-d16    |              |
-+------------+--------------------------------------+--------------+
-| Cortex-M7  | -mthumb -mcpu=cortex-m7              | cortex-m7    |
-| (No FP)    |                                      |              |
-+------------+--------------------------------------+--------------+
-| Cortex-M7  | -mthumb -mcpu=cortex-m7              | cortex-m7    |
-| (Soft FP)  | -mfloat-abi=softfp -mfpu=fpv5-sp-d16 | /softfp      |
-|            |                                      | /fpv5-sp-d16 |
-|            |--------------------------------------+--------------+
-|            | -mthumb -mcpu=cortex-m7              | cortex-m7    |
-|            | -mfloat-abi=softfp -mfpu=fpv5-d16    | /softfp      |
-|            |                                      | /fpv5-d16    |
-+------------+--------------------------------------+--------------+
-| Cortex-M7  | -mthumb -mcpu=cortex-m7              | cortex-m7    |
-| (Hard FP)  | -mfloat-abi=hard -mfpu=fpv5-sp-d16   | /fpu         |
-|            |                                      | /fpv5-sp-d16 |
-|            |--------------------------------------+--------------+
-|            | -mthumb -mcpu=cortex-m7              | cortex-m7    |
-|            | -mfloat-abi=hard -mfpu=fpv5-d16      | /fpu         |
-|            |                                      | /fpv5-d16    |
-+------------+--------------------------------------+--------------+
-| Cortex-R*  | [-mthumb] -march=armv7-r             | armv7-ar     |
-| (No FP)    |                                      | /thumb       |
-+------------+--------------------------------------+--------------+
-| Cortex-R*  | [-mthumb] -march=armv7-r             | armv7-ar     |
-| (Soft FP)  | -mfloat-abi=softfp -mfpu=vfpv3-d16   | /thumb       |
-|            |                                      | /softfp      |
-+------------+--------------------------------------+--------------+
-| Cortex-R*  | [-mthumb] -march=armv7-r             | armv7-ar     |
-| (Hard FP)  | -mfloat-abi=hard -mfpu=vfpv3-d16     | /thumb       |
-|            |                                      | /fpu         |
-+------------+--------------------------------------+--------------+
-| Cortex-A*  | [-mthumb] -march=armv7-a             | armv7-ar     |
-| (No FP)    |                                      | /thumb       |
-+------------+--------------------------------------+--------------+
-| Cortex-A*  | [-mthumb] -march=armv7-a             | armv7-ar     |
-| (Soft FP)  | -mfloat-abi=softfp -mfpu=vfpv3-d16   | /thumb       |
-|            |                                      | /softfp      |
-+------------+--------------------------------------+--------------+
-| Cortex-A*  | [-mthumb] -march=armv7-a             | armv7-ar     |
-| (Hard FP)  | -mfloat-abi=hard -mfpu=vfpv3-d16     | /thumb       |
-|            |                                      | /fpu         |
-+------------+--------------------------------------+--------------+
+--------------------------------------------------------------------------
+|   ARM core | Command Line Options                       | multilib     |
+| / ARM arch |                                            |              |
+|------------|--------------------------------------------|--------------|
+| Cortex-M0+ | -mthumb -mcpu=cortex-m0plus                | armv6-m      |
+| Cortex-M0  | -mthumb -mcpu=cortex-m0                    |              |
+| Cortex-M1  | -mthumb -mcpu=cortex-m1                    |              |
+|            |--------------------------------------------|              |
+|            | -mthumb -march=armv6-m                     |              |
+|------------|--------------------------------------------|--------------|
+| Cortex-M3  | -mthumb -mcpu=cortex-m3                    | armv7-m      |
+|            |--------------------------------------------|              |
+|            | -mthumb -march=armv7-m                     |              |
+|------------|--------------------------------------------|--------------|
+| Cortex-M4  | -mthumb -mcpu=cortex-m4                    | armv7e-m     |
+| (No FP)    |--------------------------------------------|              |
+|            | -mthumb -march=armv7e-m                    |              |
+|------------|--------------------------------------------|--------------|
+| Cortex-M4  | -mthumb -mcpu=cortex-m4 -mfloat-abi=softfp | armv7e-m     |
+| (Soft FP)  | -mfpu=fpv4-sp-d16                          | /softfp      |
+|            |--------------------------------------------|              |
+|            | -mthumb -march=armv7e-m -mfloat-abi=softfp |              |
+|            | -mfpu=fpv4-sp-d16                          |              |
+|------------|--------------------------------------------|--------------|
+| Cortex-M4  | -mthumb -mcpu=cortex-m4 -mfloat-abi=hard   | armv7e-m     |
+| (Hard FP)  | -mfpu=fpv4-sp-d16                          | /fpu         |
+|            |--------------------------------------------|              |
+|            | -mthumb -march=armv7e-m -mfloat-abi=hard   |              |
+|            | -mfpu=fpv4-sp-d16                          |              |
+|------------|--------------------------------------------|--------------|
+| Cortex-M7  | -mthumb -mcpu=cortex-m7                    | armv7e-m     |
+| (No FP)    |--------------------------------------------|              |
+|            | -mthumb -march=armv7e-m                    |              |
+|------------|--------------------------------------------|--------------|
+| Cortex-M7  | -mthumb -mcpu=cortex-m7 -mfloat-abi=softfp | armv7e-m     |
+| (Soft FP)  | -mfpu=fpv5-sp-d16                          | /softfp      |
+|            |--------------------------------------------| /fpv5-sp-d16 |
+|            | -mthumb -march=armv7e-m -mfloat-abi=softfp |              |
+|            | -mfpu=fpv5-sp-d16                          |              |
+|            |--------------------------------------------|--------------|
+|            | -mthumb -mcpu=cortex-m7 -mfloat-abi=softfp | armv7e-m     |
+|            | -mfpu=fpv5-d16                             | /softfp      |
+|            |--------------------------------------------| /fpv5-d16    |
+|            | -mthumb -march=armv7e-m -mfloat-abi=softfp |              |
+|            | -mfpu=fpv5-d16                             |              |
+|------------|--------------------------------------------|--------------|
+| Cortex-M7  | -mthumb -mcpu=cortex-m7 -mfloat-abi=hard   | armv7e-m     |
+| (Hard FP)  | -mfpu=fpv5-sp-d16                          | /fpu         |
+|            |--------------------------------------------| /fpv5-sp-d16 |
+|            | -mthumb -march=armv7e-m -mfloat-abi=hard   |              |
+|            | -mfpu=fpv5-sp-d16                          |              |
+|            |--------------------------------------------|--------------|
+|            | -mthumb -mcpu=cortex-m7 -mfloat-abi=hard   | armv7e-m     |
+|            | -mfpu=fpv5-d16                             | /fpu         |
+|            |--------------------------------------------| /fpv5-d16    |
+|            | -mthumb -march=armv7e-m -mfloat-abi=hard   |              |
+|            | -mfpu=fpv5-d16                             |              |
+|------------|--------------------------------------------|--------------|
+| ARMv8-M    | -mthumb -march=armv8-m.base                | armv8-m.base |
+| Baseline   |                                            |              |
+|------------|--------------------------------------------|--------------|
+| ARMv8-M    | -mthumb -march=armv8-m.main                | armv8-m.main |
+| Mainline   |                                            |              |
+| (No FP)    |                                            |              |
+|------------|--------------------------------------------|--------------|
+| ARMv8-M    | -mthumb -march=armv8-m.main                | armv8-m.main |
+| Mainline   | -mfloat-abi=softfp -mfpu=fpv5-sp-d16       | /softfp      |
+| (Soft FP)  |                                            | /fpv5-sp-d16 |
+|            |--------------------------------------------|--------------|
+|            | -mthumb -march=armv8-m.main                | armv8-m.main |
+|            | -mfloat-abi=softfp -mfpu=fpv5-d16          | /softfp      |
+|            |                                            | /fpv5-d16    |
+|------------|--------------------------------------------|--------------|
+| ARMv8-M    | -mthumb -march=armv8-m.main                | armv8-m.main |
+| Mainline   | -mfloat-abi=hard -mfpu=fpv5-sp-d16         | /fpu         |
+| (Hard FP)  |                                            | /fpv5-sp-d16 |
+|            |--------------------------------------------|--------------|
+|            | -mthumb -march=armv8-m.main                | armv8-m.main |
+|            | -mfloat-abi=hard -mfpu=fpv5-d16            | /fpu         |
+|            |                                            | /fpv5-d16    |
+|------------|--------------------------------------------|--------------|
+| Cortex-R4  | [-mthumb] -march=armv7-r                   | armv7-ar     |
+| Cortex-R5  |                                            | /thumb       |
+| Cortex-R7  |                                            |              |
+| Cortex-R8  |						  |		 |
+| (No FP)    |                                            |              |
+|------------|--------------------------------------------|--------------|
+| Cortex-R4  | [-mthumb] -march=armv7-r -mfloat-abi=softfp| armv7-ar     |
+| Cortex-R5  | -mfpu=vfpv3-d16                            | /thumb       |
+| Cortex-R7  |                                            | /softfp      |
+| Cortex-R8  |						  |		 |
+| (Soft FP)  |                                            |              |
+|------------|--------------------------------------------|--------------|
+| Cortex-R4  | [-mthumb] -march=armv7-r -mfloat-abi=hard  | armv7-ar     |
+| Cortex-R5  | -mfpu=vfpv3-d16                            | /thumb       |
+| Cortex-R7  |                                            | /fpu         |
+| Cortex-R8  |						  |		 |
+| (Hard FP)  |                                            |              |
+|------------|--------------------------------------------|--------------|
+| Cortex-A*  | [-mthumb] -march=armv7-a                   | armv7-ar     |
+| (No FP)    |                                            | /thumb       |
+|------------|--------------------------------------------|--------------|
+| Cortex-A*  | [-mthumb] -march=armv7-a -mfloat-abi=softfp| armv7-ar     |
+| (Soft FP)  | -mfpu=vfpv3-d16                            | /thumb       |
+|            |                                            | /softfp      |
+|------------|--------------------------------------------|--------------|
+| Cortex-A*  | [-mthumb] -march=armv7-a -mfloat-abi=hard  | armv7-ar     |
+| (Hard FP)  | -mfpu=vfpv3-d16                            | /thumb       |
+|            |                                            | /fpu         |
+--------------------------------------------------------------------------
 
 * C Libraries usage *
 
@@ -148,11 +184,15 @@ To distinguish them, we rename the size optimized libraries as:
   libc.a --> libc_nano.a
   libg.a --> libg_nano.a
 
-To use newlib-nano, users should provide additional gcc link time option:
+To use newlib-nano, users should provide additional gcc compile and link time
+option:
  --specs=nano.specs
 
-Nano.specs also handles two additional gcc libraries: libstdc++_s.a and
-libsupc++_s.a, which are optimized for code size.
+At compile time, a 'newlib.h' header file especially configured for newlib-nano
+will be used if --specs=nano.specs is passed to the compiler.
+
+Nano.specs also handles two additional gcc libraries: libstdc++_nano.a and
+libsupc++_nano.a, which are optimized for code size.
 
 For example:
 $ arm-none-eabi-gcc src.c --specs=nano.specs $(OTHER_OPTIONS)
@@ -160,8 +200,9 @@ $ arm-none-eabi-gcc src.c --specs=nano.specs $(OTHER_OPTIONS)
 This option can also work together with other specs options like
 --specs=rdimon.specs
 
-Please note that --specs=nano.specs is a linker option. Be sure
-to include it in linker options if compiling and linking separately.
+Please note that, unlike previous versions of this toolchain, --specs=nano.specs
+is now both a compiler and linker option.  Be sure to include in both compiler
+and linker options if compiling and linking are separated.
 
 ** additional newlib-nano libraries usage
 
@@ -209,6 +250,5 @@ hardware debugger.  The pyOCD is an implementation of such GDB server that is
 written in Python and under Apache License.
 
 For those who are using this toolchain and have board with CMSIS-DAP based
-debugger, the pyOCD is our recommended gdb server.  The pyOCD binary
-is released at https://launchpad.net/gcc-arm-embedded-misc/pyocd-binary.
-More information can be found at https://github.com/mbedmicro/pyOCD.
+debugger, the pyOCD is our recommended gdb server.  More information can be
+found at https://github.com/mbedmicro/pyOCD.

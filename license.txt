@@ -2037,7 +2037,7 @@ That's all there is to it!
 
 
 Part 5)
-This license applies to files under directories binutils, gcc, gcb, gmp
+This license applies to files under directories binutils, gcc, gdb, gmp
 
 		   GNU LESSER GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
@@ -2400,18 +2400,7 @@ Mail Stop 573
 Austin, TX 78741
 800-292-9263
 
-(6) Array Technology Corporation and MIPS (mips/lsi33k-stub.h)
- 
-COPYRIGHT (C) 1991, 1992 ARRAY TECHNOLOGY CORPORATION
-              All Rights Reserved
-
-This software is confidential information which is proprietary to and
-a trade secret of ARRAY Technology Corporation.  Use, duplication, or
-disclosure is subject to the terms of a separate license agreement.
-
-Copyright 1985 by MIPS Computer Systems, Inc.
- 
-(7) University of Utah and the Computer Systems Laboratory (CSL)
+(6) University of Utah and the Computer Systems Laboratory (CSL)
     [applies only to hppa*-*-pro* targets]
 Copyright (c) 1990,1994 The University of Utah and
 the Computer Systems Laboratory (CSL).  All rights reserved.
@@ -2431,7 +2420,7 @@ ANY KIND FOR ANY DAMAGES WHATSOEVER RESULTING FROM THE USE OF THIS SOFTWARE.
 CSL requests users of this software to return to csl-dist@cs.utah.edu any
 improvements that they make and grant CSL redistribution rights.
 
-(8) Sun Microsystems
+(7) Sun Microsystems
 
 Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
 
@@ -2439,7 +2428,7 @@ Developed at SunPro, a Sun Microsystems, Inc. business.
 Permission to use, copy, modify, and distribute this
 software is freely granted, provided that this notice is preserved.
 
-(9) Hewlett Packard
+(8) Hewlett Packard
 
 (c) Copyright 1986 HEWLETT-PACKARD COMPANY
 
@@ -2455,7 +2444,7 @@ of the software without specific, written prior permission.
 Hewlett-Packard Company makes no representations about the
 suitability of this software for any purpose.
 
-(10) Hans-Peter Nilsson
+(9) Hans-Peter Nilsson
 
 Copyright (C) 2001 Hans-Peter Nilsson
 
@@ -2468,7 +2457,7 @@ IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
 WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 PURPOSE.
 
-(11) IBM Corp. spu processor (only spu-* targets)
+(10) IBM Corp. spu processor (only spu-* targets)
 
 (C) Copyright IBM Corp. 2005, 2006
 
@@ -2498,7 +2487,7 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
-(12) Jon Beniston (only lm32-* targets)
+(11) Jon Beniston (only lm32-* targets)
 
  Contributed by Jon Beniston <jon@beniston.com>
  
@@ -2523,7 +2512,7 @@ POSSIBILITY OF SUCH DAMAGE.
  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  SUCH DAMAGE.
 
-(13) - Xilinx, Inc. (microblaze-* and powerpc-* targets)
+(12) - Xilinx, Inc. (microblaze-* and powerpc-* targets)
 
 Copyright (c) 2004, 2009 Xilinx, Inc.  All rights reserved.
 
@@ -2555,7 +2544,7 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-(14) - National Semiconductor Corporation
+(13) - National Semiconductor Corporation
 
 Copyright (c) 2004 National Semiconductor Corporation
 
@@ -2570,7 +2559,7 @@ the new terms are clearly indicated on the first page of each file where
 they apply.
 
 
-(15) - CodeSourcery, Inc. (tic6x-* targets)
+(14) - CodeSourcery, Inc. (tic6x-* targets)
 
 Copyright (c) 2010 CodeSourcery, Inc.
 All rights reserved.
