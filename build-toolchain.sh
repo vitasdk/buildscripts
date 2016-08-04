@@ -291,6 +291,8 @@ $SRCDIR/$BINUTILS/configure  \
     --pdfdir=$INSTALLDIR_NATIVE_DOC/pdf \
     --disable-nls \
     --disable-werror \
+    --disable-sim \
+    --disable-gdb \
     --enable-interwork \
     --enable-plugins \
     --with-sysroot=$INSTALLDIR_NATIVE/$TARGET \
@@ -655,6 +657,8 @@ $SRCDIR/$BINUTILS/configure --build=$BUILD \
     --pdfdir=$INSTALLDIR_MINGW_DOC/pdf \
     --disable-nls \
     --disable-werror \
+    --disable-sim \
+    --disable-gdb \
     --enable-plugins \
     --with-sysroot=$INSTALLDIR_MINGW/$TARGET \
     "--with-pkgversion=$PKGVERSION"
@@ -719,6 +723,7 @@ $SRCDIR/$GCC/configure --build=$BUILD --host=$HOST_MINGW --target=$TARGET \
     --disable-libquadmath \
     --disable-libssp \
     --disable-libstdcxx-pch \
+    --disable-libstdcxx-verbose \
     --disable-nls \
     --disable-shared \
     --disable-threads \
