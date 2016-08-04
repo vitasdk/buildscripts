@@ -257,7 +257,7 @@ INSTALLDIR_MINGW_DOC=$ROOT/install-mingw/share/doc/gcc-arm-vita-eabi
 PACKAGEDIR=$ROOT/pkg
 
 BINUTILS=binutils
-CLOOG=cloog-0.18.0
+CLOOG=cloog-0.18.1
 EXPAT=expat-2.0.1
 GCC=gcc
 GDB=gdb
@@ -269,7 +269,7 @@ LIBICONV=libiconv-1.14
 MPC=mpc-0.8.1
 MPFR=mpfr-2.4.2
 NEWLIB=newlib
-ISL=isl-0.11.1
+ISL=isl-0.12.2
 ZLIB=zlib-1.2.8
 INSTALLATION=installation
 SAMPLES=samples
@@ -314,7 +314,13 @@ SAMPLES_DOS_FILES=$SAMPLES/readme.txt
 BUILD_MANUAL_FILE=How-to-build-toolchain.pdf
 GCC_VER=`cat $SRCDIR/$GCC/gcc/BASE-VER`
 GCC_VER_NAME=`echo $GCC_VER | cut -d'.' -f1,2 | sed -e 's/\./_/g'`
-GCC_VER_SHORT=`echo $GCC_VER_NAME | sed -e 's/_/\./g'`
+if [[ $(uname -s) == "Darwin" ]]
+then
+    SEDOPTION='-E'
+else
+    SEDOPTION='-r'
+fi
+GCC_VER_SHORT=`echo $GCC_VER_NAME | sed $SEDOPTION 's/_/\./g'`
 HOST_MINGW=i686-w64-mingw32
 HOST_MINGW_TOOL=i686-w64-mingw32
 TARGET=arm-vita-eabi

@@ -277,6 +277,8 @@ $SRCDIR/$BINUTILS/configure  \
     --pdfdir=$INSTALLDIR_NATIVE_DOC/pdf \
     --disable-nls \
     --disable-werror \
+    --disable-sim \
+    --disable-gdb \
     --enable-interwork \
     --enable-plugins \
     --with-sysroot=$INSTALLDIR_NATIVE/$TARGET \
@@ -344,7 +346,7 @@ popd
 pushd $INSTALLDIR_NATIVE
 rm -rf bin/$TARGET-gccbug
 rm -rf ./lib/libiberty.a
-rmdir include
+rm -rf  include
 popd
 
 echo Task [III-2] /$HOST_NATIVE/newlib/
@@ -451,7 +453,7 @@ for libiberty_lib in $LIBIBERTY_LIBRARIES ; do
     rm -rf $libiberty_lib
 done
 rm -rf ./lib/libiberty.a
-rmdir include
+rm -rf  include
 popd
 
 rm -f $INSTALLDIR_NATIVE/$TARGET/usr
@@ -496,7 +498,11 @@ if [ "x$DEBUG_BUILD_OPTIONS" = "x" ] ; then
       *)        PERM="/111" ;;
     esac
 
-    STRIP_BINARIES=`find $INSTALLDIR_NATIVE/lib/gcc/$TARGET/$GCC_VER/ -maxdepth 1 -name \* -perm $PERM -and ! -type d`
+    if [ "x$BUILD" == "xx86_64-apple-darwin10" ]; then
+        STRIP_BINARIES=`find $INSTALLDIR_NATIVE/lib/gcc/$TARGET/$GCC_VER/ -maxdepth 1 -name \* -perm +111 -and ! -type d`
+    else
+        STRIP_BINARIES=`find $INSTALLDIR_NATIVE/lib/gcc/$TARGET/$GCC_VER/ -maxdepth 1 -name \* -perm /111 -and ! -type d`
+    fi
     for bin in $STRIP_BINARIES ; do
         strip_binary strip $bin
     done
@@ -620,6 +626,8 @@ $SRCDIR/$BINUTILS/configure --build=$BUILD \
     --pdfdir=$INSTALLDIR_MINGW_DOC/pdf \
     --disable-nls \
     --disable-werror \
+    --disable-sim \
+    --disable-gdb \
     --enable-plugins \
     --with-sysroot=$INSTALLDIR_MINGW/$TARGET \
     "--with-pkgversion=$PKGVERSION"
@@ -684,6 +692,7 @@ $SRCDIR/$GCC/configure --build=$BUILD --host=$HOST_MINGW --target=$TARGET \
     --disable-libquadmath \
     --disable-libssp \
     --disable-libstdcxx-pch \
+    --disable-libstdcxx-verbose \
     --disable-nls \
     --disable-shared \
     --disable-threads \
@@ -720,7 +729,7 @@ popd
 
 pushd $INSTALLDIR_MINGW
 rm -rf bin/$TARGET-gccbug
-rmdir include
+rm -rf include
 popd
 
 copy_dir $BUILDDIR_MINGW/tools-$OBJ_SUFFIX_NATIVE/lib/gcc/$TARGET $INSTALLDIR_MINGW/lib/gcc/$TARGET
