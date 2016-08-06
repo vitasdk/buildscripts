@@ -620,7 +620,7 @@ cd ..
 
 mkdir build-vita-toolchain && cd build-vita-toolchain
 cmake $SRCDIR/$VITA_TOOLCHAIN \
-        -DZIP_STATIC \
+        -DZIP_STATIC=ON \
         -DCMAKE_TOOLCHAIN_FILE=$SRCDIR/mingw-toolchain.cmake \
         -DJansson_INCLUDE_DIR=$BUILDDIR_MINGW/vita-toolchain/install/include/ \
         -DJansson_LIBRARY=$BUILDDIR_MINGW/vita-toolchain/install/lib/libjansson.a \
@@ -629,7 +629,7 @@ cmake $SRCDIR/$VITA_TOOLCHAIN \
         -Dzlib_INCLUDE_DIR=$BUILDDIR_MINGW/vita-toolchain/install/include/ \
         -Dzlib_LIBRARY=$BUILDDIR_MINGW/vita-toolchain/install/lib/libz.a \
         -Dlibzip_INCLUDE_DIR=$BUILDDIR_MINGW/vita-toolchain/install/include/ \
-        -Dlibzip_CONF_INCLUDE_DIR=$BUILDDIR_MINGW/vita-toolchain/install/lib/libzip/include/ \
+        -Dlibzip_CONFIG_INCLUDE_DIR=$BUILDDIR_MINGW/vita-toolchain/install/lib/libzip/include/ \
         -Dlibzip_LIBRARY=$BUILDDIR_MINGW/vita-toolchain/install/lib/libzip.a \
         -DCMAKE_INSTALL_PREFIX=$INSTALLDIR_MINGW \
         $DEFAULT_JSON
