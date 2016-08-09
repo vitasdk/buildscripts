@@ -2,12 +2,12 @@
 
 1. Read the pdf
 2. Download & untar all deps
-3. Apply `vita.patch`: `patch -p1 < vita.patch`
-4. Replace `src/newlib` with a version for the Vita: https://github.com/vitasdk/newlib
-5. Clone https://github.com/vitasdk/vita-toolchain to `src/vita-toolchain`
-6. Clone https://github.com/vitasdk/vita-headers to `src/vita-headers`
-7. Download http://www.digip.org/jansson/releases/jansson-2.7.tar.gz and untar to `src/jansson-2.7`
-8. Download http://nih.at/libzip/libzip-1.1.3.tar.gz and untar to `src/libzip-1.1.3`
+3. Replace `src/newlib` with a version for the Vita: https://github.com/vitasdk/newlib
+4. Clone https://github.com/vitasdk/vita-toolchain to `src/vita-toolchain`
+5. Clone https://github.com/vitasdk/vita-headers to `src/vita-headers`
+6. Download http://www.digip.org/jansson/releases/jansson-2.7.tar.gz and untar to `src/jansson-2.7`
+7. Download http://nih.at/libzip/libzip-1.1.3.tar.gz and untar to `src/libzip-1.1.3`
+8. Apply `vita.patch`: `patch -p1 < vita.patch`
 9. Build
 10. ...
 11. Ask for help in #vitasdk @ freenode because this never works right
