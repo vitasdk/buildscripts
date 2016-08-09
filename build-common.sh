@@ -257,7 +257,7 @@ INSTALLDIR_MINGW_DOC=$ROOT/install-mingw/share/doc/gcc-arm-vita-eabi
 PACKAGEDIR=$ROOT/pkg
 
 BINUTILS=binutils
-CLOOG=cloog-0.18.0
+CLOOG=cloog-0.18.1
 EXPAT=expat-2.0.1
 GCC=gcc
 GDB=gdb
@@ -269,7 +269,7 @@ LIBICONV=libiconv-1.14
 MPC=mpc-0.8.1
 MPFR=mpfr-2.4.2
 NEWLIB=newlib
-ISL=isl-0.11.1
+ISL=isl-0.12.2
 ZLIB=zlib-1.2.8
 INSTALLATION=installation
 SAMPLES=samples
