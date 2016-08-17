@@ -266,6 +266,7 @@ cmake $SRCDIR/$VITA_TOOLCHAIN \
 	-Dzlib_INCLUDE_DIR=$BUILDDIR_NATIVE/vita-toolchain/install/include/ \
 	-Dzlib_LIBRARY=$BUILDDIR_NATIVE/vita-toolchain/install/lib/libz.a \
 	-Dlibzip_INCLUDE_DIR=$BUILDDIR_NATIVE/vita-toolchain/install/include/ \
+	-Dlibzip_CONFIG_INCLUDE_DIR=$BUILDDIR_NATIVE/vita-toolchain/install/lib/libzip/include/ \
 	-Dlibzip_LIBRARY=$BUILDDIR_NATIVE/vita-toolchain/install/lib/libzip.a \
 	-DUSE_BUNDLED_ENDIAN_H=ON \
 	-DCMAKE_INSTALL_PREFIX=$INSTALLDIR_NATIVE \
