@@ -362,6 +362,17 @@ rm -rf ./lib/libiberty.a
 rmdir include
 popd
 
+echo Task [Vita-1]: Deploy headers/generate libs
+rm -rf $BUILDDIR_NATIVE/vitalibs && mkdir -p $BUILDDIR_NATIVE/vitalibs
+pushd $BUILDDIR_NATIVE/vitalibs
+$INSTALLDIR_NATIVE/bin/vita-libs-gen $SRCDIR/$VITA_HEADERS/db.json .
+make ARCH=$INSTALLDIR_NATIVE/bin/arm-vita-eabi
+cp *.a $INSTALLDIR_NATIVE/arm-vita-eabi/lib/
+cp -r $SRCDIR/$VITA_HEADERS/include $INSTALLDIR_NATIVE/arm-vita-eabi/
+mkdir -p $INSTALLDIR_NATIVE/share
+cp $SRCDIR/$VITA_HEADERS/db.json $INSTALLDIR_NATIVE/share
+popd
+
 echo Task [III-2] /$HOST_NATIVE/newlib/
 saveenv
 prepend_path PATH $INSTALLDIR_NATIVE/bin
@@ -470,17 +481,6 @@ rmdir include
 popd
 
 rm -f $INSTALLDIR_NATIVE/$TARGET/usr
-popd
-
-echo Task [Vita-1]: Deploy headers/generate libs
-rm -rf $BUILDDIR_NATIVE/vitalibs && mkdir -p $BUILDDIR_NATIVE/vitalibs
-pushd $BUILDDIR_NATIVE/vitalibs
-$INSTALLDIR_NATIVE/bin/vita-libs-gen $SRCDIR/$VITA_HEADERS/db.json .
-make ARCH=$INSTALLDIR_NATIVE/bin/arm-vita-eabi
-cp *.a $INSTALLDIR_NATIVE/arm-vita-eabi/lib/
-cp -r $SRCDIR/$VITA_HEADERS/include $INSTALLDIR_NATIVE/arm-vita-eabi/
-mkdir -p $INSTALLDIR_NATIVE/share
-cp $SRCDIR/$VITA_HEADERS/db.json $INSTALLDIR_NATIVE/share
 popd
 
 echo Task [III-5] /$HOST_NATIVE/gcc-size-libstdcxx/
