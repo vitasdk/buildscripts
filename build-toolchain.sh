@@ -266,6 +266,7 @@ cmake $SRCDIR/$VITA_TOOLCHAIN \
 	-Dzlib_INCLUDE_DIR=$BUILDDIR_NATIVE/vita-toolchain/install/include/ \
 	-Dzlib_LIBRARY=$BUILDDIR_NATIVE/vita-toolchain/install/lib/libz.a \
 	-Dlibzip_INCLUDE_DIR=$BUILDDIR_NATIVE/vita-toolchain/install/include/ \
+	-Dlibzip_CONFIG_INCLUDE_DIR=$BUILDDIR_NATIVE/vita-toolchain/install/lib/libzip/include/ \
 	-Dlibzip_LIBRARY=$BUILDDIR_NATIVE/vita-toolchain/install/lib/libzip.a \
 	-DUSE_BUNDLED_ENDIAN_H=ON \
 	-DCMAKE_INSTALL_PREFIX=$INSTALLDIR_NATIVE \
@@ -359,6 +360,17 @@ pushd $INSTALLDIR_NATIVE
 rm -rf bin/$TARGET-gccbug
 rm -rf ./lib/libiberty.a
 rm -rf include
+popd
+
+echo Task [Vita-1]: Deploy headers/generate libs
+rm -rf $BUILDDIR_NATIVE/vitalibs && mkdir -p $BUILDDIR_NATIVE/vitalibs
+pushd $BUILDDIR_NATIVE/vitalibs
+$INSTALLDIR_NATIVE/bin/vita-libs-gen $SRCDIR/$VITA_HEADERS/db.json .
+make ARCH=$INSTALLDIR_NATIVE/bin/arm-vita-eabi
+cp *.a $INSTALLDIR_NATIVE/arm-vita-eabi/lib/
+cp -r $SRCDIR/$VITA_HEADERS/include $INSTALLDIR_NATIVE/arm-vita-eabi/
+mkdir -p $INSTALLDIR_NATIVE/share
+cp $SRCDIR/$VITA_HEADERS/db.json $INSTALLDIR_NATIVE/share
 popd
 
 echo Task [III-2] /$HOST_NATIVE/newlib/
@@ -469,17 +481,6 @@ rm -rf include
 popd
 
 rm -f $INSTALLDIR_NATIVE/$TARGET/usr
-popd
-
-echo Task [Vita-1]: Deploy headers/generate libs
-rm -rf $BUILDDIR_NATIVE/vitalibs && mkdir -p $BUILDDIR_NATIVE/vitalibs
-pushd $BUILDDIR_NATIVE/vitalibs
-$INSTALLDIR_NATIVE/bin/vita-libs-gen $SRCDIR/$VITA_HEADERS/db.json .
-make ARCH=$INSTALLDIR_NATIVE/bin/arm-vita-eabi
-cp *.a $INSTALLDIR_NATIVE/arm-vita-eabi/lib/
-cp -r $SRCDIR/$VITA_HEADERS/include $INSTALLDIR_NATIVE/arm-vita-eabi/
-mkdir -p $INSTALLDIR_NATIVE/share
-cp $SRCDIR/$VITA_HEADERS/db.json $INSTALLDIR_NATIVE/share
 popd
 
 echo Task [III-5] /$HOST_NATIVE/gcc-size-libstdcxx/
