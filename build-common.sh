@@ -279,6 +279,7 @@ LIBELF=libelf-0.8.13
 LIBZIP=libzip-1.1.3
 VITA_TOOLCHAIN=vita-toolchain
 VITA_HEADERS=vita-headers
+PTHREAD_EMBEDDED=pthread-embedded
 
 CLOOG_PACK=$CLOOG.tar.gz
 EXPAT_PACK=$EXPAT.tar.gz
