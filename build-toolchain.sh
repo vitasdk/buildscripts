@@ -327,7 +327,7 @@ $SRCDIR/$GCC/configure --target=$TARGET \
     --mandir=$INSTALLDIR_NATIVE_DOC/man \
     --htmldir=$INSTALLDIR_NATIVE_DOC/html \
     --pdfdir=$INSTALLDIR_NATIVE_DOC/pdf \
-    --enable-languages=c \
+    --enable-languages=c,c++ \
     --disable-decimal-float \
     --disable-libffi \
     --disable-libgomp \
