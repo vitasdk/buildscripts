@@ -327,7 +327,7 @@ $SRCDIR/$GCC/configure --target=$TARGET \
     --mandir=$INSTALLDIR_NATIVE_DOC/man \
     --htmldir=$INSTALLDIR_NATIVE_DOC/html \
     --pdfdir=$INSTALLDIR_NATIVE_DOC/pdf \
-    --enable-languages=c \
+    --enable-languages=c,c++ \
     --disable-decimal-float \
     --disable-libffi \
     --disable-libgomp \
@@ -412,6 +412,23 @@ fi
 popd
 restoreenv
 
+echo Task [Vita-2]: Build pthread-embedded
+saveenv
+prepend_path PATH $INSTALLDIR_NATIVE/bin
+saveenvvar CFLAGS_FOR_TARGET '-g -O2 -ffunction-sections -fdata-sections'
+rm -rf $BUILDDIR_NATIVE/$PTHREAD_EMBEDDED && mkdir -p $BUILDDIR_NATIVE/$PTHREAD_EMBEDDED
+pushd $BUILDDIR_NATIVE/$PTHREAD_EMBEDDED
+cp -R $SRCDIR/$PTHREAD_EMBEDDED/* .
+popd
+pushd $BUILDDIR_NATIVE/$PTHREAD_EMBEDDED/platform/vita
+
+saveenvvar PREFIX $INSTALLDIR_NATIVE/$TARGET
+make
+make install
+
+popd
+restoreenv
+
 echo Task [III-3] /$HOST_NATIVE/newlib-nano/
 echo [Vita] Skipped
 
@@ -431,6 +448,7 @@ $SRCDIR/$GCC/configure --target=$TARGET \
     --pdfdir=$INSTALLDIR_NATIVE_DOC/pdf \
     --enable-languages=c,c++ \
     --enable-plugins \
+    --enable-threads=posix \
     --disable-decimal-float \
     --disable-libffi \
     --disable-libgomp \
@@ -440,7 +458,6 @@ $SRCDIR/$GCC/configure --target=$TARGET \
     --disable-libstdcxx-pch \
     --disable-nls \
     --disable-shared \
-    --disable-threads \
     --disable-tls \
     --with-gnu-as \
     --with-gnu-ld \
