@@ -211,8 +211,8 @@ ExternalProject_add(gmp
 
 ExternalProject_add(mpfr
     DEPENDS gmp
-    URL http://www.mpfr.org/mpfr-current/mpfr-3.1.4.tar.bz2
-    URL_MD5 b8a2f6b0e68bef46e53da2ac439e1cf4
+    URL http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.5.tar.bz2
+    URL_MD5 b1d23a55588e3b2a13e3be66bc69fd8d
     CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
     ${COMMON_DEPS_CONFIGURE_ARGS}
