@@ -190,6 +190,20 @@ else ()
     set(VITA_HEADERS_DEPENDS binutils vita-toolchain)
 endif ()
 
+# tools for cross compilation
+list(APPEND TARGET_TOOLS
+    AR_FOR_TARGET="${BINUTILS_PREFIX}-ar"
+    NM_FOR_TARGET="${BINUTILS_PREFIX}-nm"
+    STRIP_FOR_TARGET="${BINUTILS_PREFIX}-strip"
+    RANLIB_FOR_TARGET="${BINUTILS_PREFIX}-ranlib"
+    CC_FOR_TARGET="${BINUTILS_PREFIX}-gcc"
+    GCC_FOR_TARGET="${BINUTILS_PREFIX}-gcc"
+    GXX_FOR_TARGET="${BINUTILS_PREFIX}-g++"
+    )
+
+# flags for cross compilation
+set(CFLAGS_FOR_TARGET "-g -O2 -ffunction-sections -fdata-sections")
+
 set(COMMON_DEPS_CONFIGURE_ARGS
     --build=${BUILD_NATIVE}
     --host=${HOST_NATIVE}
@@ -269,6 +283,20 @@ ExternalProject_add(expat
     --disable-nls
     )
 
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    # Clang doesn't seem to support static-libgcc not mixing static/dynamic libraries.
+    # Leave GCC_LINKER_ARGS unset.
+    if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+        # clang on OSX needs mode depth to compile gcc
+        set(EXTRA_CFLAGS -fbracket-depth=512)
+    endif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    set(GCC_LINKER_ARGS "--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm")
+else ()
+    message(FATAL_ERROR "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
+endif()
+
+
 set(COMMON_GCC_CONFIGURE_ARGS
     --build=${BUILD_NATIVE}
     --host=${HOST_NATIVE}
@@ -301,7 +329,7 @@ set(COMMON_GCC_CONFIGURE_ARGS
     --with-gnu-ld
     --with-newlib
     --with-headers=yes
-    "--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm"
+    ${GCC_LINKER_ARGS}
     --disable-multilib
     --with-arch=armv7-a
     --with-tune=cortex-a9
@@ -310,17 +338,12 @@ set(COMMON_GCC_CONFIGURE_ARGS
     --with-mode=thumb
     )
 
-# OSX compilation fails without this
-if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-    set(EXTRA_CFLAGS -fbracket-depth=2048)
-endif()
-
 ExternalProject_add(gcc-base
     DEPENDS gmp mpfr mpc isl cloog libelf expat
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2
     URL_MD5 4c626ac2a83ef30dfb9260e6f59c2b30
     PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc.patch
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CPPLAGS=${EXTRA_CFLAGS} ${COMPILER_FLAGS}
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${EXTRA_CFLAGS} CXXFLAGS=${EXTRA_CFLAGS} ${COMPILER_FLAGS} ${TARGET_TOOLS}
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
     ${COMMON_GCC_CONFIGURE_ARGS}
     --disable-threads
@@ -375,8 +398,8 @@ ExternalProject_Add(newlib
     DEPENDS binutils gcc-base
     GIT_REPOSITORY https://github.com/vitasdk/newlib
     GIT_TAG vita
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
-    "CFLAGS_FOR_TARGET=-g -O2 -ffunction-sections -fdata-sections"
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS} ${TARGET_TOOLS}
+    "CFLAGS_FOR_TARGET=${CFLAGS_FOR_TARGET}"
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
     --build=${BUILD_NATIVE}
     --host=${HOST_NATIVE}
@@ -398,10 +421,10 @@ ExternalProject_Add(pthread-embedded
     GIT_TAG master
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
-    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
+    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS} ${TARGET_TOOLS}
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh $(MAKE)
     PREFIX=${CMAKE_INSTALL_PREFIX} -C <SOURCE_DIR>/platform/vita
-    CFLAGS_FOR_TARGET="-g -O2 -ffunction-sections -fdata-sections"
+    "CFLAGS_FOR_TARGET=${CFLAGS_FOR_TARGET}"
     INSTALL_COMMAND $(MAKE) -C <SOURCE_DIR>/platform/vita PREFIX=${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH} install
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/pthread-embedded-version.txt
     )
@@ -412,7 +435,7 @@ ExternalProject_add(gcc-final
     URL_MD5 ${GCC_MD5}
     PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc.patch
     COMMAND ${CMAKE_COMMAND} -E create_symlink . ${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}/usr
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS} CFLAGS=${EXTRA_CFLAGS}
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS} CFLAGS=${EXTRA_CFLAGS} ${TARGET_TOOLS}
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
     ${COMMON_GCC_CONFIGURE_ARGS}
     --enable-plugins
