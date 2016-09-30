@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # According to the CMake folks, this is the way to do things.
 # http://www.cmake.org/pipermail/cmake/2010-April/036566.html
