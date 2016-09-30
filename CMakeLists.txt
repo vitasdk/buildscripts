@@ -218,7 +218,6 @@ ExternalProject_add(mpfr
     ${COMMON_DEPS_CONFIGURE_ARGS}
     --with-gmp=${DEPS_DIR}
     --disable-shared
-    --disable-nls
     )
 
 ExternalProject_add(mpc
