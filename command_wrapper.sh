@@ -31,6 +31,7 @@ unset _CPPFLAGS
 unset _LDFLAGS
 
 export CONFIG_SITE=
+export LC_ALL=C
 
 COMMAND_NAME="$1"
 
