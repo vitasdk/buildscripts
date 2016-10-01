@@ -516,7 +516,7 @@ add_custom_target(version_info
 
 # create a sdk tarball
 add_custom_target(tarball ALL
-    COMMAND ${CMAKE_COMMAND} -E tar "cfvj" "vitasdk-${TARGET_ARCH}-${BUILD_DATE}.tar.bz2" "${CMAKE_INSTALL_PREFIX}"
+    COMMAND ${CMAKE_COMMAND} -E tar "cfvj" "vitasdk-${BUILD_NATIVE}-${BUILD_DATE}.tar.bz2" "${CMAKE_INSTALL_PREFIX}"
     DEPENDS vita-toolchain vita-headers newlib pthread-embedded samples binutils gcc-final
     DEPENDS pretidy strip_host_binaries strip_target_objects version_info
     COMMENT "Creating vitasdk-${host_os}-${BUILD_DATE}.tar.bz2"
