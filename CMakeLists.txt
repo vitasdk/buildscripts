@@ -365,40 +365,17 @@ ExternalProject_add(vita-headers
     DEPENDS ${VITA_HEADERS_DEPENDS}
     GIT_REPOSITORY https://github.com/vitasdk/vita-headers
     GIT_TAG master
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND $(MAKE) -C vitalibs ARCH=${BINUTILS_PREFIX}
-    INSTALL_COMMAND ""
-    COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/vita-headers-version.txt
-    )
-
-# generate the vita library stubs
-ExternalProject_Add_Step(vita-headers
-    create_directory
-    DEPENDEES configure
-    DEPENDERS build
-    WORKING_DIRECTORY <SOURCE_DIR>
-    COMMAND ${CMAKE_COMMAND} -E remove_directory <BINARY_DIR>/vitalibs
-    COMMAND ${CMAKE_COMMAND} -E make_directory <BINARY_DIR>/vitalibs
-    COMMAND ${VITA_LIBS_GEN_COMMAND} <SOURCE_DIR>/db.json <BINARY_DIR>/vitalibs
-    COMMENT "Generating vitalibs sources"
-    )
-
-file(GLOB vitalibs_stubs <BINARY_DIR>/vitalibs/*.a)
-
-# copy generated headers and stubs to the install directory
-ExternalProject_Add_Step(vita-headers
-    copy_files
-    DEPENDEES build
-    WORKING_DIRECTORY <SOURCE_DIR>
-    COMMAND ${CMAKE_COMMAND}
-    -DSTUBS_DIR=<BINARY_DIR>/vitalibs
+    # TODO: vita-libs-gen should generate a proper makefile so this can be simplified
+    CONFIGURE_COMMAND ${VITA_LIBS_GEN_COMMAND} <SOURCE_DIR>/db.json <BINARY_DIR>
+    BUILD_COMMAND $(MAKE) ARCH=${BINUTILS_PREFIX}
+    INSTALL_COMMAND ${CMAKE_COMMAND} -DGLOB_PATTERN=<BINARY_DIR>/*a
     -DINSTALL_DIR=${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}/lib
-    -P ${CMAKE_SOURCE_DIR}/cmake/copy_vita_stubs.cmake
+    -P ${CMAKE_SOURCE_DIR}/cmake/install_files.cmake
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}/include
     COMMAND ${CMAKE_COMMAND} -E copy_directory include ${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}/include
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/share
-    COMMAND ${CMAKE_COMMAND} -E copy db.json ${CMAKE_INSTALL_PREFIX}/share
-    COMMENT "Copying libraries and headers"
+    COMMAND ${CMAKE_COMMAND} -DGLOB_PATTERN=<SOURCE_DIR>/db.json -DINSTALL_DIR${CMAKE_INSTALL_PREFIX}/share
+    -P ${CMAKE_SOURCE_DIR}/cmake/install_files.cmake
+    COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/vita-headers-version.txt
     )
 
 ExternalProject_Add(newlib
@@ -461,7 +438,7 @@ ExternalProject_Add(samples
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
     INSTALL_COMMAND ${CMAKE_COMMAND}
-    -DSOURCE=<SOURCE_DIR> -DDEST=${CMAKE_INSTALL_PREFIX}/share/gcc-${TARGET_ARCH}
+    -DGLOB_PATTERN=<SOURCE_DIR> -DINSTALL_DIR=${CMAKE_INSTALL_PREFIX}/share/gcc-${TARGET_ARCH}
     -P ${CMAKE_SOURCE_DIR}/cmake/install_files.cmake
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/samples-version.txt
     )
