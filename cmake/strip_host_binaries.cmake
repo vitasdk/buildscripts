@@ -1,5 +1,12 @@
 if (NOT WIN32)
-    execute_process(COMMAND find "${BINDIR}" -maxdepth 1 -perm /u=x,g=x,o=x -and ! -type d
+    # use an alternative perms format for find in OSX.
+    if (${HOST_SYSTEM_NAME} STREQUAL "Darwin")
+        set(FIND_PERMS "+u=x,g=x,o=x")
+    else ()
+        set(FIND_PERMS "/u=x,g=x,o=x")
+    endif ()
+
+    execute_process(COMMAND find "${BINDIR}" -maxdepth 1 -perm ${FIND_PERMS} -and ! -type d
         OUTPUT_VARIABLE binaries
         OUTPUT_STRIP_TRAILING_WHITESPACE)
     string(REGEX REPLACE "\n" ";" binaries ${binaries})

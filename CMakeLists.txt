@@ -423,7 +423,7 @@ ExternalProject_Add(newlib
     )
 
 ExternalProject_Add(pthread-embedded
-    DEPENDS binutils newlib gcc-base
+    DEPENDS binutils newlib binutils gcc-base
     GIT_REPOSITORY https://github.com/vitasdk/pthread-embedded
     GIT_TAG master
     BUILD_IN_SOURCE 1
@@ -478,13 +478,13 @@ add_custom_target(pretidy
 # strip toolchain binaries to reduce filesize
 add_custom_target(strip_host_binaries
     COMMAND ${CMAKE_COMMAND} -DBINDIR=${CMAKE_INSTALL_PREFIX}/bin
-    -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake
+    -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake -DHOST_SYSTEM_NAME=${CMAKE_HOST_SYSTEM_NAME}
 
     COMMAND ${CMAKE_COMMAND} -DBINDIR=${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}/bin
-    -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake
+    -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake -DHOST_SYSTEM_NAME=${CMAKE_HOST_SYSTEM_NAME}
 
     COMMAND ${CMAKE_COMMAND} -DBINDIR=${CMAKE_INSTALL_PREFIX}/lib/gcc/${TARGET_ARCH}/${GCC_VERSION}
-    -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake
+    -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake -DHOST_SYSTEM_NAME=${CMAKE_HOST_SYSTEM_NAME}
 
     DEPENDS vita-toolchain binutils gcc-final
     COMMENT "Stripping host binaries"
