@@ -348,7 +348,7 @@ set(COMMON_GCC_CONFIGURE_ARGS
 ExternalProject_add(gcc-base
     DEPENDS gmp mpfr mpc isl cloog libelf expat
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2
-    URL_MD5 4c626ac2a83ef30dfb9260e6f59c2b30
+    URL_MD5 ${GCC_MD5}
     PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc.patch
     CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${EXTRA_CFLAGS} CXXFLAGS=${EXTRA_CFLAGS} ${COMPILER_FLAGS} ${TARGET_TOOLS}
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
@@ -428,10 +428,9 @@ ExternalProject_Add(pthread-embedded
     GIT_TAG master
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
-    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS} ${PTHREAD_TOOLS}
+    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh $(MAKE)
-    PREFIX=${CMAKE_INSTALL_PREFIX} -C <SOURCE_DIR>/platform/vita
-    "CFLAGS_FOR_TARGET=${CFLAGS_FOR_TARGET}"
+    PREFIX=${CMAKE_INSTALL_PREFIX} -C <SOURCE_DIR>/platform/vita ${PTHREAD_TOOLS}
     INSTALL_COMMAND $(MAKE) -C <SOURCE_DIR>/platform/vita PREFIX=${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH} install
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/pthread-embedded-version.txt
     )
@@ -442,7 +441,7 @@ ExternalProject_add(gcc-final
     URL_MD5 ${GCC_MD5}
     PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc.patch
     COMMAND ${CMAKE_COMMAND} -E create_symlink . ${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}/usr
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS} CFLAGS=${EXTRA_CFLAGS} ${TARGET_TOOLS}
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${EXTRA_CFLAGS} CXXFLAGS=${EXTRA_CFLAGS} ${COMPILER_FLAGS} ${TARGET_TOOLS}
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
     ${COMMON_GCC_CONFIGURE_ARGS}
     --enable-plugins
