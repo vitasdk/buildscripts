@@ -201,6 +201,13 @@ list(APPEND TARGET_TOOLS
     GXX_FOR_TARGET="${BINUTILS_PREFIX}-g++"
     )
 
+# tools for pthread-embedded
+list(APPEND PTHREAD_TOOLS
+    CC="${BINUTILS_PREFIX}-gcc"
+    CXX="${BINUTILS_PREFIX}-g++"
+    AR="${BINUTILS_PREFIX}-ar"
+    )
+
 # flags for cross compilation
 set(CFLAGS_FOR_TARGET "-g -O2 -ffunction-sections -fdata-sections")
 
@@ -421,7 +428,7 @@ ExternalProject_Add(pthread-embedded
     GIT_TAG master
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
-    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS} ${TARGET_TOOLS}
+    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS} ${PTHREAD_TOOLS}
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh $(MAKE)
     PREFIX=${CMAKE_INSTALL_PREFIX} -C <SOURCE_DIR>/platform/vita
     "CFLAGS_FOR_TARGET=${CFLAGS_FOR_TARGET}"
