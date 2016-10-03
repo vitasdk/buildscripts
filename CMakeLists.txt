@@ -410,9 +410,6 @@ ExternalProject_add(vita-headers
     COMMAND ${CMAKE_COMMAND} -E create_symlink . ${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}/usr
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}/include
     COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include ${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}/include
-    # install a copy of the headers in the toolchain directory
-    #COMMAND ${CMAKE_COMMAND} -E make_directory ${TOOLCHAIN_BUILD_INSTALL_DIR}/${TARGET_ARCH}/include
-    #COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include ${TOOLCHAIN_BUILD_INSTALL_DIR}/${TARGET_ARCH}/include
     # copy the json database
     COMMAND ${CMAKE_COMMAND} -DGLOB_PATTERN=<SOURCE_DIR>/db.json -DINSTALL_DIR=${CMAKE_INSTALL_PREFIX}/share
     -P ${CMAKE_SOURCE_DIR}/cmake/install_files.cmake
@@ -438,8 +435,6 @@ ExternalProject_Add(newlib
     BUILD_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS} ${TOOLCHAIN_TOOLS}
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh $(MAKE)
     INSTALL_COMMAND $(MAKE) install
-    # install a copy of newlib in the toolchain directory
-    #COMMAND $(MAKE) install DESTDIR=${TOOLCHAIN_BUILD_INSTALL_DIR}
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/newlib-version.txt
     )
 
