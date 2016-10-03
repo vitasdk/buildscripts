@@ -10,13 +10,9 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 set(GCC_VERSION 5.4.0)
 set(GCC_MD5 4c626ac2a83ef30dfb9260e6f59c2b30)
 
-# installation directory
+# Installation directory
 set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/vitasdk)
-# alias for the installation directory
-set(VITASDK ${CMAKE_INSTALL_PREFIX})
-# toolchain dependencies
-set(DEPS_DIR ${CMAKE_BINARY_DIR}/deps)
-# toolchain arch target
+# Toolchain arch target
 set(TARGET_ARCH arm-vita-eabi)
 # build date
 string(TIMESTAMP BUILD_DATE "%Y-%m-%d_%H-%M-%S")
@@ -25,7 +21,7 @@ include(Utils)
 include(GetTriplet)
 include(ExternalProject)
 
-# identify host and build systems
+# Identify host and build systems
 get_host_triplet(HOST_NATIVE)
 get_build_triplet(BUILD_NATIVE)
 
@@ -36,7 +32,7 @@ message(STATUS "Target: ${TARGET_ARCH}")
 # load the compiler flags to pass them to the other projects
 load_flags(COMPILER_FLAGS)
 
-# macro to build the dependencies required for the vitasdk toolchain/headers
+# Macro to build the dependencies required for the vitasdk toolchain/headers
 macro(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFIX)
     set(extra_macro_args ${ARGN})
 
@@ -55,25 +51,11 @@ macro(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFIX)
         set(CC_COMPILER "gcc")
     endif ()
 
-    ExternalProject_Add(binutils${TOOLCHAIN_SUFFIX}
-        URL https://ftp.gnu.org/gnu/binutils/binutils-2.27.tar.bz2
-        URL_MD5 2869c9bf3e60ee97c74ac2a6bf4e9d68
-        PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils.patch
-        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
-        ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+    set(COMMON_DEPS_CONFIGURE_ARGS
         --build=${BUILD_NATIVE}
         ${TOOLCHAIN_HOST}
-        --target=${TARGET_ARCH}
         --prefix=${TOOLCHAIN_INSTALL_DIR}
-        --with-sysroot=${TOOLCHAIN_INSTALL_DIR}
-        --disable-multilib
-        --disable-nls
-        --disable-shared
-        --disable-werror
-        --enable-interwork
-        --enable-plugins
-        BUILD_COMMAND $(MAKE) -j${MAKEJOBS}
-        INSTALL_COMMAND $(MAKE) install
+        --libdir=${TOOLCHAIN_INSTALL_DIR}/lib
         )
 
     ExternalProject_Add(zlib${TOOLCHAIN_SUFFIX}
@@ -124,7 +106,6 @@ macro(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFIX)
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
         ${TOOLCHAIN_HOST}
-        --target=${TARGET_ARCH}
         --prefix=${TOOLCHAIN_DEPS_DIR}
         --libdir=${TOOLCHAIN_DEPS_DIR}/lib
         --disable-shared
@@ -138,18 +119,106 @@ macro(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFIX)
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
         ${TOOLCHAIN_HOST}
-        --target=${TARGET_ARCH}
         --prefix=${TOOLCHAIN_DEPS_DIR}
         --libdir=${TOOLCHAIN_DEPS_DIR}/lib
         --disable-shared
         --enable-static
         )
 
+    ExternalProject_add(gmp${TOOLCHAIN_SUFFIX}
+        URL https://gmplib.org/download/gmp/gmp-6.1.1.tar.bz2
+        URL_MD5 4c175f86e11eb32d8bf9872ca3a8e11d
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CPPFLAGS=-fexceptions ${COMPILER_FLAGS}
+        ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+        --build=${BUILD_NATIVE}
+        ${TOOLCHAIN_HOST}
+        --prefix=${TOOLCHAIN_DEPS_DIR}
+        --libdir=${TOOLCHAIN_DEPS_DIR}/lib
+        --enable-cxx
+        --disable-shared
+        BUILD_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
+        ${PROJECT_SOURCE_DIR}/command_wrapper.sh $(MAKE)
+        )
+
+    ExternalProject_add(mpfr${TOOLCHAIN_SUFFIX}
+        DEPENDS gmp${TOOLCHAIN_SUFFIX}
+        URL http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.5.tar.bz2
+        URL_MD5 b1d23a55588e3b2a13e3be66bc69fd8d
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
+        ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+        --build=${BUILD_NATIVE}
+        ${TOOLCHAIN_HOST}
+        --prefix=${TOOLCHAIN_DEPS_DIR}
+        --libdir=${TOOLCHAIN_DEPS_DIR}/lib
+        --with-gmp=${TOOLCHAIN_DEPS_DIR}
+        --disable-shared
+        )
+
+    ExternalProject_add(mpc${TOOLCHAIN_SUFFIX}
+        DEPENDS gmp${TOOLCHAIN_SUFFIX} mpfr${TOOLCHAIN_SUFFIX}
+        URL http://www.multiprecision.org/mpc/download/mpc-1.0.3.tar.gz
+        URL_MD5 d6a1d5f8ddea3abd2cc3e98f58352d26
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
+        ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+        --build=${BUILD_NATIVE}
+        ${TOOLCHAIN_HOST}
+        --prefix=${TOOLCHAIN_DEPS_DIR}
+        --libdir=${TOOLCHAIN_DEPS_DIR}/lib
+        --with-gmp=${TOOLCHAIN_DEPS_DIR}
+        --with-mpfr=${TOOLCHAIN_DEPS_DIR}
+        --disable-shared
+        --disable-nls
+        )
+
+    ExternalProject_add(isl${TOOLCHAIN_SUFFIX}
+        DEPENDS gmp${TOOLCHAIN_SUFFIX}
+        URL http://isl.gforge.inria.fr/isl-0.17.1.tar.bz2
+        URL_MD5 5184f543a013165e8057be59728664b1
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
+        ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+        --build=${BUILD_NATIVE}
+        ${TOOLCHAIN_HOST}
+        --prefix=${TOOLCHAIN_DEPS_DIR}
+        --libdir=${TOOLCHAIN_DEPS_DIR}/lib
+        --with-gmp-prefix=${TOOLCHAIN_DEPS_DIR}
+        --disable-shared
+        )
+
+    ExternalProject_add(cloog${TOOLCHAIN_SUFFIX}
+        DEPENDS gmp${TOOLCHAIN_SUFFIX} isl${TOOLCHAIN_SUFFIX}
+        URL http://www.bastoul.net/cloog/pages/download/cloog-0.18.4.tar.gz
+        URL_MD5 e531f725244856c92c9bba009ff44faf
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
+        ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+        --build=${BUILD_NATIVE}
+        ${TOOLCHAIN_HOST}
+        --prefix=${TOOLCHAIN_DEPS_DIR}
+        --libdir=${TOOLCHAIN_DEPS_DIR}/lib
+        --with-gmp-prefix=${TOOLCHAIN_DEPS_DIR}
+        --with-isl-prefix=${TOOLCHAIN_DEPS_DIR}
+        --disable-shared
+        --disable-nls
+        --with-bits=gmp
+        --with-host-libstdcxx='-lstdc++'
+        )
+
+    ExternalProject_add(expat${TOOLCHAIN_SUFFIX}
+        URL http://downloads.sourceforge.net/sourceforge/expat/expat-2.2.0.tar.bz2
+        URL_MD5 2f47841c829facb346eb6e3fab5212e2
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
+        ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+        --build=${BUILD_NATIVE}
+        ${TOOLCHAIN_HOST}
+        --prefix=${TOOLCHAIN_DEPS_DIR}
+        --libdir=${TOOLCHAIN_DEPS_DIR}/lib
+        --disable-shared
+        )
+
     ExternalProject_Add(vita-toolchain${TOOLCHAIN_SUFFIX}
         DEPENDS jansson${TOOLCHAIN_SUFFIX} libelf${TOOLCHAIN_SUFFIX} zlib${TOOLCHAIN_SUFFIX} libzip${TOOLCHAIN_SUFFIX}
         GIT_REPOSITORY https://github.com/vitasdk/vita-toolchain
         GIT_TAG master
-        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${TOOLCHAIN_INSTALL_DIR}
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=/
         ${TOOLCHAIN_CMAKE_ARGS}
         ${VITA_TOOLCHAIN_CMAKE_ARGS}
         -DJansson_INCLUDE_DIR=${TOOLCHAIN_DEPS_DIR}/include
@@ -163,132 +232,114 @@ macro(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFIX)
         -Dlibzip_LIBRARY=${TOOLCHAIN_DEPS_DIR}/lib/libzip.a
         -DDEFAULT_JSON=../share/db.json
         BUILD_COMMAND $(MAKE)
-        INSTALL_COMMAND $(MAKE) install
+        INSTALL_COMMAND $(MAKE) install DESTDIR=${TOOLCHAIN_INSTALL_DIR}
         COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/vita-toolchain-version.txt
         )
+
+    ExternalProject_Add(binutils${TOOLCHAIN_SUFFIX}
+        URL https://ftp.gnu.org/gnu/binutils/binutils-2.27.tar.bz2
+        URL_MD5 2869c9bf3e60ee97c74ac2a6bf4e9d68
+        PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils.patch
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
+        ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+        --build=${BUILD_NATIVE}
+        ${TOOLCHAIN_HOST}
+        --target=${TARGET_ARCH}
+        --prefix=/
+        --with-sysroot=${TOOLCHAIN_INSTALL_DIR}
+        --disable-multilib
+        --disable-nls
+        --disable-shared
+        --disable-werror
+        --enable-interwork
+        --enable-plugins
+        BUILD_COMMAND $(MAKE) -j${MAKEJOBS}
+        INSTALL_COMMAND $(MAKE) install DESTDIR=${TOOLCHAIN_INSTALL_DIR}
+        )
+
+    if (NOT TOOLCHAIN_FILE)
+        ExternalProject_Add_Step(binutils${TOOLCHAIN_SUFFIX}
+            install_sdk
+            DEPENDEES install
+            COMMAND $(MAKE) -C <BINARY_DIR> install DESTDIR=${CMAKE_INSTALL_PREFIX}
+            COMMENT "Installing binutils to ${CMAKE_INSTALL_PREFIX}"
+            )
+
+        ExternalProject_Add_Step(vita-toolchain${TOOLCHAIN_SUFFIX}
+            install_sdk
+            DEPENDEES install
+            COMMAND $(MAKE) -C <BINARY_DIR> install DESTDIR=${CMAKE_INSTALL_PREFIX}
+            COMMENT "Installing vita-toolchain to ${CMAKE_INSTALL_PREFIX}"
+            )
+    endif ()
 endmacro()
 
+set(HOST_SUFFIX host)
+set(BUILD_SUFFIX build)
+
+# Only when using cross compilation
 if (CMAKE_TOOLCHAIN_FILE)
+    set(TARGET_SUFFIX ${HOST_SUFFIX})
+    # path of the host dependencies for gcc-final
+    set(TOOLCHAIN_TARGET_DEPENDS_DIR "${CMAKE_BINARY_DIR}/deps_${TARGET_SUFFIX}")
     # get the absolute path of the toolchain file, relative paths doesn't with external projects
     get_filename_component(TOOLCHAIN_FILEPATH "${CMAKE_TOOLCHAIN_FILE}" ABSOLUTE)
-    # build a temporal vita-toolchain and binutils to build the vita-headers
-    toolchain_deps("${DEPS_DIR}_host" "${CMAKE_BINARY_DIR}/toolchain_host" "_host")
-    # build the native vita-toolchain and binutils
-    toolchain_deps("${DEPS_DIR}" "${CMAKE_INSTALL_PREFIX}" "" "${TOOLCHAIN_FILEPATH}")
-
-    # set variables needed for the vita headers build step
-    set(VITA_LIBS_GEN_COMMAND "${CMAKE_BINARY_DIR}/toolchain_host/bin/vita-libs-gen")
-    set(BINUTILS_PREFIX "${CMAKE_BINARY_DIR}/toolchain_host/bin/${TARGET_ARCH}")
-    set(VITA_HEADERS_DEPENDS binutils_host vita-toolchain_host)
-else ()
-    # build the native vita-toolchain and binutils
-    toolchain_deps("${DEPS_DIR}" "${CMAKE_INSTALL_PREFIX}" "")
-
-    # set variables needed for the vita-headers build step
-    set(VITA_LIBS_GEN_COMMAND "${CMAKE_INSTALL_PREFIX}/bin/vita-libs-gen")
-    set(BINUTILS_PREFIX "${CMAKE_INSTALL_PREFIX}/bin/${TARGET_ARCH}")
-    set(VITA_HEADERS_DEPENDS binutils vita-toolchain)
+    # build the native vita-toolchain, binutils and gcc-host depdndencies
+    toolchain_deps("${TOOLCHAIN_TARGET_DEPENDS_DIR}" "${CMAKE_INSTALL_PREFIX}" "_${HOST_SUFFIX}" "${TOOLCHAIN_FILEPATH}")
+else()
+    set(TARGET_SUFFIX ${BUILD_SUFFIX})
+    # path of the host dependencies for gcc-final
+    set(TOOLCHAIN_TARGET_DEPENDS_DIR "${CMAKE_BINARY_DIR}/deps_${TARGET_SUFFIX}")
 endif ()
 
+# native toolchain install dir (used to build the real toolchain)
+set(TOOLCHAIN_BUILD_INSTALL_DIR ${CMAKE_BINARY_DIR}/toolchain_${BUILD_SUFFIX})
+# toolchain dependencies dir
+SET(TOOLCHAIN_BUILD_DEPENDS_DIR ${CMAKE_BINARY_DIR}/deps_${BUILD_SUFFIX})
+# build the native vita-toolchain, gcc dependencies and native binutils
+toolchain_deps("${TOOLCHAIN_BUILD_DEPENDS_DIR}" "${TOOLCHAIN_BUILD_INSTALL_DIR}" "_${BUILD_SUFFIX}")
+
+set(VITA_LIBS_GEN_COMMAND "${TOOLCHAIN_BUILD_INSTALL_DIR}/bin/vita-libs-gen")
+set(BINUTILS_PREFIX "${TOOLCHAIN_BUILD_INSTALL_DIR}/bin/${TARGET_ARCH}")
+
 # tools for cross compilation
-list(APPEND TARGET_TOOLS
-    AR_FOR_TARGET="${BINUTILS_PREFIX}-ar"
-    NM_FOR_TARGET="${BINUTILS_PREFIX}-nm"
-    STRIP_FOR_TARGET="${BINUTILS_PREFIX}-strip"
-    RANLIB_FOR_TARGET="${BINUTILS_PREFIX}-ranlib"
-    CC_FOR_TARGET="${BINUTILS_PREFIX}-gcc"
-    GCC_FOR_TARGET="${BINUTILS_PREFIX}-gcc"
-    GXX_FOR_TARGET="${BINUTILS_PREFIX}-g++"
+list(APPEND TOOLCHAIN_TOOLS
+    AR_FOR_TARGET=${BINUTILS_PREFIX}-ar
+    LD_FOR_TARGET=${BINUTILS_PREFIX}-ld
+    OBJDUMP_FOR_TARGET=${BINUTILS_PREFIX}-objdump
+    NM_FOR_TARGET=${BINUTILS_PREFIX}-nm
+    RANLIB_FOR_TARGET=${BINUTILS_PREFIX}-ranlib
+    READELF_FOR_TARGET=${BINUTILS_PREFIX}-readelf
+    STRIP_FOR_TARGET=${BINUTILS_PREFIX}-strip
+    AS_FOR_TARGET=${BINUTILS_PREFIX}-as
+    )
+
+# tools for cross compilation
+list(APPEND COMPILER_TARGET_TOOLS
+    CC_FOR_TARGET=${BINUTILS_PREFIX}-gcc
+    GCC_FOR_TARGET=${BINUTILS_PREFIX}-gcc
+    GXX_FOR_TARGET=${BINUTILS_PREFIX}-g++
+    )
+
+list(APPEND COMPILER_HOST_TOOLS
+    CC_FOR_BUILD=gcc
+    CC=${HOST_NATIVE}-gcc
+    CXX=${HOST_NATIVE}-g++
+    AR=${HOST_NATIVE}-ar
+    RANLIB=${HOST_NATIVE}-ranlib
+    STRIP=${HOST_NATIVE}-strip
+    NM=${HOST_NATIVE}-nm
     )
 
 # tools for pthread-embedded
 list(APPEND PTHREAD_TOOLS
-    CC="${BINUTILS_PREFIX}-gcc"
-    CXX="${BINUTILS_PREFIX}-g++"
-    AR="${BINUTILS_PREFIX}-ar"
+    CC=${BINUTILS_PREFIX}-gcc
+    CXX=${BINUTILS_PREFIX}-g++
+    AR=${BINUTILS_PREFIX}-ar
     )
 
 # flags for cross compilation
 set(CFLAGS_FOR_TARGET "-g -O2 -ffunction-sections -fdata-sections")
-
-set(COMMON_DEPS_CONFIGURE_ARGS
-    --build=${BUILD_NATIVE}
-    --host=${HOST_NATIVE}
-    --prefix=${DEPS_DIR}
-    --libdir=${DEPS_DIR}/lib
-    )
-
-ExternalProject_add(gmp
-    URL https://gmplib.org/download/gmp/gmp-6.1.1.tar.bz2
-    URL_MD5 4c175f86e11eb32d8bf9872ca3a8e11d
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CPPFLAGS=-fexceptions ${COMPILER_FLAGS}
-    ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
-    ${COMMON_DEPS_CONFIGURE_ARGS}
-    --enable-cxx
-    --disable-shared
-    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
-    ${PROJECT_SOURCE_DIR}/command_wrapper.sh $(MAKE)
-    )
-
-ExternalProject_add(mpfr
-    DEPENDS gmp
-    URL http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.5.tar.bz2
-    URL_MD5 b1d23a55588e3b2a13e3be66bc69fd8d
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
-    ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
-    ${COMMON_DEPS_CONFIGURE_ARGS}
-    --with-gmp=${DEPS_DIR}
-    --disable-shared
-    )
-
-ExternalProject_add(mpc
-    DEPENDS gmp mpfr
-    URL http://www.multiprecision.org/mpc/download/mpc-1.0.3.tar.gz
-    URL_MD5 d6a1d5f8ddea3abd2cc3e98f58352d26
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
-    ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
-    ${COMMON_DEPS_CONFIGURE_ARGS}
-    --with-gmp=${DEPS_DIR}
-    --with-mpfr=${DEPS_DIR}
-    --disable-shared
-    --disable-nls
-    )
-
-ExternalProject_add(isl
-    DEPENDS gmp
-    URL http://isl.gforge.inria.fr/isl-0.17.1.tar.bz2
-    URL_MD5 5184f543a013165e8057be59728664b1
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
-    ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
-    ${COMMON_DEPS_CONFIGURE_ARGS}
-    --with-gmp-prefix=${DEPS_DIR}
-    --disable-shared
-    )
-
-ExternalProject_add(cloog
-    DEPENDS gmp isl
-    URL http://www.bastoul.net/cloog/pages/download/cloog-0.18.4.tar.gz
-    URL_MD5 e531f725244856c92c9bba009ff44faf
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
-    ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
-    ${COMMON_DEPS_CONFIGURE_ARGS}
-    --with-gmp-prefix=${DEPS_DIR}
-    --with-isl-prefix=${DEPS_DIR}
-    --disable-shared
-    --disable-nls
-    --with-bits=gmp
-    --with-host-libstdcxx='-lstdc++'
-    )
-
-ExternalProject_add(expat
-    URL http://downloads.sourceforge.net/sourceforge/expat/expat-2.2.0.tar.bz2
-    URL_MD5 2f47841c829facb346eb6e3fab5212e2
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
-    ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
-    ${COMMON_DEPS_CONFIGURE_ARGS}
-    --disable-shared
-    --disable-nls
-    )
 
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     # Clang doesn't seem to support static-libgcc not mixing static/dynamic libraries.
@@ -296,32 +347,17 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
         # clang on OSX needs mode depth to compile gcc
         set(EXTRA_CFLAGS -fbracket-depth=512)
-    endif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    endif (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(GCC_LINKER_ARGS "--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm")
 else ()
     message(FATAL_ERROR "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
-endif()
+endif ()
 
-
+# common gcc configure options
 set(COMMON_GCC_CONFIGURE_ARGS
-    --build=${BUILD_NATIVE}
-    --host=${HOST_NATIVE}
-    --target=${TARGET_ARCH}
-    --prefix=${CMAKE_INSTALL_PREFIX}
-    --libdir=${CMAKE_INSTALL_PREFIX}/lib
-    --libexecdir=${CMAKE_INSTALL_PREFIX}/lib
-    --with-sysroot=${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}
     --with-python-dir=share/gcc-${TARGET_ARCH}
-    --with-gmp=${DEPS_DIR}
-    --with-mpfr=${DEPS_DIR}
-    --with-mpc=${DEPS_DIR}
-    --with-isl=${DEPS_DIR}
-    --with-cloog=${DEPS_DIR}
-    --with-libelf=${DEPS_DIR}
     --enable-languages=c,c++
-    --enable-plugins
-    --enable-threads=posix
     --disable-decimal-float
     --disable-libffi
     --disable-libgomp
@@ -335,7 +371,6 @@ set(COMMON_GCC_CONFIGURE_ARGS
     --with-gnu-as
     --with-gnu-ld
     --with-newlib
-    --with-headers=yes
     ${GCC_LINKER_ARGS}
     --disable-multilib
     --with-arch=armv7-a
@@ -346,23 +381,33 @@ set(COMMON_GCC_CONFIGURE_ARGS
     )
 
 ExternalProject_add(gcc-base
-    DEPENDS gmp mpfr mpc isl cloog libelf expat
+    DEPENDS gmp_${BUILD_SUFFIX} mpfr_${BUILD_SUFFIX} mpc_${BUILD_SUFFIX} isl_${BUILD_SUFFIX} cloog_${BUILD_SUFFIX} libelf_${BUILD_SUFFIX} expat_${BUILD_SUFFIX}
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2
     URL_MD5 ${GCC_MD5}
     PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc.patch
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${EXTRA_CFLAGS} CXXFLAGS=${EXTRA_CFLAGS} ${COMPILER_FLAGS} ${TARGET_TOOLS}
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${EXTRA_CFLAGS} CXXFLAGS=${EXTRA_CFLAGS} ${COMPILER_FLAGS}
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+    --build=${BUILD_NATIVE}
+    --target=${TARGET_ARCH}
+    --prefix=${TOOLCHAIN_BUILD_INSTALL_DIR}
+    --libdir=${TOOLCHAIN_BUILD_INSTALL_DIR}/lib
+    --libexecdir=${TOOLCHAIN_BUILD_INSTALL_DIR}/lib
+    --with-sysroot=${TOOLCHAIN_BUILD_INSTALL_DIR}/${TARGET_ARCH}
+    --with-gmp=${TOOLCHAIN_BUILD_DEPENDS_DIR}
+    --with-mpfr=${TOOLCHAIN_BUILD_DEPENDS_DIR}
+    --with-mpc=${TOOLCHAIN_BUILD_DEPENDS_DIR}
+    --with-isl=${TOOLCHAIN_BUILD_DEPENDS_DIR}
+    --with-cloog=${TOOLCHAIN_BUILD_DEPENDS_DIR}
+    --with-libelf=${TOOLCHAIN_BUILD_DEPENDS_DIR}
     ${COMMON_GCC_CONFIGURE_ARGS}
     --disable-threads
     --without-headers
-    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
-    ${PROJECT_SOURCE_DIR}/command_wrapper.sh $(MAKE) all-gcc
+    BUILD_COMMAND $(MAKE) all-gcc
     INSTALL_COMMAND $(MAKE) install-gcc
-    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/include
     )
 
 ExternalProject_add(vita-headers
-    DEPENDS ${VITA_HEADERS_DEPENDS}
+    DEPENDS binutils_${BUILD_SUFFIX} vita-toolchain_${BUILD_SUFFIX}
     GIT_REPOSITORY https://github.com/vitasdk/vita-headers
     GIT_TAG master
     # TODO: vita-libs-gen should generate a proper makefile so this can be simplified
@@ -371,36 +416,42 @@ ExternalProject_add(vita-headers
     INSTALL_COMMAND ${CMAKE_COMMAND} -DGLOB_PATTERN=<BINARY_DIR>/*a
     -DINSTALL_DIR=${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}/lib
     -P ${CMAKE_SOURCE_DIR}/cmake/install_files.cmake
+    COMMAND ${CMAKE_COMMAND} -E create_symlink . ${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}/usr
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}/include
-    COMMAND ${CMAKE_COMMAND} -E copy_directory include ${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}/include
-    COMMAND ${CMAKE_COMMAND} -DGLOB_PATTERN=<SOURCE_DIR>/db.json -DINSTALL_DIR${CMAKE_INSTALL_PREFIX}/share
+    COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include ${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}/include
+    # install a copy of the headers in the toolchain directory
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${TOOLCHAIN_BUILD_INSTALL_DIR}/${TARGET_ARCH}/include
+    COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include ${TOOLCHAIN_BUILD_INSTALL_DIR}/${TARGET_ARCH}/include
+    # copy the json database
+    COMMAND ${CMAKE_COMMAND} -DGLOB_PATTERN=<SOURCE_DIR>/db.json -DINSTALL_DIR=${CMAKE_INSTALL_PREFIX}/share
     -P ${CMAKE_SOURCE_DIR}/cmake/install_files.cmake
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/vita-headers-version.txt
     )
 
 ExternalProject_Add(newlib
-    DEPENDS binutils gcc-base
+    DEPENDS binutils_${TARGET_SUFFIX} gcc-base vita-headers
     GIT_REPOSITORY https://github.com/vitasdk/newlib
     GIT_TAG vita
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS} ${TARGET_TOOLS}
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS} ${TOOLCHAIN_TOOLS} ${COMPILER_TARGET_TOOLS}
     "CFLAGS_FOR_TARGET=${CFLAGS_FOR_TARGET}"
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
     --build=${BUILD_NATIVE}
     --host=${HOST_NATIVE}
     --target=${TARGET_ARCH}
     --prefix=${CMAKE_INSTALL_PREFIX}
+    #--with-build-sysroot=${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}
     --enable-newlib-io-long-long
     --enable-newlib-register-fini
     --disable-newlib-supplied-syscalls
     --disable-nls
-    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
+    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS} ${TOOLCHAIN_TOOLS}
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh $(MAKE)
     INSTALL_COMMAND $(MAKE) install
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/newlib-version.txt
     )
 
 ExternalProject_Add(pthread-embedded
-    DEPENDS binutils newlib binutils gcc-base
+    DEPENDS binutils_${TARGET_SUFFIX} gcc-base newlib vita-headers
     GIT_REPOSITORY https://github.com/vitasdk/pthread-embedded
     GIT_TAG master
     BUILD_IN_SOURCE 1
@@ -413,21 +464,35 @@ ExternalProject_Add(pthread-embedded
     )
 
 ExternalProject_add(gcc-final
-    DEPENDS gmp mpfr mpc isl cloog libelf expat newlib binutils gcc-base pthread-embedded
+    DEPENDS gmp_${TARGET_SUFFIX} mpfr_${TARGET_SUFFIX} mpc_${TARGET_SUFFIX} isl_${TARGET_SUFFIX}
+    DEPENDS cloog_${TARGET_SUFFIX} libelf_${TARGET_SUFFIX} expat_${TARGET_SUFFIX}
+    DEPENDS binutils_${TARGET_SUFFIX} newlib gcc-base pthread-embedded
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2
     URL_MD5 ${GCC_MD5}
     PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc.patch
-    COMMAND ${CMAKE_COMMAND} -E create_symlink . ${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}/usr
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${EXTRA_CFLAGS} CXXFLAGS=${EXTRA_CFLAGS} ${COMPILER_FLAGS} ${TARGET_TOOLS}
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${EXTRA_CFLAGS}
+    CXXFLAGS=${EXTRA_CFLAGS} ${COMPILER_FLAGS} ${TOOLCHAIN_TOOLS}
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+    --build=${BUILD_NATIVE}
+    --host=${HOST_NATIVE}
+    --target=${TARGET_ARCH}
+    --prefix=${CMAKE_INSTALL_PREFIX}
+    --libdir=${CMAKE_INSTALL_PREFIX}/lib
+    --libexecdir=${CMAKE_INSTALL_PREFIX}/lib
+    --with-sysroot=${TOOLCHAIN_BUILD_INSTALL_DIR}/${TARGET_ARCH}
+    --with-gmp=${TOOLCHAIN_TARGET_DEPENDS_DIR}
+    --with-mpfr=${TOOLCHAIN_TARGET_DEPENDS_DIR}
+    --with-mpc=${TOOLCHAIN_TARGET_DEPENDS_DIR}
+    --with-isl=${TOOLCHAIN_TARGET_DEPENDS_DIR}
+    --with-cloog=${TOOLCHAIN_TARGET_DEPENDS_DIR}
+    --with-libelf=${TOOLCHAIN_TARGET_DEPENDS_DIR}
     ${COMMON_GCC_CONFIGURE_ARGS}
     --enable-plugins
     --enable-threads=posix
     --with-headers=yes
-    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
-    ${PROJECT_SOURCE_DIR}/command_wrapper.sh $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
+    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${TOOLCHAIN_TOOLS}
+    $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
     INSTALL_COMMAND $(MAKE) install
-    COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}/usr
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/include
     )
 
@@ -446,7 +511,7 @@ ExternalProject_Add(samples
 # remove .la files
 add_custom_target(pretidy
     COMMAND ${CMAKE_COMMAND}
-    -DPATTERN=${CMAKE_INSTALL_PREFIX}/*.la
+    -DGLOB_PATTERN=${CMAKE_INSTALL_PREFIX}/*.la
     -P ${CMAKE_SOURCE_DIR}/cmake/remove_files.cmake
     DEPENDS vita-headers gcc-final
     COMMENT "Removing .la files"
@@ -466,18 +531,18 @@ add_custom_target(strip_host_binaries
     -DBINDIR=${CMAKE_INSTALL_PREFIX}/lib/gcc/${TARGET_ARCH}/${GCC_VERSION}
     -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake
 
-    DEPENDS vita-toolchain binutils gcc-final
+    DEPENDS vita-toolchain_${TARGET_SUFFIX} binutils_${TARGET_SUFFIX} gcc-final
     COMMENT "Stripping host binaries"
     )
 
 # remove unnecessary sections from tolchain libraries
 add_custom_target(strip_target_objects
-    COMMAND ${CMAKE_COMMAND} -DBINDIR=${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}/lib
-    -DOBJCOPY_CMD=${CMAKE_INSTALL_PREFIX}/bin/${TARGET_ARCH}-objcopy
+    COMMAND ${CMAKE_COMMAND} -DOBJCOPY_COMMAND=${BINUTILS_PREFIX}-objcopy
+    -DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}/lib/*.[ao]
     -P ${CMAKE_SOURCE_DIR}/cmake/strip_target_objects.cmake
 
-    COMMAND ${CMAKE_COMMAND} -DBINDIR=${CMAKE_INSTALL_PREFIX}/lib/gcc/${TARGET_ARCH}/${GCC_VERSION}
-    -DOBJCOPY_CMD=${CMAKE_INSTALL_PREFIX}/bin/${TARGET_ARCH}-objcopy
+    COMMAND ${CMAKE_COMMAND} -DOBJCOPY_COMMAND=${BINUTILS_PREFIX}-objcopy
+    -DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/lib/gcc/${TARGET_ARCH}/${GCC_VERSION}/*.[ao]
     -P ${CMAKE_SOURCE_DIR}/cmake/strip_target_objects.cmake
 
     DEPENDS vita-headers gcc-final
@@ -488,13 +553,21 @@ add_custom_target(strip_target_objects
 add_custom_target(version_info
     COMMAND ${CMAKE_COMMAND} -DINPUT_DIR=${CMAKE_BINARY_DIR} -DOUTPUT_DIR=${CMAKE_INSTALL_PREFIX}
     -P ${CMAKE_SOURCE_DIR}/cmake/create_version.cmake
-    DEPENDS vita-headers vita-toolchain newlib pthread-embedded samples
+    DEPENDS vita-headers vita-toolchain_${TARGET_SUFFIX} newlib pthread-embedded samples
+    )
+
+# remove unnecessary docs
+add_custom_target(cleanup
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/man
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/info
+    DEPENDS vita-toolchain_${TARGET_SUFFIX} vita-headers newlib pthread-embedded samples binutils_${TARGET_SUFFIX} gcc-final
+    COMMENT "Removing gcc/binutils docs"
     )
 
 # create a sdk tarball
 add_custom_target(tarball ALL
     COMMAND ${CMAKE_COMMAND} -E tar "cfvj" "vitasdk-${BUILD_NATIVE}-${BUILD_DATE}.tar.bz2" "${CMAKE_INSTALL_PREFIX}"
-    DEPENDS vita-toolchain vita-headers newlib pthread-embedded samples binutils gcc-final
+    DEPENDS vita-toolchain_${TARGET_SUFFIX} vita-headers newlib pthread-embedded samples binutils_${TARGET_SUFFIX} gcc-final
     DEPENDS pretidy strip_host_binaries strip_target_objects version_info
     COMMENT "Creating vitasdk-${host_os}-${BUILD_DATE}.tar.bz2"
     )

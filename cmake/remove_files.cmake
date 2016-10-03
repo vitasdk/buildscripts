@@ -1,2 +1,5 @@
-file(GLOB_RECURSE lafiles ${PATTERN})
-file(REMOVE ${lafiles})
+file(GLOB_RECURSE FILE_LIST ${GLOB_PATTERN})
+
+if (FILE_LIST)
+    file(REMOVE ${FILE_LIST})
+endif ()

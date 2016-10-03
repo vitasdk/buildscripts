@@ -7,11 +7,11 @@ if (NOT WIN32)
     endif ()
 
     execute_process(COMMAND find "${BINDIR}" -maxdepth 1 -perm ${FIND_PERMS} -and ! -type d
-        OUTPUT_VARIABLE binaries
+        OUTPUT_VARIABLE BINARIES
         OUTPUT_STRIP_TRAILING_WHITESPACE)
-    string(REGEX REPLACE "\n" ";" binaries ${binaries})
+    string(REGEX REPLACE "\n" ";" BINARIES ${BINARIES})
 else ()
-    file(GLOB_RECURSE binaries "${BINDIR}/*exe")
+    file(GLOB_RECURSE BINARIES "${BINDIR}/*exe")
 endif ()
 
 # set default strip command
@@ -19,7 +19,7 @@ if (NOT "${CMAKE_STRIP}")
     set(CMAKE_STRIP "strip")
 endif ()
 
-foreach (file ${binaries})
-    message(STATUS "${CMAKE_STRIP} ${file}")
-    execute_process(COMMAND ${CMAKE_STRIP} ${file})
+foreach (EXECUTABLE ${BINARIES})
+    message(STATUS "${CMAKE_STRIP} ${EXECUTABLE}")
+    execute_process(COMMAND ${CMAKE_STRIP} ${EXECUTABLE})
 endforeach ()
