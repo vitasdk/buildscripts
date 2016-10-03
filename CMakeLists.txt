@@ -33,7 +33,7 @@ message(STATUS "Target: ${TARGET_ARCH}")
 load_flags(COMPILER_FLAGS)
 
 # Macro to build the dependencies required for the vitasdk toolchain/headers
-macro(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFIX)
+function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFIX)
     set(extra_macro_args ${ARGN})
 
     # check if the toolchain file has been passed as optional argument
@@ -48,6 +48,7 @@ macro(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFIX)
         # workaround for libelf configure (doesn't detect the compiler)
         set(CC_COMPILER "${HOST_NATIVE}-gcc")
     else ()
+        set(TOOLCHAIN_HOST --host=${BUILD_NATIVE})
         set(CC_COMPILER "gcc")
     endif ()
 
@@ -257,7 +258,7 @@ macro(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFIX)
         INSTALL_COMMAND $(MAKE) install DESTDIR=${TOOLCHAIN_INSTALL_DIR}
         )
 
-    if (NOT TOOLCHAIN_FILE)
+    if (NOT TOOLCHAIN_FILE AND "${HOST_NATIVE}" STREQUAL "${BUILD_NATIVE}")
         ExternalProject_Add_Step(binutils${TOOLCHAIN_SUFFIX}
             install_sdk
             DEPENDEES install
@@ -272,7 +273,7 @@ macro(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFIX)
             COMMENT "Installing vita-toolchain to ${CMAKE_INSTALL_PREFIX}"
             )
     endif ()
-endmacro()
+endfunction()
 
 set(HOST_SUFFIX host)
 set(BUILD_SUFFIX build)
@@ -319,16 +320,6 @@ list(APPEND COMPILER_TARGET_TOOLS
     CC_FOR_TARGET=${BINUTILS_PREFIX}-gcc
     GCC_FOR_TARGET=${BINUTILS_PREFIX}-gcc
     GXX_FOR_TARGET=${BINUTILS_PREFIX}-g++
-    )
-
-list(APPEND COMPILER_HOST_TOOLS
-    CC_FOR_BUILD=gcc
-    CC=${HOST_NATIVE}-gcc
-    CXX=${HOST_NATIVE}-g++
-    AR=${HOST_NATIVE}-ar
-    RANLIB=${HOST_NATIVE}-ranlib
-    STRIP=${HOST_NATIVE}-strip
-    NM=${HOST_NATIVE}-nm
     )
 
 # tools for pthread-embedded
@@ -420,8 +411,8 @@ ExternalProject_add(vita-headers
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}/include
     COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include ${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}/include
     # install a copy of the headers in the toolchain directory
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${TOOLCHAIN_BUILD_INSTALL_DIR}/${TARGET_ARCH}/include
-    COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include ${TOOLCHAIN_BUILD_INSTALL_DIR}/${TARGET_ARCH}/include
+    #COMMAND ${CMAKE_COMMAND} -E make_directory ${TOOLCHAIN_BUILD_INSTALL_DIR}/${TARGET_ARCH}/include
+    #COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include ${TOOLCHAIN_BUILD_INSTALL_DIR}/${TARGET_ARCH}/include
     # copy the json database
     COMMAND ${CMAKE_COMMAND} -DGLOB_PATTERN=<SOURCE_DIR>/db.json -DINSTALL_DIR=${CMAKE_INSTALL_PREFIX}/share
     -P ${CMAKE_SOURCE_DIR}/cmake/install_files.cmake
@@ -439,7 +430,7 @@ ExternalProject_Add(newlib
     --host=${HOST_NATIVE}
     --target=${TARGET_ARCH}
     --prefix=${CMAKE_INSTALL_PREFIX}
-    #--with-build-sysroot=${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}
+    --with-build-sysroot=${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}
     --enable-newlib-io-long-long
     --enable-newlib-register-fini
     --disable-newlib-supplied-syscalls
@@ -447,6 +438,8 @@ ExternalProject_Add(newlib
     BUILD_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS} ${TOOLCHAIN_TOOLS}
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh $(MAKE)
     INSTALL_COMMAND $(MAKE) install
+    # install a copy of newlib in the toolchain directory
+    #COMMAND $(MAKE) install DESTDIR=${TOOLCHAIN_BUILD_INSTALL_DIR}
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/newlib-version.txt
     )
 
@@ -458,7 +451,7 @@ ExternalProject_Add(pthread-embedded
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh $(MAKE)
-    PREFIX=${CMAKE_INSTALL_PREFIX} -C <SOURCE_DIR>/platform/vita ${PTHREAD_TOOLS}
+    -C <SOURCE_DIR>/platform/vita ${PTHREAD_TOOLS} PREFIX=${CMAKE_INSTALL_PREFIX}
     INSTALL_COMMAND $(MAKE) -C <SOURCE_DIR>/platform/vita PREFIX=${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH} install
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/pthread-embedded-version.txt
     )
@@ -471,7 +464,7 @@ ExternalProject_add(gcc-final
     URL_MD5 ${GCC_MD5}
     PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc.patch
     CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${EXTRA_CFLAGS}
-    CXXFLAGS=${EXTRA_CFLAGS} ${COMPILER_FLAGS} ${TOOLCHAIN_TOOLS}
+    CXXFLAGS=${EXTRA_CFLAGS} ${COMPILER_FLAGS} ${TOOLCHAIN_TOOLS} ${COMPILER_TARGET_TOOLS}
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
     --build=${BUILD_NATIVE}
     --host=${HOST_NATIVE}
@@ -479,7 +472,7 @@ ExternalProject_add(gcc-final
     --prefix=${CMAKE_INSTALL_PREFIX}
     --libdir=${CMAKE_INSTALL_PREFIX}/lib
     --libexecdir=${CMAKE_INSTALL_PREFIX}/lib
-    --with-sysroot=${TOOLCHAIN_BUILD_INSTALL_DIR}/${TARGET_ARCH}
+    --with-sysroot=${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}
     --with-gmp=${TOOLCHAIN_TARGET_DEPENDS_DIR}
     --with-mpfr=${TOOLCHAIN_TARGET_DEPENDS_DIR}
     --with-mpc=${TOOLCHAIN_TARGET_DEPENDS_DIR}
@@ -490,7 +483,7 @@ ExternalProject_add(gcc-final
     --enable-plugins
     --enable-threads=posix
     --with-headers=yes
-    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${TOOLCHAIN_TOOLS}
+    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${TOOLCHAIN_TOOLS} ${COMPILER_TARGET_TOOLS}
     $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
     INSTALL_COMMAND $(MAKE) install
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/include
@@ -568,6 +561,6 @@ add_custom_target(cleanup
 add_custom_target(tarball ALL
     COMMAND ${CMAKE_COMMAND} -E tar "cfvj" "vitasdk-${BUILD_NATIVE}-${BUILD_DATE}.tar.bz2" "${CMAKE_INSTALL_PREFIX}"
     DEPENDS vita-toolchain_${TARGET_SUFFIX} vita-headers newlib pthread-embedded samples binutils_${TARGET_SUFFIX} gcc-final
-    DEPENDS pretidy strip_host_binaries strip_target_objects version_info
+    DEPENDS pretidy cleanup strip_host_binaries strip_target_objects version_info
     COMMENT "Creating vitasdk-${host_os}-${BUILD_DATE}.tar.bz2"
     )
