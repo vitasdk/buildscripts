@@ -319,7 +319,7 @@ list(APPEND TOOLCHAIN_TOOLS
 list(APPEND COMPILER_TARGET_TOOLS
     CC_FOR_TARGET=${BINUTILS_PREFIX}-gcc
     GCC_FOR_TARGET=${BINUTILS_PREFIX}-gcc
-    GXX_FOR_TARGET=${BINUTILS_PREFIX}-g++
+    CXX_FOR_TARGET=${BINUTILS_PREFIX}-g++
     )
 
 # tools for pthread-embedded
@@ -472,6 +472,7 @@ ExternalProject_add(gcc-final
     --prefix=${CMAKE_INSTALL_PREFIX}
     --libdir=${CMAKE_INSTALL_PREFIX}/lib
     --libexecdir=${CMAKE_INSTALL_PREFIX}/lib
+    --with-headers=${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}/include
     --with-sysroot=${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}
     --with-gmp=${TOOLCHAIN_TARGET_DEPENDS_DIR}
     --with-mpfr=${TOOLCHAIN_TARGET_DEPENDS_DIR}
@@ -484,8 +485,8 @@ ExternalProject_add(gcc-final
     --enable-threads=posix
     --with-headers=yes
     BUILD_COMMAND ${CMAKE_COMMAND} -E env ${TOOLCHAIN_TOOLS} ${COMPILER_TARGET_TOOLS}
-    $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
-    INSTALL_COMMAND $(MAKE) install
+    $(MAKE) all-gcc INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
+    INSTALL_COMMAND $(MAKE) install-gcc
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/include
     )
 
