@@ -555,7 +555,7 @@ add_custom_target(cleanup
 
 # create a sdk tarball
 add_custom_target(tarball ALL
-    COMMAND ${CMAKE_COMMAND} -E tar "cfvj" "vitasdk-${BUILD_NATIVE}-${BUILD_DATE}.tar.bz2" "${CMAKE_INSTALL_PREFIX}"
+    COMMAND ${CMAKE_COMMAND} -E tar "cfvj" "vitasdk-${HOST_NATIVE}-${BUILD_DATE}.tar.bz2" "${CMAKE_INSTALL_PREFIX}"
     DEPENDS vita-toolchain_${TARGET_SUFFIX} vita-headers newlib pthread-embedded samples binutils_${TARGET_SUFFIX} gcc-final
     DEPENDS pretidy cleanup strip_host_binaries strip_target_objects version_info
     COMMENT "Creating vitasdk-${host_os}-${BUILD_DATE}.tar.bz2"
