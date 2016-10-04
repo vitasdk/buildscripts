@@ -29,6 +29,8 @@ message(STATUS "Host:   ${HOST_NATIVE}")
 message(STATUS "Build:  ${BUILD_NATIVE}")
 message(STATUS "Target: ${TARGET_ARCH}")
 
+set(PKGVERSION "GNU Tools for ARM Embedded Processors")
+
 # load the compiler flags to pass them to the other projects
 load_flags(COMPILER_FLAGS)
 
@@ -257,6 +259,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         --disable-werror
         --enable-interwork
         --enable-plugins
+        "--with-pkgversion=${PKGVERSION}"
         BUILD_COMMAND $(MAKE) -j${MAKEJOBS}
         INSTALL_COMMAND $(MAKE) install DESTDIR=${TOOLCHAIN_INSTALL_DIR}
         )
@@ -292,6 +295,7 @@ if (CMAKE_TOOLCHAIN_FILE)
     set(TOOLCHAIN_TARGET_DEPENDS_DIR "${CMAKE_BINARY_DIR}/deps_${TARGET_SUFFIX}")
     # Get the absolute path of the toolchain file, relative paths doesn't work with external projects
     get_filename_component(TOOLCHAIN_FILEPATH "${CMAKE_TOOLCHAIN_FILE}" ABSOLUTE)
+    message(STATUS "Using toolchain file '${TOOLCHAIN_FILEPATH}'")
     # Build the host vita-toolchain, binutils and gcc-final depdndencies
     toolchain_deps("${TOOLCHAIN_TARGET_DEPENDS_DIR}" "${CMAKE_INSTALL_PREFIX}" "${HOST_SUFFIX}" "${TOOLCHAIN_FILEPATH}")
 else ()
@@ -379,6 +383,7 @@ set(COMMON_GCC_CONFIGURE_ARGS
     --with-fpu=neon
     --with-float=hard
     --with-mode=thumb
+    "--with-pkgversion=${PKGVERSION}"
     )
 
 ExternalProject_add(gcc-base
@@ -482,7 +487,7 @@ ExternalProject_add(gcc-final
     URL_MD5 ${GCC_MD5}
     PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc.patch
     CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${EXTRA_CFLAGS}
-    CXXFLAGS=${EXTRA_CFLAGS} ${COMPILER_FLAGS} ${TOOLCHAIN_TOOLS} ${COMPILER_TARGET_TOOLS}
+    CXXFLAGS=${EXTRA_CFLAGS} ${COMPILER_FLAGS} ${TOOLCHAIN_TOOLS}
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
     --build=${BUILD_NATIVE}
     --host=${HOST_NATIVE}
@@ -502,9 +507,9 @@ ExternalProject_add(gcc-final
     --enable-plugins
     --enable-threads=posix
     --with-headers=yes
-    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${TOOLCHAIN_TOOLS} ${COMPILER_TARGET_TOOLS}
-    $(MAKE) all-gcc INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
-    INSTALL_COMMAND $(MAKE) install-gcc
+    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${TOOLCHAIN_TOOLS}
+    $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
+    INSTALL_COMMAND $(MAKE) install
     # Remove empty include directory in the installation directory
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/include
     )
