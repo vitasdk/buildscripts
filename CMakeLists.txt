@@ -66,6 +66,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
     ExternalProject_Add(zlib${SUFFIX}
         URL http://zlib.net/zlib-1.2.8.tar.gz
         URL_MD5 44d667c142d7cda120332623eab69f40
+        DOWNLOAD_DIR downloads
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${TOOLCHAIN_DEPS_DIR}
         ${TOOLCHAIN_CMAKE_ARGS}
         )
@@ -96,6 +97,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         DEPENDS zlib${SUFFIX}
         URL https://nih.at/libzip/libzip-1.1.3.tar.gz
         URL_MD5 898f02db185068c8ae45bafe4c5cc81c
+        DOWNLOAD_DIR downloads
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libzip.patch
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${TOOLCHAIN_DEPS_DIR}
         ${TOOLCHAIN_CMAKE_ARGS}
@@ -107,6 +109,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
     ExternalProject_add(libelf${SUFFIX}
         URL http://www.mr511.de/software/libelf-0.8.13.tar.gz
         URL_MD5 4136d7b4c04df68b686570afa26988ac
+        DOWNLOAD_DIR downloads
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libelf.patch
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CC=${CC_COMPILER} ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
@@ -121,6 +124,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
     ExternalProject_add(jansson${SUFFIX}
         URL http://www.digip.org/jansson/releases/jansson-2.8.tar.bz2
         URL_MD5 592e29db0903d3031ea5a4e5a22fe75c
+        DOWNLOAD_DIR downloads
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
@@ -134,6 +138,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
     ExternalProject_add(gmp${SUFFIX}
         URL https://gmplib.org/download/gmp/gmp-6.1.1.tar.bz2
         URL_MD5 4c175f86e11eb32d8bf9872ca3a8e11d
+        DOWNLOAD_DIR downloads
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CPPFLAGS=-fexceptions ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
@@ -150,6 +155,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         DEPENDS gmp${SUFFIX}
         URL http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.5.tar.bz2
         URL_MD5 b1d23a55588e3b2a13e3be66bc69fd8d
+        DOWNLOAD_DIR downloads
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
@@ -164,6 +170,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         DEPENDS gmp${SUFFIX} mpfr${SUFFIX}
         URL http://www.multiprecision.org/mpc/download/mpc-1.0.3.tar.gz
         URL_MD5 d6a1d5f8ddea3abd2cc3e98f58352d26
+        DOWNLOAD_DIR downloads
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
@@ -180,6 +187,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         DEPENDS gmp${SUFFIX}
         URL http://isl.gforge.inria.fr/isl-0.17.1.tar.bz2
         URL_MD5 5184f543a013165e8057be59728664b1
+        DOWNLOAD_DIR downloads
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
@@ -194,6 +202,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         DEPENDS gmp${SUFFIX} isl${SUFFIX}
         URL http://www.bastoul.net/cloog/pages/download/cloog-0.18.4.tar.gz
         URL_MD5 e531f725244856c92c9bba009ff44faf
+        DOWNLOAD_DIR downloads
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
@@ -211,6 +220,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
     ExternalProject_add(expat${SUFFIX}
         URL http://downloads.sourceforge.net/sourceforge/expat/expat-2.2.0.tar.bz2
         URL_MD5 2f47841c829facb346eb6e3fab5212e2
+        DOWNLOAD_DIR downloads
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
@@ -245,6 +255,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
     ExternalProject_Add(binutils${SUFFIX}
         URL https://ftp.gnu.org/gnu/binutils/binutils-2.27.tar.bz2
         URL_MD5 2869c9bf3e60ee97c74ac2a6bf4e9d68
+        DOWNLOAD_DIR downloads
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils.patch
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
@@ -345,18 +356,9 @@ list(APPEND PTHREAD_TOOLS
 # Flags for cross compilation
 set(CFLAGS_FOR_TARGET "-g -O2 -ffunction-sections -fdata-sections")
 
-if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-    # Clang doesn't seem to support static-libgcc nor mixing static/dynamic libraries.
-    # Leave GCC_LINKER_ARGS unset.
-    if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-        # Clang on OSX needs more bracket nesting depth to compile gcc
-        set(EXTRA_CFLAGS -fbracket-depth=512)
-    endif (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    # Default linker args for gcc
-    set(GCC_LINKER_ARGS "--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm")
-else ()
-    message(FATAL_ERROR "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" AND ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    # Clang on OSX needs more bracket nesting depth to compile gcc
+    set(EXTRA_CFLAGS -fbracket-depth=512)
 endif ()
 
 # Common gcc configure options
@@ -376,7 +378,6 @@ set(COMMON_GCC_CONFIGURE_ARGS
     --with-gnu-as
     --with-gnu-ld
     --with-newlib
-    ${GCC_LINKER_ARGS}
     --disable-multilib
     --with-arch=armv7-a
     --with-tune=cortex-a9
@@ -385,16 +386,22 @@ set(COMMON_GCC_CONFIGURE_ARGS
     --with-mode=thumb
     "--with-pkgversion=${PKGVERSION}"
     )
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    list(APPEND COMMON_GCC_CONFIGURE_ARGS "--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm")
+endif ()
 
 ExternalProject_add(gcc-base
     DEPENDS gmp_${BUILD_SUFFIX} mpfr_${BUILD_SUFFIX} mpc_${BUILD_SUFFIX} isl_${BUILD_SUFFIX}
     DEPENDS cloog_${BUILD_SUFFIX} libelf_${BUILD_SUFFIX} expat_${BUILD_SUFFIX}
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2
     URL_MD5 ${GCC_MD5}
+    DOWNLOAD_DIR downloads
     PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc.patch
     CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${EXTRA_CFLAGS} CXXFLAGS=${EXTRA_CFLAGS} ${COMPILER_FLAGS}
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
     --build=${BUILD_NATIVE}
+    # compile a native compiler so keep host == build
+    --host=${BUILD_NATIVE}
     --target=${TARGET_ARCH}
     --prefix=${TOOLCHAIN_BUILD_INSTALL_DIR}
     --libdir=${TOOLCHAIN_BUILD_INSTALL_DIR}/lib
@@ -479,15 +486,22 @@ ExternalProject_Add(pthread-embedded
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/pthread-embedded-version.txt
     )
 
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+    list(APPEND COMMON_GCC_CONFIGURE_ARGS --disable-threads)
+else ()
+    list(APPEND COMMON_GCC_CONFIGURE_ARGS --enable-threads=posix)
+endif ()
+
 ExternalProject_add(gcc-final
     DEPENDS gmp_${TARGET_SUFFIX} mpfr_${TARGET_SUFFIX} mpc_${TARGET_SUFFIX} isl_${TARGET_SUFFIX}
     DEPENDS cloog_${TARGET_SUFFIX} libelf_${TARGET_SUFFIX} expat_${TARGET_SUFFIX} binutils_${TARGET_SUFFIX}
     DEPENDS newlib gcc-base pthread-embedded
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2
     URL_MD5 ${GCC_MD5}
+    DOWNLOAD_DIR downloads
     PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc.patch
     CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${EXTRA_CFLAGS}
-    CXXFLAGS=${EXTRA_CFLAGS} ${COMPILER_FLAGS} ${TOOLCHAIN_TOOLS}
+    CXXFLAGS=${EXTRA_CFLAGS} ${COMPILER_FLAGS} ${TOOLCHAIN_TOOLS} ${COMPILER_TARGET_TOOLS}
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
     --build=${BUILD_NATIVE}
     --host=${HOST_NATIVE}
@@ -504,10 +518,8 @@ ExternalProject_add(gcc-final
     --with-cloog=${TOOLCHAIN_TARGET_DEPENDS_DIR}
     --with-libelf=${TOOLCHAIN_TARGET_DEPENDS_DIR}
     ${COMMON_GCC_CONFIGURE_ARGS}
-    --enable-plugins
-    --enable-threads=posix
     --with-headers=yes
-    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${TOOLCHAIN_TOOLS}
+    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${TOOLCHAIN_TOOLS} ${COMPILER_TARGET_TOOLS}
     $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
     INSTALL_COMMAND $(MAKE) install
     # Remove empty include directory in the installation directory
