@@ -1,0 +1,26 @@
+diff -ru a/src/gcc/gcc/config/arm/arm-c.c b/src/gcc/gcc/config/arm/arm-c.c
+--- a/src/gcc/gcc/config/arm/arm-c.c	2016-02-24 04:19:12.000000000 -0400
++++ b/src/gcc/gcc/config/arm/arm-c.c	2016-08-13 16:55:03.509143808 -0300
+@@ -189,6 +189,8 @@
+   builtin_assert ("cpu=arm");
+   builtin_assert ("machine=arm");
+ 
++  builtin_define ("__vita__");
++
+   arm_cpu_builtins (pfile);
+ }
+ 
+diff -ru a/src/gcc/gcc/gcc.c b/src/gcc/gcc/gcc.c
+--- a/src/gcc/gcc/gcc.c	2016-02-19 18:18:38.000000000 -0400
++++ b/src/gcc/gcc/gcc.c	2016-08-13 17:13:54.104949572 -0300
+@@ -658,8 +658,9 @@
+ #endif
+ 
+ /* config.h can define LIB_SPEC to override the default libraries.  */
++#undef LIB_SPEC
+ #ifndef LIB_SPEC
+-#define LIB_SPEC "%{!shared:%{g*:-lg} %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}}"
++#define LIB_SPEC "%{!shared:%{g*:-lg} %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}} -lSceRtc_stub -lSceKernel_stub -lSceNet_stub"
+ #endif
+ 
+ /* When using -fsplit-stack we need to wrap pthread_create, in order

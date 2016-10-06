@@ -7,8 +7,8 @@ find_package(Git REQUIRED)
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 # Use the following gcc version
-set(GCC_VERSION 5.4.0)
-set(GCC_MD5 4c626ac2a83ef30dfb9260e6f59c2b30)
+set(GCC_VERSION 6.2.0)
+set(GCC_HASH SHA256=9944589fc722d3e66308c0ce5257788ebd7872982a718aa2516123940671b7c5)
 
 # Installation directory
 set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/vitasdk)
@@ -394,9 +394,9 @@ ExternalProject_add(gcc-base
     DEPENDS gmp_${BUILD_SUFFIX} mpfr_${BUILD_SUFFIX} mpc_${BUILD_SUFFIX} isl_${BUILD_SUFFIX}
     DEPENDS cloog_${BUILD_SUFFIX} libelf_${BUILD_SUFFIX} expat_${BUILD_SUFFIX}
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2
-    URL_MD5 ${GCC_MD5}
+    URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR downloads
-    PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc.patch
+    PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc-6.patch
     CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${EXTRA_CFLAGS} CXXFLAGS=${EXTRA_CFLAGS} ${COMPILER_FLAGS}
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
     --build=${BUILD_NATIVE}
@@ -497,9 +497,9 @@ ExternalProject_add(gcc-final
     DEPENDS cloog_${TARGET_SUFFIX} libelf_${TARGET_SUFFIX} expat_${TARGET_SUFFIX} binutils_${TARGET_SUFFIX}
     DEPENDS newlib gcc-base pthread-embedded
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2
-    URL_MD5 ${GCC_MD5}
+    URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR downloads
-    PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc.patch
+    PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc-6.patch
     CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${EXTRA_CFLAGS}
     CXXFLAGS=${EXTRA_CFLAGS} ${COMPILER_FLAGS} ${TOOLCHAIN_TOOLS} ${COMPILER_TARGET_TOOLS}
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
