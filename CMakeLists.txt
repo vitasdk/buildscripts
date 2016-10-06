@@ -524,12 +524,6 @@ ExternalProject_Add(pthread-embedded
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/pthread-embedded-version.txt
     )
 
-if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-    list(APPEND COMMON_GCC_CONFIGURE_ARGS --disable-threads)
-else ()
-    list(APPEND COMMON_GCC_CONFIGURE_ARGS --enable-threads=posix)
-endif ()
-
 ExternalProject_add(gcc-final
     DEPENDS gmp_${TARGET_SUFFIX} mpfr_${TARGET_SUFFIX} mpc_${TARGET_SUFFIX} isl_${TARGET_SUFFIX}
     DEPENDS cloog_${TARGET_SUFFIX} libelf_${TARGET_SUFFIX} expat_${TARGET_SUFFIX} binutils_${TARGET_SUFFIX}
@@ -556,6 +550,7 @@ ExternalProject_add(gcc-final
     --with-libelf=${TOOLCHAIN_TARGET_DEPENDS_DIR}
     ${COMMON_GCC_CONFIGURE_ARGS}
     --with-headers=yes
+    --enable-threads=posix
     BUILD_COMMAND ${CMAKE_COMMAND} -E env ${TOOLCHAIN_TOOLS} ${COMPILER_TARGET_TOOLS}
     $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
     INSTALL_COMMAND $(MAKE) install
