@@ -253,6 +253,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         URL_MD5 2869c9bf3e60ee97c74ac2a6bf4e9d68
         DOWNLOAD_DIR downloads
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils.patch
+        COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils-2.27-fix-linker-segfault.patch
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
@@ -261,9 +262,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         # Set prefix to "/" here to be able to install twice
         --prefix=/
         --with-sysroot=${TOOLCHAIN_INSTALL_DIR}
-        --disable-multilib
         --disable-nls
-        --disable-shared
         --disable-werror
         --enable-interwork
         --enable-plugins
