@@ -14,10 +14,12 @@ set(TOOLCHAIN_TAG master CACHE string "vita-toolchain branch name, commit id or 
 set(PTHREAD_TAG master CACHE string "pthread-embedded branch name, commit id or tag")
 
 # Location to save the downloaded tarballs. Can be overriden from command line.
-set(DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/downloads CACHE string "Default download directory for tarballs")
+set(DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/downloads CACHE PATH "Default download path for tarballs")
 
 # Installation directory. Can be overriden from command line.
-set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/vitasdk CACHE string "Installation directory")
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/vitasdk CACHE PATH "Default install path" FORCE)
+endif ()
 
 ################## END OF CONFIGURABLE OPTIONS ##################
 
