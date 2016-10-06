@@ -69,7 +69,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
 
     ExternalProject_Add(zlib${SUFFIX}
         URL http://zlib.net/zlib-1.2.8.tar.gz
-        URL_MD5 44d667c142d7cda120332623eab69f40
+        URL_HASH SHA256=36658cb768a54c1d4dec43c3116c27ed893e88b02ecfcb44f2166f9c0b7f2a0d
         DOWNLOAD_DIR downloads
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${TOOLCHAIN_DEPS_DIR}
         ${TOOLCHAIN_CMAKE_ARGS}
@@ -100,7 +100,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
     ExternalProject_Add(libzip${SUFFIX}
         DEPENDS zlib${SUFFIX}
         URL https://nih.at/libzip/libzip-1.1.3.tar.gz
-        URL_MD5 898f02db185068c8ae45bafe4c5cc81c
+        URL_HASH SHA256=1faa5a524dd4a12c43b6344e618edce1bf8050dfdb9d0f73f3cc826929a002b0
         DOWNLOAD_DIR downloads
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libzip.patch
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${TOOLCHAIN_DEPS_DIR}
@@ -111,7 +111,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
 
     ExternalProject_add(libelf${SUFFIX}
         URL http://www.mr511.de/software/libelf-0.8.13.tar.gz
-        URL_MD5 4136d7b4c04df68b686570afa26988ac
+        URL_HASH SHA256=591a9b4ec81c1f2042a97aa60564e0cb79d041c52faa7416acb38bc95bd2c76d
         DOWNLOAD_DIR downloads
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libelf.patch
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CC=${CC_COMPILER} ${COMPILER_FLAGS}
@@ -126,7 +126,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
 
     ExternalProject_add(jansson${SUFFIX}
         URL http://www.digip.org/jansson/releases/jansson-2.8.tar.bz2
-        URL_MD5 592e29db0903d3031ea5a4e5a22fe75c
+        URL_HASH SHA256=cf4682f317e2cb3cd69090c8602771a93effd43ea5970cf1444f542af9c631c4
         DOWNLOAD_DIR downloads
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
@@ -140,7 +140,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
 
     ExternalProject_add(gmp${SUFFIX}
         URL https://gmplib.org/download/gmp/gmp-6.1.1.tar.bz2
-        URL_MD5 4c175f86e11eb32d8bf9872ca3a8e11d
+        URL_HASH SHA256=a8109865f2893f1373b0a8ed5ff7429de8db696fc451b1036bd7bdf95bbeffd6
         DOWNLOAD_DIR downloads
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CPPFLAGS=-fexceptions ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
@@ -157,7 +157,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
     ExternalProject_add(mpfr${SUFFIX}
         DEPENDS gmp${SUFFIX}
         URL http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.5.tar.bz2
-        URL_MD5 b1d23a55588e3b2a13e3be66bc69fd8d
+        URL_HASH SHA256=ca498c1c7a74dd37a576f353312d1e68d490978de4395fa28f1cbd46a364e658
         DOWNLOAD_DIR downloads
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
@@ -172,7 +172,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
     ExternalProject_add(mpc${SUFFIX}
         DEPENDS gmp${SUFFIX} mpfr${SUFFIX}
         URL http://www.multiprecision.org/mpc/download/mpc-1.0.3.tar.gz
-        URL_MD5 d6a1d5f8ddea3abd2cc3e98f58352d26
+        URL_HASH SHA256=617decc6ea09889fb08ede330917a00b16809b8db88c29c31bfbb49cbf88ecc3
         DOWNLOAD_DIR downloads
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
@@ -189,7 +189,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
     ExternalProject_add(isl${SUFFIX}
         DEPENDS gmp${SUFFIX}
         URL http://isl.gforge.inria.fr/isl-0.17.1.tar.bz2
-        URL_MD5 5184f543a013165e8057be59728664b1
+        URL_HASH SHA256=d6307bf9a59514087abac3cbaab3d99393a0abb519354f7e7834a8c842310daa
         DOWNLOAD_DIR downloads
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
@@ -204,7 +204,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
     ExternalProject_add(cloog${SUFFIX}
         DEPENDS gmp${SUFFIX} isl${SUFFIX}
         URL http://www.bastoul.net/cloog/pages/download/cloog-0.18.4.tar.gz
-        URL_MD5 e531f725244856c92c9bba009ff44faf
+        URL_HASH SHA256=325adf3710ce2229b7eeb9e84d3b539556d093ae860027185e7af8a8b00a750e
         DOWNLOAD_DIR downloads
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
@@ -222,7 +222,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
 
     ExternalProject_add(expat${SUFFIX}
         URL http://downloads.sourceforge.net/sourceforge/expat/expat-2.2.0.tar.bz2
-        URL_MD5 2f47841c829facb346eb6e3fab5212e2
+        URL_HASH SHA256=d9e50ff2d19b3538bd2127902a89987474e1a4db8e43a66a4d1a712ab9a504ff
         DOWNLOAD_DIR downloads
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
@@ -257,7 +257,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
 
     ExternalProject_Add(binutils${SUFFIX}
         URL https://ftp.gnu.org/gnu/binutils/binutils-2.27.tar.bz2
-        URL_MD5 2869c9bf3e60ee97c74ac2a6bf4e9d68
+        URL_HASH SHA256=369737ce51587f92466041a97ab7d2358c6d9e1b6490b3940eb09fb0a9a6ac88
         DOWNLOAD_DIR downloads
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils.patch
         COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils-2.27-fix-linker-segfault.patch
