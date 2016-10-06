@@ -29,6 +29,7 @@ message(STATUS "Host:   ${HOST_NATIVE}")
 message(STATUS "Build:  ${BUILD_NATIVE}")
 message(STATUS "Target: ${TARGET_ARCH}")
 
+# Set a custom package version (visible with --version)
 set(PKGVERSION "GNU Tools for ARM Embedded Processors")
 
 # load the compiler flags to pass them to the other projects
@@ -45,21 +46,17 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
     endif ()
 
     if (TOOLCHAIN_FILE)
-        set(TOOLCHAIN_HOST --host=${HOST_NATIVE})
+        # Use the host triplet when crosscompiling
+        set(TOOLCHAIN_HOST ${HOST_NATIVE})
         set(TOOLCHAIN_CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE})
-        # Workaround for libelf configure (doesn't detect the compiler)
+        # Workaround for libelf configure step (doesn't detect the compiler)
         set(CC_COMPILER "${HOST_NATIVE}-gcc")
     else ()
-        set(TOOLCHAIN_HOST --host=${BUILD_NATIVE})
+        # Use the same host triplet as the build env
+        set(TOOLCHAIN_HOST ${BUILD_NATIVE})
+        # Use the default compiler
         set(CC_COMPILER "gcc")
     endif ()
-
-    set(COMMON_DEPS_CONFIGURE_ARGS
-        --build=${BUILD_NATIVE}
-        ${TOOLCHAIN_HOST}
-        --prefix=${TOOLCHAIN_INSTALL_DIR}
-        --libdir=${TOOLCHAIN_INSTALL_DIR}/lib
-        )
 
     set(SUFFIX "_${TOOLCHAIN_SUFFIX}")
 
@@ -88,9 +85,9 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
 
     # Different configurations for the unix/windows builds of the toolchain
     if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-        set(VITA_TOOLCHAIN_CMAKE_ARGS -DZIP_STATIC=ON)
+        list(APPEND TOOLCHAIN_CMAKE_ARGS -DZIP_STATIC=ON)
     else ()
-        set(VITA_TOOLCHAIN_CMAKE_ARGS -DUSE_BUNDLED_ENDIAN_H=ON)
+        list(APPEND TOOLCHAIN_CMAKE_ARGS -DUSE_BUNDLED_ENDIAN_H=ON)
     endif ()
 
     ExternalProject_Add(libzip${SUFFIX}
@@ -100,8 +97,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         DOWNLOAD_DIR downloads
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libzip.patch
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${TOOLCHAIN_DEPS_DIR}
-        ${TOOLCHAIN_CMAKE_ARGS}
-        ${LIBZIP_CONFIGURE}
+        ${TOOLCHAIN_CMAKE_ARGS} ${LIBZIP_CONFIGURE}
         -DZLIB_INCLUDE_DIR=${TOOLCHAIN_DEPS_DIR}/include
         -DZLIB_LIBRARY=${TOOLCHAIN_DEPS_DIR}/lib/libz.a
         )
@@ -114,7 +110,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CC=${CC_COMPILER} ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
-        ${TOOLCHAIN_HOST}
+        --host=${TOOLCHAIN_HOST}
         --prefix=${TOOLCHAIN_DEPS_DIR}
         --libdir=${TOOLCHAIN_DEPS_DIR}/lib
         --disable-shared
@@ -128,7 +124,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
-        ${TOOLCHAIN_HOST}
+        --host=${TOOLCHAIN_HOST}
         --prefix=${TOOLCHAIN_DEPS_DIR}
         --libdir=${TOOLCHAIN_DEPS_DIR}/lib
         --disable-shared
@@ -142,7 +138,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CPPFLAGS=-fexceptions ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
-        ${TOOLCHAIN_HOST}
+        --host=${TOOLCHAIN_HOST}
         --prefix=${TOOLCHAIN_DEPS_DIR}
         --libdir=${TOOLCHAIN_DEPS_DIR}/lib
         --enable-cxx
@@ -159,7 +155,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
-        ${TOOLCHAIN_HOST}
+        --host=${TOOLCHAIN_HOST}
         --prefix=${TOOLCHAIN_DEPS_DIR}
         --libdir=${TOOLCHAIN_DEPS_DIR}/lib
         --with-gmp=${TOOLCHAIN_DEPS_DIR}
@@ -174,7 +170,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
-        ${TOOLCHAIN_HOST}
+        --host=${TOOLCHAIN_HOST}
         --prefix=${TOOLCHAIN_DEPS_DIR}
         --libdir=${TOOLCHAIN_DEPS_DIR}/lib
         --with-gmp=${TOOLCHAIN_DEPS_DIR}
@@ -191,7 +187,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
-        ${TOOLCHAIN_HOST}
+        --host=${TOOLCHAIN_HOST}
         --prefix=${TOOLCHAIN_DEPS_DIR}
         --libdir=${TOOLCHAIN_DEPS_DIR}/lib
         --with-gmp-prefix=${TOOLCHAIN_DEPS_DIR}
@@ -206,7 +202,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
-        ${TOOLCHAIN_HOST}
+        --host=${TOOLCHAIN_HOST}
         --prefix=${TOOLCHAIN_DEPS_DIR}
         --libdir=${TOOLCHAIN_DEPS_DIR}/lib
         --with-gmp-prefix=${TOOLCHAIN_DEPS_DIR}
@@ -224,7 +220,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
-        ${TOOLCHAIN_HOST}
+        --host=${TOOLCHAIN_HOST}
         --prefix=${TOOLCHAIN_DEPS_DIR}
         --libdir=${TOOLCHAIN_DEPS_DIR}/lib
         --disable-shared
@@ -234,9 +230,8 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         DEPENDS jansson${SUFFIX} libelf${SUFFIX} zlib${SUFFIX} libzip${SUFFIX}
         GIT_REPOSITORY https://github.com/vitasdk/vita-toolchain
         GIT_TAG master
-        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=/
-        ${TOOLCHAIN_CMAKE_ARGS}
-        ${VITA_TOOLCHAIN_CMAKE_ARGS}
+        # Set prefix to "/" here to be able to install twice
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=/ ${TOOLCHAIN_CMAKE_ARGS}
         -DJansson_INCLUDE_DIR=${TOOLCHAIN_DEPS_DIR}/include
         -DJansson_LIBRARY=${TOOLCHAIN_DEPS_DIR}/lib/libjansson.a
         -Dlibelf_INCLUDE_DIR=${TOOLCHAIN_DEPS_DIR}/include
@@ -249,6 +244,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         -DDEFAULT_JSON=../share/db.json
         BUILD_COMMAND $(MAKE)
         INSTALL_COMMAND $(MAKE) install DESTDIR=${TOOLCHAIN_INSTALL_DIR}
+        # Save the commit id for tracking purposes
         COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/vita-toolchain-version.txt
         )
 
@@ -260,8 +256,9 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
-        ${TOOLCHAIN_HOST}
+        --host=${TOOLCHAIN_HOST}
         --target=${TARGET_ARCH}
+        # Set prefix to "/" here to be able to install twice
         --prefix=/
         --with-sysroot=${TOOLCHAIN_INSTALL_DIR}
         --disable-multilib
@@ -353,11 +350,8 @@ list(APPEND PTHREAD_TOOLS
     AR=${BINUTILS_PREFIX}-ar
     )
 
-# Flags for cross compilation
-set(CFLAGS_FOR_TARGET "-g -O2 -ffunction-sections -fdata-sections")
-
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" AND ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-    # Clang on OSX needs more bracket nesting depth to compile gcc
+    # GCC on OSX (Clang in diguise) needs more bracket nesting depth to compile gcc
     set(EXTRA_CFLAGS -fbracket-depth=512)
 endif ()
 
@@ -386,10 +380,12 @@ set(COMMON_GCC_CONFIGURE_ARGS
     --with-mode=thumb
     "--with-pkgversion=${PKGVERSION}"
     )
+
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     list(APPEND COMMON_GCC_CONFIGURE_ARGS "--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm")
 endif ()
 
+# Build a basic gcc compiler, needed to compile newlib
 ExternalProject_add(gcc-base
     DEPENDS gmp_${BUILD_SUFFIX} mpfr_${BUILD_SUFFIX} mpc_${BUILD_SUFFIX} isl_${BUILD_SUFFIX}
     DEPENDS cloog_${BUILD_SUFFIX} libelf_${BUILD_SUFFIX} expat_${BUILD_SUFFIX}
@@ -450,8 +446,9 @@ ExternalProject_Add(newlib
     DEPENDS binutils_${TARGET_SUFFIX} gcc-base vita-headers
     GIT_REPOSITORY https://github.com/vitasdk/newlib
     GIT_TAG vita
+    # Pass the COMPILER_TARGET_TOOLS here so newlib picks up the fresh gcc-base compiler
     CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS} ${TOOLCHAIN_TOOLS} ${COMPILER_TARGET_TOOLS}
-    "CFLAGS_FOR_TARGET=${CFLAGS_FOR_TARGET}"
+    "CFLAGS_FOR_TARGET=-g -O2 -ffunction-sections -fdata-sections"
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
     --build=${BUILD_NATIVE}
     --host=${HOST_NATIVE}
@@ -472,8 +469,8 @@ ExternalProject_Add(newlib
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/newlib-version.txt
     )
 
-# Compile a complete gcc compiler to build the final compiler for the host.
-# Using gcc-base doesn't work properly for cross compilation.
+# Build a complete gcc compiler to be able to compile the full gcc for the host when crosscompiling.
+# Using gcc-base doesn't work since is missing some headers.
 if (CMAKE_TOOLCHAIN_FILE)
     ExternalProject_add(gcc-complete
         DEPENDS gmp_${BUILD_SUFFIX} mpfr_${BUILD_SUFFIX} mpc_${BUILD_SUFFIX} isl_${BUILD_SUFFIX}
@@ -506,8 +503,10 @@ if (CMAKE_TOOLCHAIN_FILE)
         $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
         INSTALL_COMMAND $(MAKE) install
         )
+    # Add this target as dependency of the final gcc target
     set(GCC_DEPENDS gcc-complete)
-else()
+else ()
+    # Just use gcc-base as the dependency of the final gcc target
     set(GCC_DEPENDS gcc-base)
 endif ()
 
@@ -515,6 +514,7 @@ ExternalProject_Add(pthread-embedded
     DEPENDS binutils_${TARGET_SUFFIX} gcc-base newlib vita-headers
     GIT_REPOSITORY https://github.com/vitasdk/pthread-embedded
     GIT_TAG master
+    # TODO: this project should have a proper makefile to support out-of-source builds
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
