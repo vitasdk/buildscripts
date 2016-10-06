@@ -2,26 +2,31 @@ cmake_minimum_required(VERSION 3.0.2)
 
 project(vitasdk)
 
-find_package(Git REQUIRED)
-
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
-
 # Use the following gcc version
 set(GCC_VERSION 6.2.0)
 set(GCC_HASH SHA256=9944589fc722d3e66308c0ce5257788ebd7872982a718aa2516123940671b7c5)
 
-# Branches to fetch the different git targets. Can be overriden from command line.
+# Branches to fetch the different project targets. Can be overriden from command line.
 set(NEWLIB_TAG vita CACHE string "newlib branch name, commit id or tag")
 set(SAMPLES_TAG master CACHE string "samples branch name, commit id or tag")
 set(HEADERS_TAG master CACHE string "vita-headers branch name, commit id or tag")
 set(TOOLCHAIN_TAG master CACHE string "vita-toolchain branch name, commit id or tag")
 set(PTHREAD_TAG master CACHE string "pthread-embedded branch name, commit id or tag")
 
-# Installation directory
-set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/vitasdk)
+# Location to save the downloaded tarballs. Can be overriden from command line.
+set(DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/downloads CACHE string "Default download directory for tarballs")
+
+# Installation directory. Can be overriden from command line.
+set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/vitasdk CACHE string "Installation directory")
+
+################## END OF CONFIGURABLE OPTIONS ##################
+
+find_package(Git REQUIRED)
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+
 # Toolchain arch target
 set(TARGET_ARCH arm-vita-eabi)
-# build date
+# Build date
 string(TIMESTAMP BUILD_DATE "%Y-%m-%d_%H-%M-%S")
 
 include(Utils)
@@ -39,7 +44,7 @@ message(STATUS "Target: ${TARGET_ARCH}")
 # Set a custom package version (visible with --version)
 set(PKGVERSION "GNU Tools for ARM Embedded Processors")
 
-# load the compiler flags to pass them to the other projects
+# Load the compiler flags to pass them to the other projects
 load_flags(COMPILER_FLAGS)
 
 # Function to build the dependencies required for the vitasdk toolchain/headers
@@ -70,7 +75,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
     ExternalProject_Add(zlib${SUFFIX}
         URL http://zlib.net/zlib-1.2.8.tar.gz
         URL_HASH SHA256=36658cb768a54c1d4dec43c3116c27ed893e88b02ecfcb44f2166f9c0b7f2a0d
-        DOWNLOAD_DIR downloads
+        DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${TOOLCHAIN_DEPS_DIR}
         ${TOOLCHAIN_CMAKE_ARGS}
         )
@@ -101,7 +106,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         DEPENDS zlib${SUFFIX}
         URL https://nih.at/libzip/libzip-1.1.3.tar.gz
         URL_HASH SHA256=1faa5a524dd4a12c43b6344e618edce1bf8050dfdb9d0f73f3cc826929a002b0
-        DOWNLOAD_DIR downloads
+        DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libzip.patch
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${TOOLCHAIN_DEPS_DIR}
         ${TOOLCHAIN_CMAKE_ARGS} ${LIBZIP_CONFIGURE}
@@ -112,7 +117,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
     ExternalProject_add(libelf${SUFFIX}
         URL http://www.mr511.de/software/libelf-0.8.13.tar.gz
         URL_HASH SHA256=591a9b4ec81c1f2042a97aa60564e0cb79d041c52faa7416acb38bc95bd2c76d
-        DOWNLOAD_DIR downloads
+        DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libelf.patch
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CC=${CC_COMPILER} ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
@@ -127,7 +132,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
     ExternalProject_add(jansson${SUFFIX}
         URL http://www.digip.org/jansson/releases/jansson-2.9.tar.bz2
         URL_HASH SHA256=77094fc1e113da0e2e65479488a0719f859b8f5bde3a6a0da88a1c73a88b5698
-        DOWNLOAD_DIR downloads
+        DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
@@ -141,7 +146,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
     ExternalProject_add(gmp${SUFFIX}
         URL https://gmplib.org/download/gmp/gmp-6.1.1.tar.bz2
         URL_HASH SHA256=a8109865f2893f1373b0a8ed5ff7429de8db696fc451b1036bd7bdf95bbeffd6
-        DOWNLOAD_DIR downloads
+        DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CPPFLAGS=-fexceptions ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
@@ -158,7 +163,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         DEPENDS gmp${SUFFIX}
         URL http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.5.tar.bz2
         URL_HASH SHA256=ca498c1c7a74dd37a576f353312d1e68d490978de4395fa28f1cbd46a364e658
-        DOWNLOAD_DIR downloads
+        DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
@@ -173,7 +178,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         DEPENDS gmp${SUFFIX} mpfr${SUFFIX}
         URL http://www.multiprecision.org/mpc/download/mpc-1.0.3.tar.gz
         URL_HASH SHA256=617decc6ea09889fb08ede330917a00b16809b8db88c29c31bfbb49cbf88ecc3
-        DOWNLOAD_DIR downloads
+        DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
@@ -190,7 +195,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         DEPENDS gmp${SUFFIX}
         URL http://isl.gforge.inria.fr/isl-0.17.1.tar.bz2
         URL_HASH SHA256=d6307bf9a59514087abac3cbaab3d99393a0abb519354f7e7834a8c842310daa
-        DOWNLOAD_DIR downloads
+        DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
@@ -205,7 +210,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         DEPENDS gmp${SUFFIX} isl${SUFFIX}
         URL http://www.bastoul.net/cloog/pages/download/cloog-0.18.4.tar.gz
         URL_HASH SHA256=325adf3710ce2229b7eeb9e84d3b539556d093ae860027185e7af8a8b00a750e
-        DOWNLOAD_DIR downloads
+        DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
@@ -223,7 +228,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
     ExternalProject_add(expat${SUFFIX}
         URL http://downloads.sourceforge.net/sourceforge/expat/expat-2.2.0.tar.bz2
         URL_HASH SHA256=d9e50ff2d19b3538bd2127902a89987474e1a4db8e43a66a4d1a712ab9a504ff
-        DOWNLOAD_DIR downloads
+        DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
         --build=${BUILD_NATIVE}
@@ -258,7 +263,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
     ExternalProject_Add(binutils${SUFFIX}
         URL https://ftp.gnu.org/gnu/binutils/binutils-2.27.tar.bz2
         URL_HASH SHA256=369737ce51587f92466041a97ab7d2358c6d9e1b6490b3940eb09fb0a9a6ac88
-        DOWNLOAD_DIR downloads
+        DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils.patch
         COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils-2.27-fix-linker-segfault.patch
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
@@ -397,7 +402,7 @@ ExternalProject_add(gcc-base
     DEPENDS cloog_${BUILD_SUFFIX} libelf_${BUILD_SUFFIX} expat_${BUILD_SUFFIX}
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2
     URL_HASH ${GCC_HASH}
-    DOWNLOAD_DIR downloads
+    DOWNLOAD_DIR ${DOWNLOAD_DIR}
     PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc-6.patch
     CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${EXTRA_CFLAGS} CXXFLAGS=${EXTRA_CFLAGS} ${COMPILER_FLAGS}
     ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
@@ -483,7 +488,7 @@ if (CMAKE_TOOLCHAIN_FILE)
         DEPENDS cloog_${BUILD_SUFFIX} libelf_${BUILD_SUFFIX} expat_${BUILD_SUFFIX} binutils_${BUILD_SUFFIX} newlib
         URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2
         URL_HASH ${GCC_HASH}
-        DOWNLOAD_DIR downloads
+        DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc-6.patch
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${EXTRA_CFLAGS} CXXFLAGS=${EXTRA_CFLAGS}
         ${COMPILER_FLAGS} ${TOOLCHAIN_TOOLS}
@@ -537,7 +542,7 @@ ExternalProject_add(gcc-final
     DEPENDS newlib ${GCC_DEPENDS} pthread-embedded
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2
     URL_HASH ${GCC_HASH}
-    DOWNLOAD_DIR downloads
+    DOWNLOAD_DIR ${DOWNLOAD_DIR}
     PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc-6.patch
     CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${EXTRA_CFLAGS}
     CXXFLAGS=${EXTRA_CFLAGS} ${COMPILER_FLAGS} ${TOOLCHAIN_TOOLS} ${COMPILER_TARGET_TOOLS}
