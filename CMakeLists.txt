@@ -10,6 +10,13 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 set(GCC_VERSION 6.2.0)
 set(GCC_HASH SHA256=9944589fc722d3e66308c0ce5257788ebd7872982a718aa2516123940671b7c5)
 
+# Branches to fetch the different git targets. Can be overriden from command line.
+set(NEWLIB_TAG vita CACHE string "newlib branch name, commit id or tag")
+set(SAMPLES_TAG master CACHE string "samples branch name, commit id or tag")
+set(HEADERS_TAG master CACHE string "vita-headers branch name, commit id or tag")
+set(TOOLCHAIN_TAG master CACHE string "vita-toolchain branch name, commit id or tag")
+set(PTHREAD_TAG master CACHE string "pthread-embedded branch name, commit id or tag")
+
 # Installation directory
 set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/vitasdk)
 # Toolchain arch target
@@ -229,7 +236,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
     ExternalProject_Add(vita-toolchain${SUFFIX}
         DEPENDS jansson${SUFFIX} libelf${SUFFIX} zlib${SUFFIX} libzip${SUFFIX}
         GIT_REPOSITORY https://github.com/vitasdk/vita-toolchain
-        GIT_TAG master
+        GIT_TAG ${TOOLCHAIN_TAG}
         # Set prefix to "/" here to be able to install twice
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=/ ${TOOLCHAIN_CMAKE_ARGS}
         -DJansson_INCLUDE_DIR=${TOOLCHAIN_DEPS_DIR}/include
@@ -418,7 +425,7 @@ ExternalProject_add(gcc-base
 ExternalProject_add(vita-headers
     DEPENDS binutils_${BUILD_SUFFIX} vita-toolchain_${BUILD_SUFFIX}
     GIT_REPOSITORY https://github.com/vitasdk/vita-headers
-    GIT_TAG master
+    GIT_TAG ${HEADERS_TAG}
     # TODO: vita-libs-gen should generate a proper makefile so this can be simplified
     CONFIGURE_COMMAND ${VITA_LIBS_GEN_COMMAND} <SOURCE_DIR>/db.json <BINARY_DIR>
     BUILD_COMMAND $(MAKE) ARCH=${BINUTILS_PREFIX}
@@ -444,7 +451,7 @@ ExternalProject_add(vita-headers
 ExternalProject_Add(newlib
     DEPENDS binutils_${TARGET_SUFFIX} gcc-base vita-headers
     GIT_REPOSITORY https://github.com/vitasdk/newlib
-    GIT_TAG vita
+    GIT_TAG ${NEWLIB_TAG}
     # Pass the COMPILER_TARGET_TOOLS here so newlib picks up the fresh gcc-base compiler
     CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS} ${TOOLCHAIN_TOOLS} ${COMPILER_TARGET_TOOLS}
     "CFLAGS_FOR_TARGET=-g -O2 -ffunction-sections -fdata-sections"
@@ -512,7 +519,7 @@ endif ()
 ExternalProject_Add(pthread-embedded
     DEPENDS binutils_${TARGET_SUFFIX} gcc-base newlib vita-headers
     GIT_REPOSITORY https://github.com/vitasdk/pthread-embedded
-    GIT_TAG master
+    GIT_TAG ${PTHREAD_TAG}
     # TODO: this project should have a proper makefile to support out-of-source builds
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
@@ -560,7 +567,7 @@ ExternalProject_add(gcc-final
 
 ExternalProject_Add(samples
     GIT_REPOSITORY https://github.com/vitasdk/samples
-    GIT_TAG master
+    GIT_TAG ${SAMPLES_TAG}
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
