@@ -125,8 +125,8 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         )
 
     ExternalProject_add(jansson${SUFFIX}
-        URL http://www.digip.org/jansson/releases/jansson-2.8.tar.bz2
-        URL_HASH SHA256=cf4682f317e2cb3cd69090c8602771a93effd43ea5970cf1444f542af9c631c4
+        URL http://www.digip.org/jansson/releases/jansson-2.9.tar.bz2
+        URL_HASH SHA256=77094fc1e113da0e2e65479488a0719f859b8f5bde3a6a0da88a1c73a88b5698
         DOWNLOAD_DIR downloads
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${COMPILER_FLAGS}
         ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
