@@ -472,6 +472,45 @@ ExternalProject_Add(newlib
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/newlib-version.txt
     )
 
+# Compile a complete gcc compiler to build the final compiler for the host.
+# Using gcc-base doesn't work properly for cross compilation.
+if (CMAKE_TOOLCHAIN_FILE)
+    ExternalProject_add(gcc-complete
+        DEPENDS gmp_${BUILD_SUFFIX} mpfr_${BUILD_SUFFIX} mpc_${BUILD_SUFFIX} isl_${BUILD_SUFFIX}
+        DEPENDS cloog_${BUILD_SUFFIX} libelf_${BUILD_SUFFIX} expat_${BUILD_SUFFIX} binutils_${BUILD_SUFFIX} newlib
+        URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2
+        URL_HASH ${GCC_HASH}
+        DOWNLOAD_DIR downloads
+        PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc-6.patch
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${EXTRA_CFLAGS} CXXFLAGS=${EXTRA_CFLAGS}
+        ${COMPILER_FLAGS} ${TOOLCHAIN_TOOLS}
+        ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+        --build=${BUILD_NATIVE}
+        # compile a native compiler so keep host == build
+        --host=${BUILD_NATIVE}
+        --target=${TARGET_ARCH}
+        --prefix=${TOOLCHAIN_BUILD_INSTALL_DIR}
+        --libdir=${TOOLCHAIN_BUILD_INSTALL_DIR}/lib
+        --libexecdir=${TOOLCHAIN_BUILD_INSTALL_DIR}/lib
+        --with-sysroot=${TOOLCHAIN_BUILD_INSTALL_DIR}/${TARGET_ARCH}
+        --with-gmp=${TOOLCHAIN_BUILD_DEPENDS_DIR}
+        --with-mpfr=${TOOLCHAIN_BUILD_DEPENDS_DIR}
+        --with-mpc=${TOOLCHAIN_BUILD_DEPENDS_DIR}
+        --with-isl=${TOOLCHAIN_BUILD_DEPENDS_DIR}
+        --with-cloog=${TOOLCHAIN_BUILD_DEPENDS_DIR}
+        --with-libelf=${TOOLCHAIN_BUILD_DEPENDS_DIR}
+        ${COMMON_GCC_CONFIGURE_ARGS}
+        --disable-threads
+        --with-headers=yes
+        BUILD_COMMAND ${CMAKE_COMMAND} -E env ${TOOLCHAIN_TOOLS}
+        $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
+        INSTALL_COMMAND $(MAKE) install
+        )
+    set(GCC_DEPENDS gcc-complete)
+else()
+    set(GCC_DEPENDS gcc-base)
+endif ()
+
 ExternalProject_Add(pthread-embedded
     DEPENDS binutils_${TARGET_SUFFIX} gcc-base newlib vita-headers
     GIT_REPOSITORY https://github.com/vitasdk/pthread-embedded
@@ -495,7 +534,7 @@ endif ()
 ExternalProject_add(gcc-final
     DEPENDS gmp_${TARGET_SUFFIX} mpfr_${TARGET_SUFFIX} mpc_${TARGET_SUFFIX} isl_${TARGET_SUFFIX}
     DEPENDS cloog_${TARGET_SUFFIX} libelf_${TARGET_SUFFIX} expat_${TARGET_SUFFIX} binutils_${TARGET_SUFFIX}
-    DEPENDS newlib gcc-base pthread-embedded
+    DEPENDS newlib ${GCC_DEPENDS} pthread-embedded
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR downloads
@@ -509,7 +548,6 @@ ExternalProject_add(gcc-final
     --prefix=${CMAKE_INSTALL_PREFIX}
     --libdir=${CMAKE_INSTALL_PREFIX}/lib
     --libexecdir=${CMAKE_INSTALL_PREFIX}/lib
-    --with-headers=${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}/include
     --with-sysroot=${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH}
     --with-gmp=${TOOLCHAIN_TARGET_DEPENDS_DIR}
     --with-mpfr=${TOOLCHAIN_TARGET_DEPENDS_DIR}
