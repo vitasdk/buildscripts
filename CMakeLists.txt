@@ -16,6 +16,8 @@ set(PTHREAD_TAG master CACHE string "pthread-embedded branch name, commit id or 
 # Location to save the downloaded tarballs. Can be overriden from command line.
 set(DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/downloads CACHE PATH "Default download path for tarballs")
 
+set(OFFLINE YES CACHE BOOL "Check repo updates")
+
 # Installation directory. Can be overriden from command line.
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/vitasdk CACHE PATH "Default install path" FORCE)
@@ -260,6 +262,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         INSTALL_COMMAND $(MAKE) install DESTDIR=${TOOLCHAIN_INSTALL_DIR}
         # Save the commit id for tracking purposes
         COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/vita-toolchain-version.txt
+        UPDATE_DISCONNECTED ${OFFLINE}
         )
 
     ExternalProject_Add(binutils${SUFFIX}
@@ -281,7 +284,7 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         --enable-interwork
         --enable-plugins
         "--with-pkgversion=${PKGVERSION}"
-        BUILD_COMMAND $(MAKE) -j${MAKEJOBS}
+        BUILD_COMMAND $(MAKE)
         INSTALL_COMMAND $(MAKE) install DESTDIR=${TOOLCHAIN_INSTALL_DIR}
         )
 
@@ -453,6 +456,7 @@ ExternalProject_add(vita-headers
     -P ${CMAKE_SOURCE_DIR}/cmake/install_files.cmake
     # Save the commit id for tracking purposes
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/vita-headers-version.txt
+    UPDATE_DISCONNECTED ${OFFLINE}
     )
 
 ExternalProject_Add(newlib
@@ -480,6 +484,7 @@ ExternalProject_Add(newlib
     COMMAND $(MAKE) install DESTDIR=${TOOLCHAIN_BUILD_INSTALL_DIR}
     # Save the commit id for tracking purposes
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/newlib-version.txt
+    UPDATE_DISCONNECTED ${OFFLINE}
     )
 
 # Build a complete gcc compiler to be able to compile the full gcc for the host when crosscompiling.
@@ -536,6 +541,7 @@ ExternalProject_Add(pthread-embedded
     INSTALL_COMMAND $(MAKE) -C <SOURCE_DIR>/platform/vita PREFIX=${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH} install
     # Save the commit id for tracking purposes
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/pthread-embedded-version.txt
+    UPDATE_DISCONNECTED ${OFFLINE}
     )
 
 ExternalProject_add(gcc-final
@@ -583,6 +589,7 @@ ExternalProject_Add(samples
     -P ${CMAKE_SOURCE_DIR}/cmake/install_files.cmake
     # Save the commit id for tracking purposes
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/samples-version.txt
+    UPDATE_DISCONNECTED ${OFFLINE}
     )
 
 # Remove .la files from installation directory
@@ -643,7 +650,7 @@ add_custom_target(cleanup
 # Create a sdk tarball
 add_custom_target(tarball ALL
     COMMAND ${CMAKE_COMMAND} -E tar "cfvj" "vitasdk-${HOST_NATIVE}-${BUILD_DATE}.tar.bz2" "${CMAKE_INSTALL_PREFIX}"
-    DEPENDS vita-toolchain_${TARGET_SUFFIX} binutils_${TARGET_SUFFIX} vita-headers newlib pthread-embedded samples gcc-final
-    DEPENDS pretidy cleanup strip_host_binaries strip_target_objects version_info
+    DEPENDS vita-toolchain_${TARGET_SUFFIX} binutils_${TARGET_SUFFIX} vita-headers newlib pthread-embedded samples
+    DEPENDS gcc-final pretidy cleanup strip_host_binaries strip_target_objects version_info
     COMMENT "Creating vitasdk-${host_os}-${BUILD_DATE}.tar.bz2"
     )

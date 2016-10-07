@@ -1,4 +1,6 @@
-function(load_flags FLAGS)
+# Loads all the CMAKE_X_FLAGS to a single list to it can be passed
+# to the command_Wrapper script.
+function(LOAD_FLAGS FLAGS)
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
         list(APPEND _FLAGS
             _CFLAGS=${CMAKE_C_FLAGS_RELEASE}
