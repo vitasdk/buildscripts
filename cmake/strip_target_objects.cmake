@@ -2,7 +2,6 @@
 file(GLOB obj_libs ${PATTERN_GLOB})
 
 foreach(obj ${obj_libs})
-    message(STATUS "${OBJCOPY_CMD} ${obj}")
     execute_process(COMMAND ${OBJCOPY_COMMAND} -R .comment -R .note
         -R .debug_info -R .debug_aranges -R .debug_pubnames
         -R .debug_line -R .debug_pubtypes -R .debug_abbrev

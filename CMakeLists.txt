@@ -294,7 +294,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
     if(NOT toolchain_file AND "${host_native}" STREQUAL "${build_native}")
         ExternalProject_Add_Step(binutils${suffix}
             install_sdk
-            DEPENDEES install
+            DEPENDEES build
             COMMAND $(MAKE) -C <BINARY_DIR> install DESTDIR=${CMAKE_INSTALL_PREFIX}
             # Remove binutils docs to reduce size
             COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/man
@@ -304,7 +304,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
         ExternalProject_Add_Step(vita-toolchain${suffix}
             install_sdk
-            DEPENDEES install
+            DEPENDEES build
             COMMAND $(MAKE) -C <BINARY_DIR> install DESTDIR=${CMAKE_INSTALL_PREFIX}
             COMMENT "Installing vita-toolchain to ${CMAKE_INSTALL_PREFIX}"
             )
@@ -612,7 +612,7 @@ ExternalProject_Add(samples
 fix_repo_update(samples)
 
 # Strip toolchain binaries to reduce filesize
-add_custom_target(strip_host_binaries
+add_custom_command(TARGET gcc-final POST_BUILD
     COMMAND ${CMAKE_COMMAND} -DHOST_SYSTEM_NAME=${CMAKE_HOST_SYSTEM_NAME}
     -DBINDIR=${CMAKE_INSTALL_PREFIX}/bin
     -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake
@@ -625,12 +625,11 @@ add_custom_target(strip_host_binaries
     -DBINDIR=${CMAKE_INSTALL_PREFIX}/lib/gcc/${target_arch}/${GCC_VERSION}
     -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake
 
-    DEPENDS vita-toolchain_${target_suffix} binutils_${target_suffix} gcc-final
     COMMENT "Stripping host binaries"
     )
 
 # Remove unnecessary sections from toolchain libraries
-add_custom_target(strip_target_objects
+add_custom_command(TARGET gcc-final POST_BUILD
     COMMAND ${CMAKE_COMMAND} -DOBJCOPY_COMMAND=${binutils_prefix}-objcopy
     -DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/${target_arch}/lib/*.[ao]
     -P ${CMAKE_SOURCE_DIR}/cmake/strip_target_objects.cmake
@@ -639,15 +638,7 @@ add_custom_target(strip_target_objects
     -DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/lib/gcc/${target_arch}/${GCC_VERSION}/*.[ao]
     -P ${CMAKE_SOURCE_DIR}/cmake/strip_target_objects.cmake
 
-    DEPENDS vita-headers gcc-final
     COMMENT "Stripping target objects"
-    )
-
-# Merge the commit ids of the collected projects into a single file
-add_custom_target(version_info
-    COMMAND ${CMAKE_COMMAND} -DINPUT_DIR=${CMAKE_BINARY_DIR} -DOUTPUT_DIR=${CMAKE_INSTALL_PREFIX}
-    -P ${CMAKE_SOURCE_DIR}/cmake/create_version.cmake
-    DEPENDS vita-headers vita-toolchain_${target_suffix} newlib pthread-embedded samples
     )
 
 set(version_info_file ${CMAKE_INSTALL_PREFIX}/version_info.txt)
@@ -663,7 +654,7 @@ add_custom_command(OUTPUT ${version_info_file}
 add_custom_command(OUTPUT "vitasdk-${host_native}-${build_date}.tar.bz2"
     COMMAND ${CMAKE_COMMAND} -E tar "cfvj" "vitasdk-${host_native}-${build_date}.tar.bz2" "${CMAKE_INSTALL_PREFIX}"
     DEPENDS vita-toolchain_${target_suffix} binutils_${target_suffix} vita-headers newlib pthread-embedded samples
-    DEPENDS gcc-final strip_host_binaries strip_target_objects ${version_info_file}
+    DEPENDS gcc-final ${version_info_file}
     COMMENT "Creating vitasdk-${host_os}-${build_date}.tar.bz2"
     )
 

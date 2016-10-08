@@ -20,6 +20,5 @@ if(NOT "${CMAKE_STRIP}")
 endif()
 
 foreach(executable ${binaries})
-    message(STATUS "${CMAKE_STRIP} ${executable}")
     execute_process(COMMAND ${CMAKE_STRIP} ${executable})
 endforeach()
