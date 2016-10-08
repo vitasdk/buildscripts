@@ -1,25 +1,25 @@
-if (NOT WIN32)
+if(NOT WIN32)
     # use an alternative perms format for find in OSX.
-    if (${HOST_SYSTEM_NAME} STREQUAL "Darwin")
-        set(FIND_PERMS "+u=x,g=x,o=x")
-    else ()
-        set(FIND_PERMS "/u=x,g=x,o=x")
-    endif ()
+    if(${HOST_SYSTEM_NAME} STREQUAL "Darwin")
+        set(find_perms "+u=x,g=x,o=x")
+    else()
+        set(find_perms "/u=x,g=x,o=x")
+    endif()
 
-    execute_process(COMMAND find "${BINDIR}" -maxdepth 1 -perm ${FIND_PERMS} -and ! -type d
-        OUTPUT_VARIABLE BINARIES
+    execute_process(COMMAND find "${BINDIR}" -maxdepth 1 -perm ${find_perms} -and ! -type d
+        OUTPUT_VARIABLE binaries
         OUTPUT_STRIP_TRAILING_WHITESPACE)
-    string(REGEX REPLACE "\n" ";" BINARIES ${BINARIES})
-else ()
-    file(GLOB_RECURSE BINARIES "${BINDIR}/*exe")
-endif ()
+    string(REGEX REPLACE "\n" ";" binaries ${binaries})
+else()
+    file(GLOB_RECURSE binaries "${BINDIR}/*exe")
+endif()
 
 # set default strip command
-if (NOT "${CMAKE_STRIP}")
+if(NOT "${CMAKE_STRIP}")
     set(CMAKE_STRIP "strip")
-endif ()
+endif()
 
-foreach (EXECUTABLE ${BINARIES})
-    message(STATUS "${CMAKE_STRIP} ${EXECUTABLE}")
-    execute_process(COMMAND ${CMAKE_STRIP} ${EXECUTABLE})
-endforeach ()
+foreach(executable ${binaries})
+    message(STATUS "${CMAKE_STRIP} ${executable}")
+    execute_process(COMMAND ${CMAKE_STRIP} ${executable})
+endforeach()

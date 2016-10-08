@@ -1,5 +1,5 @@
-file(GLOB_RECURSE FILE_LIST ${GLOB_PATTERN})
+file(GLOB_RECURSE file_list ${GLOB_PATTERN})
 
-if (FILE_LIST)
-    file(REMOVE ${FILE_LIST})
-endif ()
+if(file_list)
+    file(REMOVE ${file_list})
+endif()
