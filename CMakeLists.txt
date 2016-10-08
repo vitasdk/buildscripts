@@ -296,6 +296,9 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
             install_sdk
             DEPENDEES install
             COMMAND $(MAKE) -C <BINARY_DIR> install DESTDIR=${CMAKE_INSTALL_PREFIX}
+            # Remove binutils docs to reduce size
+            COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/man
+            COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/info
             COMMENT "Installing binutils to ${CMAKE_INSTALL_PREFIX}"
             )
 
@@ -584,6 +587,9 @@ ExternalProject_add(gcc-final
     INSTALL_COMMAND $(MAKE) install
     # Remove empty include directory in the installation directory
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/include
+    # Remove gcc docs to reduce size
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/man
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/info
     )
 
 ExternalProject_Add(samples
@@ -649,18 +655,22 @@ add_custom_target(version_info
     DEPENDS vita-headers vita-toolchain_${target_suffix} newlib pthread-embedded samples
     )
 
-# Remove unnecessary docs from binutils/gcc installations
-add_custom_target(cleanup
-    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/man
-    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/info
-    DEPENDS binutils_${target_suffix} gcc-final
-    COMMENT "Removing gcc/binutils docs"
+set(version_info_file ${CMAKE_INSTALL_PREFIX}/version_info.txt)
+
+# Merge the commit ids of the collected projects into a single file
+add_custom_command(OUTPUT ${version_info_file}
+    COMMAND ${CMAKE_COMMAND} -DINPUT_DIR=${CMAKE_BINARY_DIR} -DOUTPUT_FILE=${version_info_file}
+    -P ${CMAKE_SOURCE_DIR}/cmake/create_version.cmake
+    DEPENDS vita-headers vita-toolchain_${target_suffix} newlib pthread-embedded samples
+    COMMENT "Creating version_info.txt"
+    )
+
+add_custom_command(OUTPUT "vitasdk-${host_native}-${build_date}.tar.bz2"
+    COMMAND ${CMAKE_COMMAND} -E tar "cfvj" "vitasdk-${host_native}-${build_date}.tar.bz2" "${CMAKE_INSTALL_PREFIX}"
+    DEPENDS vita-toolchain_${target_suffix} binutils_${target_suffix} vita-headers newlib pthread-embedded samples
+    DEPENDS gcc-final pretidy strip_host_binaries strip_target_objects ${version_info_file}
+    COMMENT "Creating vitasdk-${host_os}-${build_date}.tar.bz2"
     )
 
 # Create a sdk tarball
-add_custom_target(tarball ALL
-    COMMAND ${CMAKE_COMMAND} -E tar "cfvj" "vitasdk-${host_native}-${build_date}.tar.bz2" "${CMAKE_INSTALL_PREFIX}"
-    DEPENDS vita-toolchain_${target_suffix} binutils_${target_suffix} vita-headers newlib pthread-embedded samples
-    DEPENDS gcc-final pretidy cleanup strip_host_binaries strip_target_objects version_info
-    COMMENT "Creating vitasdk-${host_os}-${build_date}.tar.bz2"
-    )
+add_custom_target(tarball ALL DEPENDS "vitasdk-${host_native}-${build_date}.tar.bz2")
