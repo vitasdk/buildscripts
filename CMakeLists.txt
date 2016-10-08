@@ -265,6 +265,8 @@ function(toolchain_deps TOOLCHAIN_DEPS_DIR TOOLCHAIN_INSTALL_DIR TOOLCHAIN_SUFFI
         UPDATE_DISCONNECTED ${OFFLINE}
         )
 
+    fix_repo_update(vita-toolchain${SUFFIX})
+
     ExternalProject_Add(binutils${SUFFIX}
         URL https://ftp.gnu.org/gnu/binutils/binutils-2.27.tar.bz2
         URL_HASH SHA256=369737ce51587f92466041a97ab7d2358c6d9e1b6490b3940eb09fb0a9a6ac88
@@ -459,6 +461,8 @@ ExternalProject_add(vita-headers
     UPDATE_DISCONNECTED ${OFFLINE}
     )
 
+fix_repo_update(vita-headers)
+
 ExternalProject_Add(newlib
     DEPENDS binutils_${TARGET_SUFFIX} gcc-base vita-headers
     GIT_REPOSITORY https://github.com/vitasdk/newlib
@@ -486,6 +490,8 @@ ExternalProject_Add(newlib
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/newlib-version.txt
     UPDATE_DISCONNECTED ${OFFLINE}
     )
+
+fix_repo_update(newlib)
 
 # Build a complete gcc compiler to be able to compile the full gcc for the host when crosscompiling.
 # Using gcc-base doesn't work since is missing some headers.
@@ -544,6 +550,8 @@ ExternalProject_Add(pthread-embedded
     UPDATE_DISCONNECTED ${OFFLINE}
     )
 
+fix_repo_update(pthread-embedded)
+
 ExternalProject_add(gcc-final
     DEPENDS gmp_${TARGET_SUFFIX} mpfr_${TARGET_SUFFIX} mpc_${TARGET_SUFFIX} isl_${TARGET_SUFFIX}
     DEPENDS cloog_${TARGET_SUFFIX} libelf_${TARGET_SUFFIX} expat_${TARGET_SUFFIX} binutils_${TARGET_SUFFIX}
@@ -591,6 +599,8 @@ ExternalProject_Add(samples
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/samples-version.txt
     UPDATE_DISCONNECTED ${OFFLINE}
     )
+
+fix_repo_update(samples)
 
 # Remove .la files from installation directory
 add_custom_target(pretidy
