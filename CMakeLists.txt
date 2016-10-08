@@ -590,6 +590,9 @@ ExternalProject_add(gcc-final
     # Remove gcc docs to reduce size
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/man
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/info
+    # Remove .la files
+    COMMAND ${CMAKE_COMMAND} -DGLOB_PATTERN=${CMAKE_INSTALL_PREFIX}/*.la
+    -P ${CMAKE_SOURCE_DIR}/cmake/remove_files.cmake
     )
 
 ExternalProject_Add(samples
@@ -607,14 +610,6 @@ ExternalProject_Add(samples
     )
 
 fix_repo_update(samples)
-
-# Remove .la files from installation directory
-add_custom_target(pretidy
-    COMMAND ${CMAKE_COMMAND} -DGLOB_PATTERN=${CMAKE_INSTALL_PREFIX}/*.la
-    -P ${CMAKE_SOURCE_DIR}/cmake/remove_files.cmake
-    DEPENDS vita-headers gcc-final
-    COMMENT "Removing .la files"
-    )
 
 # Strip toolchain binaries to reduce filesize
 add_custom_target(strip_host_binaries
@@ -668,9 +663,9 @@ add_custom_command(OUTPUT ${version_info_file}
 add_custom_command(OUTPUT "vitasdk-${host_native}-${build_date}.tar.bz2"
     COMMAND ${CMAKE_COMMAND} -E tar "cfvj" "vitasdk-${host_native}-${build_date}.tar.bz2" "${CMAKE_INSTALL_PREFIX}"
     DEPENDS vita-toolchain_${target_suffix} binutils_${target_suffix} vita-headers newlib pthread-embedded samples
-    DEPENDS gcc-final pretidy strip_host_binaries strip_target_objects ${version_info_file}
+    DEPENDS gcc-final strip_host_binaries strip_target_objects ${version_info_file}
     COMMENT "Creating vitasdk-${host_os}-${build_date}.tar.bz2"
     )
 
 # Create a sdk tarball
-add_custom_target(tarball ALL DEPENDS "vitasdk-${host_native}-${build_date}.tar.bz2")
+add_custom_target(tarball DEPENDS "vitasdk-${host_native}-${build_date}.tar.bz2")
