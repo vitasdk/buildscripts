@@ -623,7 +623,7 @@ add_custom_command(TARGET gcc-final POST_BUILD
     -P ${CMAKE_SOURCE_DIR}/cmake/strip_target_objects.cmake
 
     COMMAND ${CMAKE_COMMAND} -DOBJCOPY_COMMAND=${binutils_prefix}-objcopy
-    -DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/lib/gcc/${target_arch}/${GCC_VERSION}/*.[ao]
+    -DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/lib/gcc/${target_arch}/${GCC_VERSION}/*[!d][!d][!l].[ao]
     -P ${CMAKE_SOURCE_DIR}/cmake/strip_target_objects.cmake
 
     COMMENT "Stripping target objects"
