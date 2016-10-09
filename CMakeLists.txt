@@ -620,10 +620,12 @@ add_custom_command(TARGET gcc-final POST_BUILD
 
 # Remove unnecessary sections from toolchain libraries
 add_custom_command(TARGET gcc-final POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/${target_arch}/lib/*.[ao]
+    COMMAND ${CMAKE_COMMAND} -DOBJCOPY_COMMAND=${binutils_prefix}-objcopy
+    -DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/${target_arch}/lib/*.[ao]
     -P ${CMAKE_SOURCE_DIR}/cmake/strip_target_objects.cmake
 
-    COMMAND ${CMAKE_COMMAND} -DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/lib/gcc/${target_arch}/${GCC_VERSION}/*.[ao]
+    COMMAND ${CMAKE_COMMAND} -DOBJCOPY_COMMAND=${binutils_prefix}-objcopy
+    -DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/lib/gcc/${target_arch}/${GCC_VERSION}/*.[ao]
     -P ${CMAKE_SOURCE_DIR}/cmake/strip_target_objects.cmake
 
     COMMENT "Stripping target objects"
