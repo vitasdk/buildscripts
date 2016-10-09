@@ -1,5 +1,5 @@
 function(get_host_triplet triplet)
-    set(host_arch ${CMAKE_HOST_SYSTEM_PROCESSOR})
+    set(host_arch ${CMAKE_SYSTEM_PROCESSOR})
     if(host_arch STREQUAL "x86")
         set(host_arch "i686")
     endif()
