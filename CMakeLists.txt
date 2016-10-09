@@ -1,3 +1,8 @@
+#
+# Copyright(c) 2016 codestation
+# Distributed under the MIT License (http://opensource.org/licenses/MIT)
+#
+
 cmake_minimum_required(VERSION 2.8.9)
 
 project(vitasdk)
