@@ -51,6 +51,8 @@ set(pkgversion "GNU Tools for ARM Embedded Processors")
 # Load the compiler flags to pass them to the other projects
 load_flags(compiler_flags)
 
+set(wrapper_command ${PROJECT_SOURCE_DIR}/command_wrapper.sh)
+
 # Function to build the dependencies required for the vitasdk toolchain/headers
 function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffix)
     set(extra_macro_args ${ARGN})
@@ -123,8 +125,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL_HASH SHA256=591a9b4ec81c1f2042a97aa60564e0cb79d041c52faa7416acb38bc95bd2c76d
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libelf.patch
-        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CC=${cc_compiler} ${compiler_flags}
-        ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND CC=${cc_compiler} ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
@@ -137,8 +138,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL http://www.digip.org/jansson/releases/jansson-2.9.tar.bz2
         URL_HASH SHA256=77094fc1e113da0e2e65479488a0719f859b8f5bde3a6a0da88a1c73a88b5698
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags}
-        ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
@@ -151,16 +151,14 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL https://gmplib.org/download/gmp/gmp-6.1.1.tar.bz2
         URL_HASH SHA256=a8109865f2893f1373b0a8ed5ff7429de8db696fc451b1036bd7bdf95bbeffd6
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CPPFLAGS=-fexceptions ${compiler_flags}
-        ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND CPPFLAGS=-fexceptions ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
         --libdir=${toolchain_deps_dir}/lib
         --enable-cxx
         --disable-shared
-        BUILD_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags}
-        ${PROJECT_SOURCE_DIR}/command_wrapper.sh $(MAKE)
+        BUILD_COMMAND ${compiler_flags} ${wrapper_command} $(MAKE)
         )
 
     ExternalProject_add(mpfr${suffix}
@@ -168,8 +166,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.5.tar.bz2
         URL_HASH SHA256=ca498c1c7a74dd37a576f353312d1e68d490978de4395fa28f1cbd46a364e658
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags}
-        ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
@@ -183,8 +180,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL http://www.multiprecision.org/mpc/download/mpc-1.0.3.tar.gz
         URL_HASH SHA256=617decc6ea09889fb08ede330917a00b16809b8db88c29c31bfbb49cbf88ecc3
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags}
-        ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
@@ -200,8 +196,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL http://isl.gforge.inria.fr/isl-0.17.1.tar.bz2
         URL_HASH SHA256=d6307bf9a59514087abac3cbaab3d99393a0abb519354f7e7834a8c842310daa
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags}
-        ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
@@ -215,8 +210,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL http://www.bastoul.net/cloog/pages/download/cloog-0.18.4.tar.gz
         URL_HASH SHA256=325adf3710ce2229b7eeb9e84d3b539556d093ae860027185e7af8a8b00a750e
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags}
-        ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
@@ -233,8 +227,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL http://downloads.sourceforge.net/sourceforge/expat/expat-2.2.0.tar.bz2
         URL_HASH SHA256=d9e50ff2d19b3538bd2127902a89987474e1a4db8e43a66a4d1a712ab9a504ff
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags}
-        ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
@@ -273,8 +266,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils.patch
         COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils-2.27-fix-linker-segfault.patch
-        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags}
-        ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --target=${target_arch}
@@ -414,8 +406,8 @@ ExternalProject_add(gcc-base
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
     PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc-6.patch
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${extra_cflags} CXXFLAGS=${extra_cflags} ${compiler_flags}
-    ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+    CONFIGURE_COMMAND CFLAGS=${extra_cflags} CXXFLAGS=${extra_cflags} ${compiler_flags}
+    ${wrapper_command} <SOURCE_DIR>/configure
     --build=${build_native}
     # compile a native compiler so keep host == build
     --host=${build_native}
@@ -471,9 +463,8 @@ ExternalProject_Add(newlib
     GIT_REPOSITORY https://github.com/vitasdk/newlib
     GIT_TAG ${NEWLIB_TAG}
     # Pass the compiler_target_tools here so newlib picks up the fresh gcc-base compiler
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
-    "CFLAGS_FOR_TARGET=-g -O2 -ffunction-sections -fdata-sections"
-    ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+    CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
+    ${wrapper_command} <SOURCE_DIR>/configure "CFLAGS_FOR_TARGET=-g -O2 -ffunction-sections -fdata-sections"
     --build=${build_native}
     --host=${host_native}
     --target=${target_arch}
@@ -484,8 +475,7 @@ ExternalProject_Add(newlib
     --enable-newlib-register-fini
     --disable-newlib-supplied-syscalls
     --disable-nls
-    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags} ${toolchain_tools}
-    ${PROJECT_SOURCE_DIR}/command_wrapper.sh $(MAKE)
+    BUILD_COMMAND ${compiler_flags} ${toolchain_tools} ${wrapper_command} $(MAKE)
     INSTALL_COMMAND $(MAKE) install DESTDIR=${CMAKE_INSTALL_PREFIX}
     # Install a copy of newlib in the toolchain directory (required for pthread-embedded target)
     COMMAND $(MAKE) install DESTDIR=${toolchain_build_install_dir}
@@ -506,9 +496,8 @@ if(CMAKE_TOOLCHAIN_FILE)
         URL_HASH ${GCC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc-6.patch
-        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${extra_cflags} CXXFLAGS=${extra_cflags}
-        ${compiler_flags} ${toolchain_tools}
-        ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND CFLAGS=${extra_cflags} CXXFLAGS=${extra_cflags} ${compiler_flags} ${toolchain_tools}
+        ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         # compile a native compiler so keep host == build
         --host=${build_native}
@@ -526,8 +515,7 @@ if(CMAKE_TOOLCHAIN_FILE)
         ${common_gcc_configure_args}
         --disable-threads
         --with-headers=yes
-        BUILD_COMMAND ${CMAKE_COMMAND} -E env ${toolchain_tools}
-        $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
+        BUILD_COMMAND ${toolchain_tools} ${wrapper_command} $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
         INSTALL_COMMAND $(MAKE) install
         )
     # Add this target as dependency of the final gcc target
@@ -544,8 +532,7 @@ ExternalProject_Add(pthread-embedded
     # TODO: this project should have a proper makefile to support out-of-source builds
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
-    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags}
-    ${PROJECT_SOURCE_DIR}/command_wrapper.sh $(MAKE)
+    BUILD_COMMAND ${compiler_flags} ${wrapper_command} $(MAKE)
     -C <SOURCE_DIR>/platform/vita ${pthread_tools} PREFIX=${CMAKE_INSTALL_PREFIX}
     INSTALL_COMMAND $(MAKE) -C <SOURCE_DIR>/platform/vita PREFIX=${CMAKE_INSTALL_PREFIX}/${target_arch} install
     # Save the commit id for tracking purposes
@@ -563,9 +550,9 @@ ExternalProject_add(gcc-final
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
     PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc-6.patch
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${extra_cflags}
+    CONFIGURE_COMMAND CFLAGS=${extra_cflags}
     CXXFLAGS=${extra_cflags} ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
-    ${PROJECT_SOURCE_DIR}/command_wrapper.sh <SOURCE_DIR>/configure
+    ${wrapper_command} <SOURCE_DIR>/configure
     --build=${build_native}
     --host=${host_native}
     --target=${target_arch}
@@ -582,7 +569,7 @@ ExternalProject_add(gcc-final
     ${common_gcc_configure_args}
     --with-headers=yes
     --enable-threads=posix
-    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${toolchain_tools} ${compiler_target_tools}
+    BUILD_COMMAND ${toolchain_tools} ${compiler_target_tools} ${wrapper_command}
     $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
     INSTALL_COMMAND $(MAKE) install
     # Remove empty include directory in the installation directory
