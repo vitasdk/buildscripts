@@ -1,5 +1,9 @@
 ## VitaSDK. How to build.
 
+```
+apt-get install cmake git build-essential autoconf
+```
+
 ### Native compilation.
 
 * Linux host -> Linux toolchain.

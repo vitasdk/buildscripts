@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 2.8.9)
 
 project(vitasdk)
 
@@ -16,7 +16,10 @@ set(PTHREAD_TAG master CACHE string "pthread-embedded branch name, commit id or 
 # Location to save the downloaded tarballs. Can be overriden from command line.
 set(DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/downloads CACHE PATH "Default download path for tarballs")
 
-set(OFFLINE YES CACHE BOOL "Check repo updates")
+if("${CMAKE_VERSION}" VERSION_GREATER 3.2.0)
+    set(OFFLINE YES CACHE BOOL "Check repo updates")
+    set(UPDATE_DISCONNECTED_SUPPORT UPDATE_DISCONNECTED ${OFFLINE})
+endif()
 
 # Installation directory. Can be overriden from command line.
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -255,7 +258,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir}
         # Save the commit id for tracking purposes
         COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/vita-toolchain-version.txt
-        UPDATE_DISCONNECTED ${OFFLINE}
+        ${UPDATE_DISCONNECTED_SUPPORT}
         )
 
     fix_repo_update(vita-toolchain${suffix})
@@ -453,7 +456,7 @@ ExternalProject_add(vita-headers
     -P ${CMAKE_SOURCE_DIR}/cmake/install_files.cmake
     # Save the commit id for tracking purposes
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/vita-headers-version.txt
-    UPDATE_DISCONNECTED ${OFFLINE}
+    ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
 fix_repo_update(vita-headers)
@@ -481,7 +484,7 @@ ExternalProject_Add(newlib
     COMMAND $(MAKE) install DESTDIR=${toolchain_build_install_dir}
     # Save the commit id for tracking purposes
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/newlib-version.txt
-    UPDATE_DISCONNECTED ${OFFLINE}
+    ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
 fix_repo_update(newlib)
@@ -537,7 +540,7 @@ ExternalProject_Add(pthread-embedded
     INSTALL_COMMAND $(MAKE) -C <SOURCE_DIR>/platform/vita PREFIX=${CMAKE_INSTALL_PREFIX}/${target_arch} install
     # Save the commit id for tracking purposes
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/pthread-embedded-version.txt
-    UPDATE_DISCONNECTED ${OFFLINE}
+    ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
 fix_repo_update(pthread-embedded)
@@ -593,7 +596,7 @@ ExternalProject_Add(samples
     -P ${CMAKE_SOURCE_DIR}/cmake/install_files.cmake
     # Save the commit id for tracking purposes
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/samples-version.txt
-    UPDATE_DISCONNECTED ${OFFLINE}
+    ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
 fix_repo_update(samples)
