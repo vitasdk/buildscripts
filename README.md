@@ -1,7 +1,7 @@
 ## VitaSDK. How to build.
 
 ```
-apt-get install cmake git build-essential autoconf
+apt-get install cmake git build-essential autoconf texinfo
 ```
 
 ### Native compilation.
