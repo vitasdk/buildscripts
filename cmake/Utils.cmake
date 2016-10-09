@@ -31,12 +31,14 @@ endfunction()
 # Workaround for: ExternalProject: detect if SCM source changed before triggering subsequent steps.
 # https://gitlab.kitware.com/cmake/cmake/issues/15914
 function(fix_repo_update name)
-    # internal function available since cmake 2.8.9
-    _ep_get_step_stampfile(${name} skip-update skip-update_stamp_file)
+    if("${CMAKE_VERSION}" VERSION_GREATER 3.2.0)
+        # internal function available since cmake 2.8.9
+        _ep_get_step_stampfile(${name} skip-update skip-update_stamp_file)
 
-    ExternalProject_Add_Step(${name}
-        skip-workaround
-        DEPENDEES skip-update
-        COMMAND ${CMAKE_COMMAND} -E touch "${skip-update_stamp_file}"
-        )
+        ExternalProject_Add_Step(${name}
+            skip-workaround
+            DEPENDEES skip-update
+            COMMAND ${CMAKE_COMMAND} -E touch "${skip-update_stamp_file}"
+            )
+    endif()
 endfunction()
