@@ -13,9 +13,9 @@ USER user
 WORKDIR /home/user
 
 RUN mkdir /home/user/.ssh && chmod 700 /home/user/.ssh -R && \
-  ssh-keyscan bitbucket.org >> /home/user/.ssh/known_hosts
+  ssh-keyscan github.com >> /home/user/.ssh/known_hosts
 
-RUN git clone https://bitbucket.org/codestation/vitasdk-cmake
+RUN git clone https://github.com/codestation/vitasdk-cmake
 
 RUN mkdir build
 WORKDIR /home/user/build
