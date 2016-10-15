@@ -271,6 +271,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         -Dlibzip_INCLUDE_DIR=${toolchain_deps_dir}/include
         -Dlibzip_CONFIG_INCLUDE_DIR=${toolchain_deps_dir}/lib/libzip/include
         -Dlibzip_LIBRARY=${toolchain_deps_dir}/lib/libzip.a
+        -Dlibyaml_INCLUDE_DIR=${toolchain_deps_dir}/include
+        -Dlibyaml_LIBRARY=${toolchain_deps_dir}/lib/libyaml.a
         -DDEFAULT_JSON=../share/db.json
         BUILD_COMMAND $(MAKE)
         INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir}
