@@ -1,16 +1,67 @@
-# How to build the toolchain
+## VitaSDK. How to build.
 
-1. Read the pdf
-2. Download & untar all deps
-3. Replace `src/newlib` with a version for the Vita: https://github.com/vitasdk/newlib
-4. Clone https://github.com/vitasdk/vita-toolchain to `src/vita-toolchain`
-5. Clone https://github.com/vitasdk/vita-headers to `src/vita-headers`
-6. Clone https://github.com/vitasdk/pthread-embedded to `src/pthread-embedded`
-7. Download http://www.digip.org/jansson/releases/jansson-2.7.tar.gz and untar to `src/jansson-2.7`
-8. Download http://nih.at/libzip/libzip-1.1.3.tar.gz and untar to `src/libzip-1.1.3`
-9. Apply `vita.patch`: `patch -p1 < vita.patch`
-10. Build
-11. ...
-12. Ask for help in #vitasdk @ freenode because this never works right
+```
+apt-get install cmake git build-essential autoconf texinfo bison flex
+```
 
-If you're building on Ubuntu 8.10, `git` from its repos won't work. You can use `wget` to download dependencies instead. (e.g. https://github.com/vitasdk/vita-headers/archive/master.zip)
+### Native compilation.
+
+* Linux host -> Linux toolchain.
+* OSX host -> OSX toolchain.
+
+``` sh
+mkdir build
+cd build
+cmake ..
+make -j4
+```
+
+### Cross compilation.
+
+* Linux host -> mingw32 toolchain
+
+``` sh
+mkdir build
+cd build
+cmake .. -DCMAKE_TOOLCHAIN_FILE=toolchain-x86_64-w64-mingw32.cmake
+make -j4
+```
+
+### Cmake command-line options
+
+You can pass then on the cmake phrase like this `cmake .. -DFOO=ON`.
+
+If you want to fetch an specific revision of a part of the toolchain
+then you can pass the branch/tag/id from the command line. The available
+values are `NEWLIB_TAG`, `TOOLCHAIN_TAG`, `PTHREAD_TAG`, `HEADERS_TAG`
+and `SAMPLES_TAG`. For example:
+
+``` sh
+cmake /path/to/cmakelists -DNEWLIB_TAG=0254c2dc0c2686f69580030af3cacc795c94d616
+```
+
+This will configure the vitasdk to use that newlib commit instead of the `vita` branch.
+
+If you need to change the download directory used for the tarballs then do the following,
+for example:
+
+``` sh
+cmake /path/to/cmakelists -DDOWNLOAD_DIR=$HOME/vitasdk_tarballs
+```
+
+The remote repositories won't be checked for updates if you run `make` again.
+If you don't want this behaviour then pass -DOFFLINE=NO to the cmake command line.
+This is only available if your CMake installation is 3.2.0 or greater, else it will always
+check for updates the next time you run make.
+
+To change the default installation path a path to CMAKE_INSTALL_PREFIX, for example:
+
+``` sh
+cmake /path/to/cmakelists -DCMAKE_INSTALL_PREFIX=$HOME/vitasdk
+```
+
+If you want to create a tarball of the sdk then run the following command:
+
+``` sh
+make tarball
+```
