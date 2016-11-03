@@ -25,7 +25,7 @@ deploy:
   provider: releases
   api_key: $OAUTH
   file_glob: true
-  file: "pkg/*.tar.bz2"
+  file: "build/*.tar.bz2"
   skip_cleanup: true
   on:
     tags: false
