@@ -1,0 +1,13 @@
+diff -ru a/src/binutils/ld/scripttempl/elf.sc b/src/binutils/ld/scripttempl/elf.sc
+--- a/src/binutils/ld/scripttempl/elf.sc	2015-08-19 18:51:37.000000000 +0400
++++ b/src/binutils/ld/scripttempl/elf.sc	2015-09-22 20:37:30.000000000 +0400
+@@ -536,7 +536,8 @@
+   ${CREATE_SHLIB-${CREATE_PIE-${RELOCATING+. = ${DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}}
+   ${CREATE_SHLIB+${RELOCATING+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}
+   ${CREATE_PIE+${RELOCATING+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}
+-
++  /* Hacky hackity hack. Need this because otherwise data segment is not aligned enough. */
++  . = ALIGN(0x10000);
+   /* Exception handling  */
+   .eh_frame     ${RELOCATING-0} : ONLY_IF_RW { KEEP (*(.eh_frame)) }
+   .gcc_except_table ${RELOCATING-0} : ONLY_IF_RW { *(.gcc_except_table .gcc_except_table.*) }

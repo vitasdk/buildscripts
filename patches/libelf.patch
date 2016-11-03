@@ -1,0 +1,12 @@
+diff -ru a/src/libelf-0.8.13/configure b/src/libelf-0.8.13/configure
+--- a/src/libelf-0.8.13/configure	2015-08-19 18:51:37.000000000 +0400
++++ b/src/libelf-0.8.13/configure	2015-09-22 20:37:30.000000000 +0400
+@@ -1595,7 +1595,7 @@
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   if test "$cross_compiling" = yes; then
+-  ac_cv_sizeof_long_long=0
++  ac_cv_sizeof_long_long=8
+ else
+   cat > conftest.$ac_ext <<EOF
+ #line 1602 "configure"
