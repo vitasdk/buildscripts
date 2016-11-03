@@ -155,6 +155,19 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         --enable-static
         )
 
+    ExternalProject_add(libyaml${suffix}
+        URL http://pyyaml.org/download/libyaml/yaml-0.1.7.tar.gz
+        URL_HASH SHA256=8088e457264a98ba451a90b8661fcb4f9d6f478f7265d48322a196cec2480729
+        DOWNLOAD_DIR ${DOWNLOAD_DIR}
+        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        --build=${build_native}
+        --host=${toolchain_host}
+        --prefix=${toolchain_deps_dir}
+        --libdir=${toolchain_deps_dir}/lib
+        --disable-shared
+        --enable-static
+        )
+
     ExternalProject_add(gmp${suffix}
         URL https://gmplib.org/download/gmp/gmp-6.1.1.tar.bz2
         URL_HASH SHA256=a8109865f2893f1373b0a8ed5ff7429de8db696fc451b1036bd7bdf95bbeffd6
@@ -244,7 +257,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_Add(vita-toolchain${suffix}
-        DEPENDS jansson${suffix} libelf${suffix} zlib${suffix} libzip${suffix}
+        DEPENDS jansson${suffix} libelf${suffix} zlib${suffix} libzip${suffix} libyaml${suffix}
         GIT_REPOSITORY https://github.com/vitasdk/vita-toolchain
         GIT_TAG ${TOOLCHAIN_TAG}
         # Set prefix to "/" here to be able to install twice
@@ -258,6 +271,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         -Dlibzip_INCLUDE_DIR=${toolchain_deps_dir}/include
         -Dlibzip_CONFIG_INCLUDE_DIR=${toolchain_deps_dir}/lib/libzip/include
         -Dlibzip_LIBRARY=${toolchain_deps_dir}/lib/libzip.a
+        -Dlibyaml_INCLUDE_DIR=${toolchain_deps_dir}/include
+        -Dlibyaml_LIBRARY=${toolchain_deps_dir}/lib/libyaml.a
         -DDEFAULT_JSON=../share/db.json
         BUILD_COMMAND $(MAKE)
         INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir}
