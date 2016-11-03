@@ -1,0 +1,35 @@
+language: cpp
+
+matrix:
+  include:
+    - os: linux
+      dist: trusty
+      sudo: required
+    - os: osx
+      osx_image: xcode8
+
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y cmake git build-essential autoconf texinfo bison flex; fi
+addons:
+script:
+ - export REV=dirty-$(git describe --always)
+ - chmod +x *.sh
+ - ./build.sh
+before_deploy:
+  - git config --global user.email "builds@travis-ci.com"
+  - git config --global user.name "Travis CI"
+  - export GIT_TAG=$TRAVIS_BRANCH-$TRAVIS_OS_NAME-v$TRAVIS_BUILD_NUMBER
+  - git tag $GIT_TAG -a -m "Generated tag from TravisCI for build $TRAVIS_BUILD_NUMBER"
+  - git push -q https://$TAGPERM@github.com/frangarcj/buildscripts --tags
+deploy:
+  provider: releases
+  api_key: $OAUTH
+  file_glob: true
+  file: "pkg/*.tar.bz2"
+  skip_cleanup: true
+  on:
+    tags: false
+    all_branches: true
+branches:
+  except:
+    - /^*-v[0-9]/
