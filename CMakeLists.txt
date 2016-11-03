@@ -482,7 +482,7 @@ fix_repo_update(vita-headers)
 
 ExternalProject_Add(newlib
     DEPENDS binutils_${target_suffix} gcc-base vita-headers
-    GIT_REPOSITORY https://github.com/vitasdk/newlib
+    GIT_REPOSITORY https://github.com/frangarcj/newlib
     GIT_TAG ${NEWLIB_TAG}
     # Pass the compiler_target_tools here so newlib picks up the fresh gcc-base compiler
     CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
