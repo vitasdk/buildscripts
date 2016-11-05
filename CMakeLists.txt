@@ -166,6 +166,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         --libdir=${toolchain_deps_dir}/lib
         --disable-shared
         --enable-static
+        "CFLAGS=-DYAML_DECLARE_STATIC"
         )
 
     ExternalProject_add(gmp${suffix}
