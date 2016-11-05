@@ -2,5 +2,5 @@
 
 mkdir build
 cd build
-cmake .. -DNEWLIB_TAG=patch-1
+cmake .. 
 make -j4 tarball
