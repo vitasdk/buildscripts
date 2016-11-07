@@ -227,24 +227,6 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         --disable-shared
         )
 
-    ExternalProject_add(cloog${suffix}
-        DEPENDS gmp${suffix} isl${suffix}
-        URL http://www.bastoul.net/cloog/pages/download/cloog-0.18.4.tar.gz
-        URL_HASH SHA256=325adf3710ce2229b7eeb9e84d3b539556d093ae860027185e7af8a8b00a750e
-        DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
-        --build=${build_native}
-        --host=${toolchain_host}
-        --prefix=${toolchain_deps_dir}
-        --libdir=${toolchain_deps_dir}/lib
-        --with-gmp-prefix=${toolchain_deps_dir}
-        --with-isl-prefix=${toolchain_deps_dir}
-        --disable-shared
-        --disable-nls
-        --with-bits=gmp
-        --with-host-libstdcxx='-lstdc++'
-        )
-
     ExternalProject_add(expat${suffix}
         URL http://downloads.sourceforge.net/sourceforge/expat/expat-2.2.0.tar.bz2
         URL_HASH SHA256=d9e50ff2d19b3538bd2127902a89987474e1a4db8e43a66a4d1a712ab9a504ff
@@ -425,7 +407,6 @@ endif()
 # Build a basic gcc compiler, needed to compile newlib
 ExternalProject_add(gcc-base
     DEPENDS gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix}
-    DEPENDS cloog_${build_suffix} libelf_${build_suffix} expat_${build_suffix}
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
@@ -444,7 +425,6 @@ ExternalProject_add(gcc-base
     --with-mpfr=${toolchain_build_depends_dir}
     --with-mpc=${toolchain_build_depends_dir}
     --with-isl=${toolchain_build_depends_dir}
-    --with-cloog=${toolchain_build_depends_dir}
     --with-libelf=${toolchain_build_depends_dir}
     ${common_gcc_configure_args}
     --disable-threads
@@ -513,7 +493,6 @@ fix_repo_update(newlib)
 if(CMAKE_TOOLCHAIN_FILE)
     ExternalProject_add(gcc-complete
         DEPENDS gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix}
-        DEPENDS cloog_${build_suffix} libelf_${build_suffix} expat_${build_suffix} binutils_${build_suffix} newlib
         URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2
         URL_HASH ${GCC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
@@ -532,7 +511,6 @@ if(CMAKE_TOOLCHAIN_FILE)
         --with-mpfr=${toolchain_build_depends_dir}
         --with-mpc=${toolchain_build_depends_dir}
         --with-isl=${toolchain_build_depends_dir}
-        --with-cloog=${toolchain_build_depends_dir}
         --with-libelf=${toolchain_build_depends_dir}
         ${common_gcc_configure_args}
         --disable-threads
@@ -566,7 +544,6 @@ fix_repo_update(pthread-embedded)
 
 ExternalProject_add(gcc-final
     DEPENDS gmp_${target_suffix} mpfr_${target_suffix} mpc_${target_suffix} isl_${target_suffix}
-    DEPENDS cloog_${target_suffix} libelf_${target_suffix} expat_${target_suffix} binutils_${target_suffix}
     DEPENDS newlib ${GCC_DEPENDS} pthread-embedded
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2
     URL_HASH ${GCC_HASH}
@@ -586,7 +563,6 @@ ExternalProject_add(gcc-final
     --with-mpfr=${toolchain_target_depends_dir}
     --with-mpc=${toolchain_target_depends_dir}
     --with-isl=${toolchain_target_depends_dir}
-    --with-cloog=${toolchain_target_depends_dir}
     --with-libelf=${toolchain_target_depends_dir}
     ${common_gcc_configure_args}
     --with-headers=yes
