@@ -241,8 +241,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_Add(vita-toolchain${suffix}
         DEPENDS jansson${suffix} libelf${suffix} zlib${suffix} libzip${suffix} libyaml${suffix}
-        GIT_REPOSITORY https://github.com/vitasdk/vita-toolchain
-        GIT_TAG ${TOOLCHAIN_TAG}
+        GIT_REPOSITORY https://github.com/frangarcj/vita-toolchain
+        GIT_TAG no_dbjson
         # Set prefix to "/" here to be able to install twice
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=/ ${toolchain_cmake_args}
         -DJansson_INCLUDE_DIR=${toolchain_deps_dir}/include
