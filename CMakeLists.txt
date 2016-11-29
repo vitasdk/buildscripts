@@ -142,19 +142,6 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         --disable-nls
         )
 
-    ExternalProject_add(jansson${suffix}
-        URL http://www.digip.org/jansson/releases/jansson-2.9.tar.bz2
-        URL_HASH SHA256=77094fc1e113da0e2e65479488a0719f859b8f5bde3a6a0da88a1c73a88b5698
-        DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
-        --build=${build_native}
-        --host=${toolchain_host}
-        --prefix=${toolchain_deps_dir}
-        --libdir=${toolchain_deps_dir}/lib
-        --disable-shared
-        --enable-static
-        )
-
     ExternalProject_add(libyaml${suffix}
         URL http://pyyaml.org/download/libyaml/yaml-0.1.7.tar.gz
         URL_HASH SHA256=8088e457264a98ba451a90b8661fcb4f9d6f478f7265d48322a196cec2480729
@@ -240,13 +227,11 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_Add(vita-toolchain${suffix}
-        DEPENDS jansson${suffix} libelf${suffix} zlib${suffix} libzip${suffix} libyaml${suffix}
+        DEPENDS libelf${suffix} zlib${suffix} libzip${suffix} libyaml${suffix}
         GIT_REPOSITORY https://github.com/vitasdk/vita-toolchain
         GIT_TAG ${TOOLCHAIN_TAG}
         # Set prefix to "/" here to be able to install twice
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=/ ${toolchain_cmake_args}
-        -DJansson_INCLUDE_DIR=${toolchain_deps_dir}/include
-        -DJansson_LIBRARY=${toolchain_deps_dir}/lib/libjansson.a
         -Dlibelf_INCLUDE_DIR=${toolchain_deps_dir}/include
         -Dlibelf_LIBRARY=${toolchain_deps_dir}/lib/libelf.a
         -Dzlib_INCLUDE_DIR=${toolchain_deps_dir}/include
@@ -256,7 +241,6 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         -Dlibzip_LIBRARY=${toolchain_deps_dir}/lib/libzip.a
         -Dlibyaml_INCLUDE_DIR=${toolchain_deps_dir}/include
         -Dlibyaml_LIBRARY=${toolchain_deps_dir}/lib/libyaml.a
-        -DDEFAULT_JSON=../share/db.json
         BUILD_COMMAND $(MAKE)
         INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir}
         # Save the commit id for tracking purposes
@@ -438,7 +422,7 @@ ExternalProject_add(vita-headers
     GIT_REPOSITORY https://github.com/vitasdk/vita-headers
     GIT_TAG ${HEADERS_TAG}
     # TODO: vita-libs-gen should generate a proper makefile so this can be simplified
-    CONFIGURE_COMMAND ${vita_libs_gen_command} <SOURCE_DIR>/db.json <BINARY_DIR>
+    CONFIGURE_COMMAND ${vita_libs_gen_command} <SOURCE_DIR>/db.yml <BINARY_DIR>
     BUILD_COMMAND $(MAKE) ARCH=${binutils_prefix}
     # Copy the generated .a files to the install directory
     INSTALL_COMMAND ${CMAKE_COMMAND} -DGLOB_PATTERN=<BINARY_DIR>/*a
@@ -450,8 +434,8 @@ ExternalProject_add(vita-headers
     # Install a copy of the headers in the toolchain directory (required for pthread-embedded target)
     COMMAND ${CMAKE_COMMAND} -E make_directory ${toolchain_build_install_dir}/${target_arch}/include
     COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include ${toolchain_build_install_dir}/${target_arch}/include
-    # Copy the json database to the installation directory
-    COMMAND ${CMAKE_COMMAND} -DGLOB_PATTERN=<SOURCE_DIR>/db.json -DINSTALL_DIR=${CMAKE_INSTALL_PREFIX}/share
+    # Copy the yml database to the installation directory
+    COMMAND ${CMAKE_COMMAND} -DGLOB_PATTERN=<SOURCE_DIR>/db.yml -DINSTALL_DIR=${CMAKE_INSTALL_PREFIX}/share
     -P ${CMAKE_SOURCE_DIR}/cmake/install_files.cmake
     # Save the commit id for tracking purposes
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/vita-headers-version.txt
