@@ -476,7 +476,7 @@ fix_repo_update(newlib)
 # Using gcc-base doesn't work since is missing some headers.
 if(CMAKE_TOOLCHAIN_FILE)
     ExternalProject_add(gcc-complete
-        DEPENDS gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix}
+        DEPENDS newlib gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix}
         URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2
         URL_HASH ${GCC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
