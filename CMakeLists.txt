@@ -75,13 +75,15 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         # Use the host triplet when crosscompiling
         set(toolchain_host ${host_native})
         set(toolchain_cmake_args -DCMAKE_TOOLCHAIN_FILE=${toolchain_file})
-        # Workaround for libelf configure step (doesn't detect the compiler)
+        # Workaround for libelf configure step (doesn't detect the toolchain)
         set(cc_compiler "${host_native}-gcc")
+        set(ranlib "${host_native}-ranlib")
     else()
         # Use the same host triplet as the build env
         set(toolchain_host ${build_native})
-        # Use the default compiler
+        # Use the default toolchain
         set(cc_compiler "gcc")
+        set(ranlib "ranlib")
     endif()
 
     set(suffix "_${toolchain_suffix}")
@@ -133,7 +135,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL_HASH SHA256=591a9b4ec81c1f2042a97aa60564e0cb79d041c52faa7416acb38bc95bd2c76d
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libelf.patch
-        CONFIGURE_COMMAND CC=${cc_compiler} ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND CC=${cc_compiler} RANLIB=${ranlib} ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
