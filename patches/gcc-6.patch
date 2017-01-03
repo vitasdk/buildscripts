@@ -24,3 +24,44 @@ diff -ru a/src/gcc/gcc/gcc.c b/src/gcc/gcc/gcc.c
  #endif
  
  /* When using -fsplit-stack we need to wrap pthread_create, in order
+ 
+diff --ru a/src/gcc/libstdc++-v3/src/c++11/random.cc b/src/gcc/libstdc++-v3/src/c++11/random.cc
+--- a/src/gcc/libstdc++-v3/src/c++11/random.cc
++++ b/src/gcc/libstdc++-v3/src/c++11/random.cc
+@@ -31,6 +31,10 @@
+ # include <cpuid.h>
+ #endif
+ 
++#if defined __vita__
++# include <psp2/kernel/rng.h>
++#endif
++
+ #include <cerrno>
+ #include <cstdio>
+ 
+@@ -95,6 +99,9 @@ namespace std _GLIBCXX_VISIBILITY(default)
+ 		return;
+ 	      }
+ 	  }
++#elif defined __vita__
++	_M_file = nullptr;
++	return;
+ #endif
+ 
+ 	fname = "/dev/urandom";
+@@ -133,6 +140,15 @@ namespace std _GLIBCXX_VISIBILITY(default)
+     result_type __ret;
+     void* p = &__ret;
+     size_t n = sizeof(result_type);
++
++#if defined __vita__
++	if (!_M_file)
++	{
++		sceKernelGetRandomNumber(p, n);
++		return __ret;
++	}
++#endif
++
+ #ifdef _GLIBCXX_HAVE_UNISTD_H
+     do
+       {
