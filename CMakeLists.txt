@@ -118,6 +118,12 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         list(APPEND toolchain_cmake_args -DUSE_BUNDLED_ENDIAN_H=ON)
     endif()
 
+    if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows" AND (host_native STREQUAL build_native OR toolchain_file))
+        list(APPEND toolchain_cmake_args -DBUILD_SHARED_LIBS=ON)
+    else()
+        list(APPEND toolchain_cmake_args -DBUILD_SHARED_LIBS=OFF)
+    endif()
+
     ExternalProject_Add(libzip${suffix}
         DEPENDS zlib${suffix}
         URL https://nih.at/libzip/libzip-1.1.3.tar.gz
@@ -556,8 +562,6 @@ ExternalProject_add(gcc-final
     BUILD_COMMAND ${toolchain_tools} ${compiler_target_tools} ${wrapper_command}
     $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
     INSTALL_COMMAND $(MAKE) install
-    # Remove empty include directory in the installation directory
-    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/include
     # Remove gcc docs to reduce size
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/man
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/info
