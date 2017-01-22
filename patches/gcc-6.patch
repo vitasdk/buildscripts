@@ -65,3 +65,32 @@ diff --ru a/src/gcc/libstdc++-v3/src/c++11/random.cc b/src/gcc/libstdc++-v3/src/
  #ifdef _GLIBCXX_HAVE_UNISTD_H
      do
        {
+
+diff --ru a/src/gcc/libstdc++-v3/configure b/src/gcc/libstdc++-v3/configure
+--- a/src/gcc/libstdc++-v3/configure
++++ b/src/gcc/libstdc++-v3/configure
+@@ -28816,6 +28816,10 @@ case "${host}" in
+   arm*-*-symbianelf*)
+     # This is a freestanding configuration; there is nothing to do here.
+     ;;
++  arm-vita-eabi*)
++    $as_echo "#define _GLIBCXX_USE_RANDOM_TR1 1" >>confdefs.h
++
++    ;;
+
+   mips*-sde-elf*)
+     # These definitions are for the SDE C library rather than newlib.
+
+diff --ru a/src/gcc/libstdc++-v3/crossconfig.m4 b/src/gcc/libstdc++-v3/crossconfig.m4
+--- a/src/gcc/libstdc++-v3/crossconfig.m4
++++ b/src/gcc/libstdc++-v3/crossconfig.m4
+@@ -8,6 +8,9 @@ case "${host}" in
+   arm*-*-symbianelf*)
+     # This is a freestanding configuration; there is nothing to do here.
+     ;;
++  arm-vita-eabi*)
++    AC_DEFINE(_GLIBCXX_USE_RANDOM_TR1)
++    ;;
+
+   mips*-sde-elf*)
+     # These definitions are for the SDE C library rather than newlib.
