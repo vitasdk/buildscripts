@@ -8,8 +8,8 @@ cmake_minimum_required(VERSION 2.8.9)
 project(vitasdk)
 
 # Use the following gcc version
-set(GCC_VERSION 6.2.0)
-set(GCC_HASH SHA256=9944589fc722d3e66308c0ce5257788ebd7872982a718aa2516123940671b7c5)
+set(GCC_VERSION 6.3.0)
+set(GCC_HASH SHA256=f06ae7f3f790fbf0f018f6d40e844451e6bc3b7bc96e128e63b09825c1f8b29f)
 
 # Branches to fetch the different project targets. Can be overriden from command line.
 set(NEWLIB_TAG vita CACHE string "newlib branch name, commit id or tag")
@@ -174,8 +174,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_add(gmp${suffix}
-        URL https://gmplib.org/download/gmp/gmp-6.1.1.tar.bz2
-        URL_HASH SHA256=a8109865f2893f1373b0a8ed5ff7429de8db696fc451b1036bd7bdf95bbeffd6
+        URL https://gmplib.org/download/gmp/gmp-6.1.2.tar.bz2
+        URL_HASH SHA256=5275bb04f4863a13516b2f39392ac5e272f5e1bb8057b18aec1c9b79d73d8fb2
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND CPPFLAGS=-fexceptions ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
@@ -219,8 +219,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_add(isl${suffix}
         DEPENDS gmp${suffix}
-        URL http://isl.gforge.inria.fr/isl-0.17.1.tar.bz2
-        URL_HASH SHA256=d6307bf9a59514087abac3cbaab3d99393a0abb519354f7e7834a8c842310daa
+        URL http://isl.gforge.inria.fr/isl-0.18.tar.bz2
+        URL_HASH SHA256=6b8b0fd7f81d0a957beb3679c81bbb34ccc7568d5682844d8924424a0dadcb1b
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
@@ -268,11 +268,10 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
     fix_repo_update(vita-toolchain${suffix})
 
     ExternalProject_Add(binutils${suffix}
-        URL https://ftp.gnu.org/gnu/binutils/binutils-2.27.tar.bz2
-        URL_HASH SHA256=369737ce51587f92466041a97ab7d2358c6d9e1b6490b3940eb09fb0a9a6ac88
+        URL https://ftp.gnu.org/gnu/binutils/binutils-2.28.tar.bz2
+        URL_HASH SHA256=6297433ee120b11b4b0a1c8f3512d7d73501753142ab9e2daa13c5a3edd32a72
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils.patch
-        COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils-227.patch
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
