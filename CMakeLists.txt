@@ -126,8 +126,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_Add(libzip${suffix}
         DEPENDS zlib${suffix}
-        URL https://nih.at/libzip/libzip-1.1.3.tar.gz
-        URL_HASH SHA256=1faa5a524dd4a12c43b6344e618edce1bf8050dfdb9d0f73f3cc826929a002b0
+        URL https://github.com/nih-at/libzip/archive/rel-1-1-3.tar.gz
+        URL_HASH SHA256=418d187b7e13c35d904c90f6b069486c5b99e2f18c8480b2732e1d8fe0380998
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libzip.patch
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${toolchain_deps_dir}
