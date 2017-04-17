@@ -109,6 +109,15 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
         # Tell libzip to use zlib static library (only on windows)
         set(libzip_configure -DCMAKE_C_FLAGS=-DZIP_STATIC)
+    else()
+        ExternalProject_Add_Step(zlib${suffix}
+            delete_shared
+            DEPENDEES install
+            COMMAND ${CMAKE_COMMAND} -E remove
+            ${toolchain_deps_dir}/lib/libz.so
+            ${toolchain_deps_dir}/lib/libz.so.1
+            COMMENT "Delete shared libraries, if present"
+            )
     endif()
 
     # Different configurations for the unix/windows builds of the toolchain
