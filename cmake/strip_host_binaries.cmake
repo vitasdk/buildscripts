@@ -1,6 +1,6 @@
 if(NOT WIN32)
     # use an alternative perms format for find in OSX.
-    if(${HOST_SYSTEM_NAME} STREQUAL "Darwin")
+    if(${HOST_SYSTEM_NAME} STREQUAL "Darwin" OR ${HOST_SYSTEM_NAME} STREQUAL "FreeBSD")
         set(find_perms "+u=x,g=x,o=x")
     else()
         set(find_perms "/u=x,g=x,o=x")
