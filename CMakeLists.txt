@@ -8,8 +8,8 @@ cmake_minimum_required(VERSION 2.8.9)
 project(vitasdk)
 
 # Use the following gcc version
-set(GCC_VERSION 6.3.0)
-set(GCC_HASH SHA256=f06ae7f3f790fbf0f018f6d40e844451e6bc3b7bc96e128e63b09825c1f8b29f)
+set(GCC_VERSION 7.1.0)
+set(GCC_HASH SHA256=8a8136c235f64c6fef69cac0d73a46a1a09bb250776a050aec8f9fc880bebc17)
 
 # Branches to fetch the different project targets. Can be overriden from command line.
 set(NEWLIB_TAG vita CACHE string "newlib branch name, commit id or tag")
@@ -135,8 +135,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_Add(libzip${suffix}
         DEPENDS zlib${suffix}
-        URL https://github.com/devnoname120/libzip/releases/download/1.1.3/libzip-1.1.3.tar.gz
-        URL_HASH SHA256=1faa5a524dd4a12c43b6344e618edce1bf8050dfdb9d0f73f3cc826929a002b0
+        URL https://github.com/devnoname120/libzip/releases/download/1.2.0/libzip-1.2.0.tar.gz
+        URL_HASH SHA256=6cf9840e427db96ebf3936665430bab204c9ebbd0120c326459077ed9c907d9f
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libzip.patch
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${toolchain_deps_dir}
@@ -174,7 +174,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_add(gmp${suffix}
-        URL https://gmplib.org/download/gmp/gmp-6.1.2.tar.bz2
+        URL http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.bz2
         URL_HASH SHA256=5275bb04f4863a13516b2f39392ac5e272f5e1bb8057b18aec1c9b79d73d8fb2
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND CPPFLAGS=-fexceptions ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
