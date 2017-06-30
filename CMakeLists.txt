@@ -3,13 +3,13 @@
 # Distributed under the MIT License (http://opensource.org/licenses/MIT)
 #
 
-cmake_minimum_required(VERSION 2.8.9)
+cmake_minimum_required(VERSION 3.2.0)
 
 project(vitasdk)
 
 # Use the following gcc version
-set(GCC_VERSION 6.2.0)
-set(GCC_HASH SHA256=9944589fc722d3e66308c0ce5257788ebd7872982a718aa2516123940671b7c5)
+set(GCC_VERSION 7.1.0)
+set(GCC_HASH SHA256=8a8136c235f64c6fef69cac0d73a46a1a09bb250776a050aec8f9fc880bebc17)
 
 # Branches to fetch the different project targets. Can be overriden from command line.
 set(NEWLIB_TAG vita CACHE string "newlib branch name, commit id or tag")
@@ -21,10 +21,8 @@ set(PTHREAD_TAG master CACHE string "pthread-embedded branch name, commit id or 
 # Location to save the downloaded tarballs. Can be overriden from command line.
 set(DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/downloads CACHE PATH "Default download path for tarballs")
 
-if("${CMAKE_VERSION}" VERSION_GREATER 3.2.0)
-    set(OFFLINE YES CACHE BOOL "Check repo updates")
-    set(UPDATE_DISCONNECTED_SUPPORT UPDATE_DISCONNECTED ${OFFLINE})
-endif()
+set(OFFLINE YES CACHE BOOL "Check repo updates")
+set(UPDATE_DISCONNECTED_SUPPORT UPDATE_DISCONNECTED ${OFFLINE})
 
 if("${CMAKE_VERSION}" VERSION_GREATER 3.6.0)
     set(GIT_SHALLOW_SUPPORT GIT_SHALLOW 1)
@@ -139,8 +137,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_Add(libzip${suffix}
         DEPENDS zlib${suffix}
-        URL https://github.com/devnoname120/libzip/releases/download/1.1.3/libzip-1.1.3.tar.gz
-        URL_HASH SHA256=1faa5a524dd4a12c43b6344e618edce1bf8050dfdb9d0f73f3cc826929a002b0
+        URL https://github.com/devnoname120/libzip/releases/download/1.2.0/libzip-1.2.0.tar.gz
+        URL_HASH SHA256=6cf9840e427db96ebf3936665430bab204c9ebbd0120c326459077ed9c907d9f
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libzip.patch
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${toolchain_deps_dir}
@@ -178,8 +176,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_add(gmp${suffix}
-        URL https://gmplib.org/download/gmp/gmp-6.1.1.tar.bz2
-        URL_HASH SHA256=a8109865f2893f1373b0a8ed5ff7429de8db696fc451b1036bd7bdf95bbeffd6
+        URL http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.bz2
+        URL_HASH SHA256=5275bb04f4863a13516b2f39392ac5e272f5e1bb8057b18aec1c9b79d73d8fb2
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND CPPFLAGS=-fexceptions ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
@@ -223,8 +221,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_add(isl${suffix}
         DEPENDS gmp${suffix}
-        URL http://isl.gforge.inria.fr/isl-0.17.1.tar.bz2
-        URL_HASH SHA256=d6307bf9a59514087abac3cbaab3d99393a0abb519354f7e7834a8c842310daa
+        URL http://isl.gforge.inria.fr/isl-0.18.tar.bz2
+        URL_HASH SHA256=6b8b0fd7f81d0a957beb3679c81bbb34ccc7568d5682844d8924424a0dadcb1b
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
@@ -236,8 +234,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_add(expat${suffix}
-        URL http://downloads.sourceforge.net/sourceforge/expat/expat-2.2.0.tar.bz2
-        URL_HASH SHA256=d9e50ff2d19b3538bd2127902a89987474e1a4db8e43a66a4d1a712ab9a504ff
+        URL http://downloads.sourceforge.net/sourceforge/expat/expat-2.2.2.tar.bz2
+        URL_HASH SHA256=4376911fcf81a23ebd821bbabc26fd933f3ac74833f74924342c29aad2c86046
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
@@ -273,11 +271,10 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
     fix_repo_update(vita-toolchain${suffix})
 
     ExternalProject_Add(binutils${suffix}
-        URL https://ftp.gnu.org/gnu/binutils/binutils-2.27.tar.bz2
-        URL_HASH SHA256=369737ce51587f92466041a97ab7d2358c6d9e1b6490b3940eb09fb0a9a6ac88
+        URL https://ftp.gnu.org/gnu/binutils/binutils-2.28.tar.bz2
+        URL_HASH SHA256=6297433ee120b11b4b0a1c8f3512d7d73501753142ab9e2daa13c5a3edd32a72
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils.patch
-        COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils-227.patch
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
