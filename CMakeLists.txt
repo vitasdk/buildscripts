@@ -26,6 +26,10 @@ if("${CMAKE_VERSION}" VERSION_GREATER 3.2.0)
     set(UPDATE_DISCONNECTED_SUPPORT UPDATE_DISCONNECTED ${OFFLINE})
 endif()
 
+if("${CMAKE_VERSION}" VERSION_GREATER 3.6.0)
+    set(GIT_SHALLOW_SUPPORT GIT_SHALLOW 1)
+endif()
+
 # Installation directory. Can be overriden from command line.
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/vitasdk CACHE PATH "Default install path" FORCE)
@@ -247,6 +251,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         DEPENDS libelf${suffix} zlib${suffix} libzip${suffix} libyaml${suffix}
         GIT_REPOSITORY https://github.com/vitasdk/vita-toolchain
         GIT_TAG ${TOOLCHAIN_TAG}
+        ${GIT_SHALLOW_SUPPORT}
         # Set prefix to "/" here to be able to install twice
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=/ ${toolchain_cmake_args}
         -Dlibelf_INCLUDE_DIR=${toolchain_deps_dir}/include
@@ -438,6 +443,7 @@ ExternalProject_add(vita-headers
     DEPENDS binutils_${build_suffix} vita-toolchain_${build_suffix}
     GIT_REPOSITORY https://github.com/vitasdk/vita-headers
     GIT_TAG ${HEADERS_TAG}
+    ${GIT_SHALLOW_SUPPORT}
     # TODO: vita-libs-gen should generate a proper makefile so this can be simplified
     CONFIGURE_COMMAND ${vita_libs_gen_command} <SOURCE_DIR>/db.yml <BINARY_DIR>
     BUILD_COMMAND $(MAKE) ARCH=${binutils_prefix}
@@ -465,6 +471,7 @@ ExternalProject_Add(newlib
     DEPENDS binutils_${target_suffix} gcc-base vita-headers
     GIT_REPOSITORY https://github.com/vitasdk/newlib
     GIT_TAG ${NEWLIB_TAG}
+    ${GIT_SHALLOW_SUPPORT}
     # Pass the compiler_target_tools here so newlib picks up the fresh gcc-base compiler
     CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
     ${wrapper_command} <SOURCE_DIR>/configure "CFLAGS_FOR_TARGET=-g -O2 -ffunction-sections -fdata-sections"
@@ -530,6 +537,7 @@ ExternalProject_Add(pthread-embedded
     DEPENDS binutils_${target_suffix} gcc-base newlib vita-headers
     GIT_REPOSITORY https://github.com/vitasdk/pthread-embedded
     GIT_TAG ${PTHREAD_TAG}
+    ${GIT_SHALLOW_SUPPORT}
     # TODO: this project should have a proper makefile to support out-of-source builds
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
@@ -582,6 +590,7 @@ ExternalProject_add(gcc-final
 ExternalProject_Add(samples
     GIT_REPOSITORY https://github.com/vitasdk/samples
     GIT_TAG ${SAMPLES_TAG}
+    ${GIT_SHALLOW_SUPPORT}
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
