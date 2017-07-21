@@ -595,6 +595,16 @@ ExternalProject_Add(samples
 
 fix_repo_update(samples)
 
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+    getgcclib(libwinpthread-1.dll WINPTHREAD_DLL)
+    if(WINPTHREAD_DLL)
+        add_custom_command(TARGET gcc-final POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy ${WINPTHREAD_DLL} ${CMAKE_INSTALL_PREFIX}/bin/
+            COMMENT "Copying libwinpthread-1.dll"
+            )
+    endif(WINPTHREAD_DLL)
+endif()
+
 # Strip toolchain binaries to reduce filesize
 add_custom_command(TARGET gcc-final POST_BUILD
     COMMAND ${CMAKE_COMMAND} -DHOST_SYSTEM_NAME=${CMAKE_HOST_SYSTEM_NAME}

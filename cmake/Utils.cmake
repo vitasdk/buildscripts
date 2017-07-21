@@ -28,6 +28,20 @@ function(load_flags flags)
     set(${flags} ${_flags} PARENT_SCOPE)
 endfunction()
 
+# Finds a gcc library and save the absolute path to varname
+function(getgcclib libname varname)
+    execute_process(COMMAND ${CMAKE_CXX_COMPILER} -print-prog-name=${libname} OUTPUT_VARIABLE filename OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(NOT EXISTS "${filename}")
+        execute_process(COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=${libname} OUTPUT_VARIABLE filename OUTPUT_STRIP_TRAILING_WHITESPACE)
+    endif()
+    if(filename)
+        get_filename_component(filename ${filename} ABSOLUTE)
+    endif()
+    if(EXISTS "${filename}")
+        set(${varname} ${filename} PARENT_SCOPE)
+    endif()
+endfunction()
+
 # Workaround for: ExternalProject: detect if SCM source changed before triggering subsequent steps.
 # https://gitlab.kitware.com/cmake/cmake/issues/15914
 function(fix_repo_update name)
