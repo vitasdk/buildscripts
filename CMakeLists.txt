@@ -91,8 +91,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
     set(suffix "_${toolchain_suffix}")
 
     ExternalProject_Add(zlib${suffix}
-        URL http://downloads.sourceforge.net/project/libpng/zlib/1.2.8/zlib-1.2.8.tar.gz
-        URL_HASH SHA256=36658cb768a54c1d4dec43c3116c27ed893e88b02ecfcb44f2166f9c0b7f2a0d
+        URL http://downloads.sourceforge.net/project/libpng/zlib/1.2.11/zlib-1.2.11.tar.xz
+        URL_HASH SHA256=4ff941449631ace0d4d203e3483be9dbc9da454084111f97ea0a2114e19bf066
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${toolchain_deps_dir}
         ${toolchain_cmake_args}
@@ -234,8 +234,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_add(expat${suffix}
-        URL http://downloads.sourceforge.net/sourceforge/expat/expat-2.2.2.tar.bz2
-        URL_HASH SHA256=4376911fcf81a23ebd821bbabc26fd933f3ac74833f74924342c29aad2c86046
+        URL http://downloads.sourceforge.net/sourceforge/expat/expat-2.2.4.tar.bz2
+        URL_HASH SHA256=03ad85db965f8ab2d27328abcf0bc5571af6ec0a414874b2066ee3fdd372019e
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
