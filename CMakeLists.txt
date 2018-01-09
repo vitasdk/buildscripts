@@ -602,6 +602,36 @@ ExternalProject_Add(samples
 
 fix_repo_update(samples)
 
+ExternalProject_Add(vdpm
+    GIT_REPOSITORY https://github.com/vitasdk/vdpm.git
+    GIT_TAG master
+    ${GIT_SHALLOW_SUPPORT}
+    BUILD_IN_SOURCE 1
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND ""
+    INSTALL_COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/bin/
+    COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/vdpm ${CMAKE_INSTALL_PREFIX}/bin/
+    ${UPDATE_DISCONNECTED_SUPPORT}
+    )
+
+fix_repo_update(vdpm)
+
+ExternalProject_Add(vita-makepkg
+    GIT_REPOSITORY https://github.com/vitasdk/vita-makepkg.git
+    GIT_TAG master
+    ${GIT_SHALLOW_SUPPORT}
+    BUILD_IN_SOURCE 1
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND ""
+    INSTALL_COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/bin/
+    COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/libmakepkg ${CMAKE_INSTALL_PREFIX}/bin/libmakepkg
+    COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/vita-makepkg ${CMAKE_INSTALL_PREFIX}/bin/
+    COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/makepkg.conf.sample ${CMAKE_INSTALL_PREFIX}/bin/makepkg.conf
+    ${UPDATE_DISCONNECTED_SUPPORT}
+    )
+
+fix_repo_update(vita-makepkg)
+
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     getgcclib(libwinpthread-1.dll WINPTHREAD_DLL)
     if(WINPTHREAD_DLL)
@@ -654,7 +684,7 @@ add_custom_command(OUTPUT ${version_info_file}
 
 add_custom_command(OUTPUT "vitasdk-${host_native}-${build_date}.tar.bz2"
     COMMAND ${CMAKE_COMMAND} -E tar "cfvj" "vitasdk-${host_native}-${build_date}.tar.bz2" "${CMAKE_INSTALL_PREFIX}"
-    DEPENDS vita-toolchain_${target_suffix} binutils_${target_suffix} vita-headers newlib pthread-embedded samples
+    DEPENDS vita-toolchain_${target_suffix} binutils_${target_suffix} vita-headers newlib pthread-embedded samples vdpm vita-makepkg
     DEPENDS gcc-final ${version_info_file}
     COMMENT "Creating vitasdk-${host_os}-${build_date}.tar.bz2"
     )
