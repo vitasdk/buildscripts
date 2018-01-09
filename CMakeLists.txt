@@ -17,6 +17,8 @@ set(SAMPLES_TAG master CACHE string "samples branch name, commit id or tag")
 set(HEADERS_TAG master CACHE string "vita-headers branch name, commit id or tag")
 set(TOOLCHAIN_TAG master CACHE string "vita-toolchain branch name, commit id or tag")
 set(PTHREAD_TAG master CACHE string "pthread-embedded branch name, commit id or tag")
+set(VDPM_TAG master CACHE string "vdpm branch name, commit id or tag")
+set(VITA_MAKEPKG_TAG master CACHE string "vita-makepkg branch name, commit id or tag")
 
 # Location to save the downloaded tarballs. Can be overriden from command line.
 set(DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/downloads CACHE PATH "Default download path for tarballs")
@@ -604,13 +606,15 @@ fix_repo_update(samples)
 
 ExternalProject_Add(vdpm
     GIT_REPOSITORY https://github.com/vitasdk/vdpm.git
-    GIT_TAG master
+    GIT_TAG ${VDPM_TAG}
     ${GIT_SHALLOW_SUPPORT}
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
     INSTALL_COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/bin/
+    COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include ${CMAKE_INSTALL_PREFIX}/bin/include
     COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/vdpm ${CMAKE_INSTALL_PREFIX}/bin/
+    COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/vitasdk-update ${CMAKE_INSTALL_PREFIX}/bin/
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
@@ -618,7 +622,7 @@ fix_repo_update(vdpm)
 
 ExternalProject_Add(vita-makepkg
     GIT_REPOSITORY https://github.com/vitasdk/vita-makepkg.git
-    GIT_TAG master
+    GIT_TAG ${VITA_MAKEPKG_TAG}
     ${GIT_SHALLOW_SUPPORT}
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
