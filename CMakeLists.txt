@@ -208,7 +208,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_add(mpc${suffix}
         DEPENDS gmp${suffix} mpfr${suffix}
-        URL http://www.multiprecision.org/mpc/download/mpc-1.0.3.tar.gz
+        URL https://github.com/vitasdk/artifacts/releases/download/mpc-1.0.3/mpc-1.0.3.tar.gz
         URL_HASH SHA256=617decc6ea09889fb08ede330917a00b16809b8db88c29c31bfbb49cbf88ecc3
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
