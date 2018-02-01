@@ -8,13 +8,13 @@ cmake_minimum_required(VERSION 3.2.0)
 project(vitasdk)
 
 # Use the following gcc version
-set(GCC_VERSION 7.2.0)
-set(GCC_HASH SHA256=1cf7adf8ff4b5aa49041c8734bbcf1ad18cc4c94d0029aae0f4e48841088479a)
+set(GCC_VERSION 7.3.0)
+set(GCC_HASH SHA256=832ca6ae04636adbb430e865a1451adf6979ab44ca1c8374f61fba65645ce15c)
 
 set(ZLIB_VERSION 1.2.11)
 set(ZLIB_HASH SHA256=4ff941449631ace0d4d203e3483be9dbc9da454084111f97ea0a2114e19bf066)
 
-set(LIBZIP_VERSION 1.2.0)
+set(LIBZIP_VERSION 1.2.0) # Outdated
 set(LIBZIP_HASH SHA256=6cf9840e427db96ebf3936665430bab204c9ebbd0120c326459077ed9c907d9f)
 
 set(LIBELF_VERSION 0.8.13)
@@ -26,20 +26,20 @@ set(LIBYAML_HASH SHA256=8088e457264a98ba451a90b8661fcb4f9d6f478f7265d48322a196ce
 set(GMP_VERSION 6.1.2)
 set(GMP_HASH SHA256=5275bb04f4863a13516b2f39392ac5e272f5e1bb8057b18aec1c9b79d73d8fb2)
 
-set(MPFR_VERSION 3.1.5)
-set(MPFR_HASH SHA256=ca498c1c7a74dd37a576f353312d1e68d490978de4395fa28f1cbd46a364e658)
+set(MPFR_VERSION 4.0.0)
+set(MPFR_HASH SHA256=6aa31fbf3bd1f9f95bcfa241590a9d11cb0f874e2bb93b99c9e2de8eaea6d5fd)
 
-set(MPC_VERSION 1.0.3)
-set(MPC_HASH SHA256=617decc6ea09889fb08ede330917a00b16809b8db88c29c31bfbb49cbf88ecc3)
+set(MPC_VERSION 1.1.0)
+set(MPC_HASH SHA256=6985c538143c1208dcb1ac42cedad6ff52e267b47e5f970183a3e75125b43c2e)
 
 set(ISL_VERSION 0.18)
 set(ISL_HASH SHA256=6b8b0fd7f81d0a957beb3679c81bbb34ccc7568d5682844d8924424a0dadcb1b)
 
-set(EXPAT_VERSION 2.2.4)
-set(EXPAT_HASH SHA256=03ad85db965f8ab2d27328abcf0bc5571af6ec0a414874b2066ee3fdd372019e)
+set(EXPAT_VERSION 2.2.5)
+set(EXPAT_HASH SHA256=d9dc32efba7e74f788fcc4f212a43216fc37cf5f23f4c2339664d473353aedf6)
 
-set(BINUTILS_VERSION 2.29)
-set(BINUTILS_HASH SHA256=0b871e271c4c620444f8264f72143b4d224aa305306d85dd77ab8dce785b1e85)
+set(BINUTILS_VERSION 2.30)
+set(BINUTILS_HASH SHA256=6e46b8aeae2f727a36f0bd9505e405768a72218f1796f0d09757d45209871ae6)
 
 # Branches to fetch the different project targets. Can be overriden from command line.
 set(NEWLIB_TAG vita CACHE string "newlib branch name, commit id or tag")
@@ -238,7 +238,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_add(mpc${suffix}
         DEPENDS gmp${suffix} mpfr${suffix}
-        URL https://github.com/vitasdk/artifacts/releases/download/mpc-${MPC_VERSION}/mpc-${MPC_VERSION}.tar.gz
+        URL https://ftp.gnu.org/gnu/mpc/mpc-${MPC_VERSION}.tar.gz
         URL_HASH ${MPC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
