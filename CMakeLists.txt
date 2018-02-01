@@ -11,6 +11,36 @@ project(vitasdk)
 set(GCC_VERSION 7.2.0)
 set(GCC_HASH SHA256=1cf7adf8ff4b5aa49041c8734bbcf1ad18cc4c94d0029aae0f4e48841088479a)
 
+set(ZLIB_VERSION 1.2.11)
+set(ZLIB_HASH SHA256=4ff941449631ace0d4d203e3483be9dbc9da454084111f97ea0a2114e19bf066)
+
+set(LIBZIP_VERSION 1.2.0)
+set(LIBZIP_HASH SHA256=6cf9840e427db96ebf3936665430bab204c9ebbd0120c326459077ed9c907d9f)
+
+set(LIBELF_VERSION 0.8.13)
+set(LIBELF_HASH SHA256=591a9b4ec81c1f2042a97aa60564e0cb79d041c52faa7416acb38bc95bd2c76d)
+
+set(LIBYAML_VERSION 0.1.7)
+set(LIBYAML_HASH SHA256=8088e457264a98ba451a90b8661fcb4f9d6f478f7265d48322a196cec2480729)
+
+set(GMP_VERSION 6.1.2)
+set(GMP_HASH SHA256=5275bb04f4863a13516b2f39392ac5e272f5e1bb8057b18aec1c9b79d73d8fb2)
+
+set(MPFR_VERSION 3.1.5)
+set(MPFR_HASH SHA256=ca498c1c7a74dd37a576f353312d1e68d490978de4395fa28f1cbd46a364e658)
+
+set(MPC_VERSION 1.0.3)
+set(MPC_HASH SHA256=617decc6ea09889fb08ede330917a00b16809b8db88c29c31bfbb49cbf88ecc3)
+
+set(ISL_VERSION 0.18)
+set(ISL_HASH SHA256=6b8b0fd7f81d0a957beb3679c81bbb34ccc7568d5682844d8924424a0dadcb1b)
+
+set(EXPAT_VERSION 2.2.4)
+set(EXPAT_HASH SHA256=03ad85db965f8ab2d27328abcf0bc5571af6ec0a414874b2066ee3fdd372019e)
+
+set(BINUTILS_VERSION 2.29)
+set(BINUTILS_HASH SHA256=0b871e271c4c620444f8264f72143b4d224aa305306d85dd77ab8dce785b1e85)
+
 # Branches to fetch the different project targets. Can be overriden from command line.
 set(NEWLIB_TAG vita CACHE string "newlib branch name, commit id or tag")
 set(SAMPLES_TAG master CACHE string "samples branch name, commit id or tag")
@@ -93,8 +123,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
     set(suffix "_${toolchain_suffix}")
 
     ExternalProject_Add(zlib${suffix}
-        URL http://downloads.sourceforge.net/project/libpng/zlib/1.2.11/zlib-1.2.11.tar.xz
-        URL_HASH SHA256=4ff941449631ace0d4d203e3483be9dbc9da454084111f97ea0a2114e19bf066
+        URL http://downloads.sourceforge.net/project/libpng/zlib/${ZLIB_VERSION}/zlib-1.2.11.tar.xz
+        URL_HASH ${ZLIB_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/zlib.patch
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${toolchain_deps_dir}
@@ -140,8 +170,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_Add(libzip${suffix}
         DEPENDS zlib${suffix}
-        URL https://github.com/devnoname120/libzip/releases/download/1.2.0/libzip-1.2.0.tar.gz
-        URL_HASH SHA256=6cf9840e427db96ebf3936665430bab204c9ebbd0120c326459077ed9c907d9f
+        URL https://github.com/devnoname120/libzip/releases/download/${LIBZIP_VERSION}/libzip-${LIBZIP_VERSION}.tar.gz
+        URL_HASH ${LIBZIP_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libzip.patch
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${toolchain_deps_dir}
@@ -151,8 +181,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_add(libelf${suffix}
-        URL http://www.mr511.de/software/libelf-0.8.13.tar.gz
-        URL_HASH SHA256=591a9b4ec81c1f2042a97aa60564e0cb79d041c52faa7416acb38bc95bd2c76d
+        URL http://www.mr511.de/software/libelf-${LIBELF_VERSION}.tar.gz
+        URL_HASH ${LIBELF_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libelf.patch
         CONFIGURE_COMMAND CC=${cc_compiler} RANLIB=${ranlib} ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
@@ -165,8 +195,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_add(libyaml${suffix}
-        URL http://pyyaml.org/download/libyaml/yaml-0.1.7.tar.gz
-        URL_HASH SHA256=8088e457264a98ba451a90b8661fcb4f9d6f478f7265d48322a196cec2480729
+        URL http://pyyaml.org/download/libyaml/yaml-${LIBYAML_VERSION}.tar.gz
+        URL_HASH ${LIBYAML_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
@@ -179,8 +209,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_add(gmp${suffix}
-        URL http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.bz2
-        URL_HASH SHA256=5275bb04f4863a13516b2f39392ac5e272f5e1bb8057b18aec1c9b79d73d8fb2
+        URL http://ftp.gnu.org/gnu/gmp/gmp-${GMP_VERSION}.tar.bz2
+        URL_HASH ${GMP_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND CPPFLAGS=-fexceptions ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
@@ -194,8 +224,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_add(mpfr${suffix}
         DEPENDS gmp${suffix}
-        URL http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.5.tar.bz2
-        URL_HASH SHA256=ca498c1c7a74dd37a576f353312d1e68d490978de4395fa28f1cbd46a364e658
+        URL http://ftp.gnu.org/gnu/mpfr/mpfr-${MPFR_VERSION}.tar.bz2
+        URL_HASH ${MPFR_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
@@ -208,8 +238,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_add(mpc${suffix}
         DEPENDS gmp${suffix} mpfr${suffix}
-        URL https://github.com/vitasdk/artifacts/releases/download/mpc-1.0.3/mpc-1.0.3.tar.gz
-        URL_HASH SHA256=617decc6ea09889fb08ede330917a00b16809b8db88c29c31bfbb49cbf88ecc3
+        URL https://github.com/vitasdk/artifacts/releases/download/mpc-${MPC_VERSION}/mpc-${MPC_VERSION}.tar.gz
+        URL_HASH ${MPC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
@@ -224,8 +254,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_add(isl${suffix}
         DEPENDS gmp${suffix}
-        URL http://isl.gforge.inria.fr/isl-0.18.tar.bz2
-        URL_HASH SHA256=6b8b0fd7f81d0a957beb3679c81bbb34ccc7568d5682844d8924424a0dadcb1b
+        URL http://isl.gforge.inria.fr/isl-${ISL_VERSION}.tar.bz2
+        URL_HASH ${ISL_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
@@ -237,8 +267,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_add(expat${suffix}
-        URL http://downloads.sourceforge.net/sourceforge/expat/expat-2.2.4.tar.bz2
-        URL_HASH SHA256=03ad85db965f8ab2d27328abcf0bc5571af6ec0a414874b2066ee3fdd372019e
+        URL http://downloads.sourceforge.net/sourceforge/expat/expat-${EXPAT_VERSION}.tar.bz2
+        URL_HASH ${EXPAT_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
@@ -274,8 +304,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
     fix_repo_update(vita-toolchain${suffix})
 
     ExternalProject_Add(binutils${suffix}
-        URL https://ftp.gnu.org/gnu/binutils/binutils-2.29.tar.xz
-        URL_HASH SHA256=0b871e271c4c620444f8264f72143b4d224aa305306d85dd77ab8dce785b1e85
+        URL https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VERSION}.tar.xz
+        URL_HASH ${BINUTILS_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils.patch
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
