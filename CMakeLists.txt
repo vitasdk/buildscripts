@@ -405,9 +405,12 @@ list(APPEND pthread_tools
     AR=${binutils_prefix}-ar
     )
 
+# Prevent GCC wrapping system includes in extern "C" (modern systems should define this)
+set(extra_cflags -DNO_IMPLICIT_EXTERN_C)
+
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" AND ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     # GCC on OSX (Clang in diguise) needs more bracket nesting depth to compile gcc
-    set(extra_cflags -fbracket-depth=512)
+	list(APPEND extra_cflags -fbracket-depth=512)
 endif()
 
 # Common gcc configure options
