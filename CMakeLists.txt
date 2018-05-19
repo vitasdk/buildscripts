@@ -8,8 +8,8 @@ cmake_minimum_required(VERSION 3.2.0)
 project(vitasdk)
 
 # Use the following gcc version
-set(GCC_VERSION 7.3.0)
-set(GCC_HASH SHA256=832ca6ae04636adbb430e865a1451adf6979ab44ca1c8374f61fba65645ce15c)
+set(GCC_VERSION 8.1.0)
+set(GCC_HASH SHA256=1d1866f992626e61349a1ccd0b8d5253816222cdc13390dcfaa74b093aa2b153)
 
 set(ZLIB_VERSION 1.2.11)
 set(ZLIB_HASH SHA256=4ff941449631ace0d4d203e3483be9dbc9da454084111f97ea0a2114e19bf066)
@@ -26,14 +26,14 @@ set(LIBYAML_HASH SHA256=8088e457264a98ba451a90b8661fcb4f9d6f478f7265d48322a196ce
 set(GMP_VERSION 6.1.2)
 set(GMP_HASH SHA256=5275bb04f4863a13516b2f39392ac5e272f5e1bb8057b18aec1c9b79d73d8fb2)
 
-set(MPFR_VERSION 4.0.0)
-set(MPFR_HASH SHA256=6aa31fbf3bd1f9f95bcfa241590a9d11cb0f874e2bb93b99c9e2de8eaea6d5fd)
+set(MPFR_VERSION 4.0.1)
+set(MPFR_HASH SHA256=67874a60826303ee2fb6affc6dc0ddd3e749e9bfcb4c8655e3953d0458a6e16e)
 
 set(MPC_VERSION 1.1.0)
 set(MPC_HASH SHA256=6985c538143c1208dcb1ac42cedad6ff52e267b47e5f970183a3e75125b43c2e)
 
-set(ISL_VERSION 0.18)
-set(ISL_HASH SHA256=6b8b0fd7f81d0a957beb3679c81bbb34ccc7568d5682844d8924424a0dadcb1b)
+set(ISL_VERSION 0.19)
+set(ISL_HASH SHA256=6d6c1aa00e2a6dfc509fa46d9a9dbe93af0c451e196a670577a148feecf6b8a5)
 
 set(EXPAT_VERSION 2.2.5)
 set(EXPAT_HASH SHA256=d9dc32efba7e74f788fcc4f212a43216fc37cf5f23f4c2339664d473353aedf6)
@@ -224,7 +224,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_add(mpfr${suffix}
         DEPENDS gmp${suffix}
-        URL http://ftp.gnu.org/gnu/mpfr/mpfr-${MPFR_VERSION}.tar.bz2
+        URL http://ftp.gnu.org/gnu/mpfr/mpfr-${MPFR_VERSION}.tar.xz
         URL_HASH ${MPFR_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
@@ -254,7 +254,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_add(isl${suffix}
         DEPENDS gmp${suffix}
-        URL http://isl.gforge.inria.fr/isl-${ISL_VERSION}.tar.bz2
+        URL http://isl.gforge.inria.fr/isl-${ISL_VERSION}.tar.xz
         URL_HASH ${ISL_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
