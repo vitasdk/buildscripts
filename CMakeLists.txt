@@ -41,6 +41,9 @@ set(EXPAT_HASH SHA256=d9dc32efba7e74f788fcc4f212a43216fc37cf5f23f4c2339664d47335
 set(BINUTILS_VERSION 2.30)
 set(BINUTILS_HASH SHA256=6e46b8aeae2f727a36f0bd9505e405768a72218f1796f0d09757d45209871ae6)
 
+set(GDB_VERSION 8.2)
+set(GDB_HASH SHA256=c3a441a29c7c89720b734e5a9c6289c0a06be7e0c76ef538f7bbcef389347c39)
+
 # Branches to fetch the different project targets. Can be overriden from command line.
 set(NEWLIB_TAG vita CACHE string "newlib branch name, commit id or tag")
 set(SAMPLES_TAG master CACHE string "samples branch name, commit id or tag")
@@ -324,7 +327,22 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir}
         )
 
-    # Install binutils and vita-toolchain on CMAKE_INSTALL_PREFIX when not crosscompiling
+    ExternalProject_Add(gdb${suffix}
+        URL https://ftp.gnu.org/gnu/gdb/gdb-${GDB_VERSION}.tar.xz
+        URL_HASH ${GDB_HASH}
+        DOWNLOAD_DIR ${DOWNLOAD_DIR}
+        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        --build=${build_native}
+        --host=${toolchain_host}
+        --target=${target_arch}
+        # Set prefix to "/" here to be able to install twice
+        --prefix=/
+        --with-sysroot=${toolchain_install_dir}
+        BUILD_COMMAND $(MAKE)
+        INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir}
+        )
+
+    # Install binutils, gdb and vita-toolchain on CMAKE_INSTALL_PREFIX when not crosscompiling
     if(NOT toolchain_file AND "${host_native}" STREQUAL "${build_native}")
         ExternalProject_Add_Step(binutils${suffix}
             install_sdk
@@ -334,6 +352,13 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
             COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/man
             COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/info
             COMMENT "Installing binutils to ${CMAKE_INSTALL_PREFIX}"
+            )
+
+        ExternalProject_Add_Step(gdb${suffix}
+            install_sdk
+            DEPENDEES build
+            COMMAND $(MAKE) -C <BINARY_DIR> install DESTDIR=${CMAKE_INSTALL_PREFIX}
+            COMMENT "Installing gdb to ${CMAKE_INSTALL_PREFIX}"
             )
 
         ExternalProject_Add_Step(vita-toolchain${suffix}
@@ -721,7 +746,7 @@ add_custom_command(OUTPUT ${version_info_file}
 
 add_custom_command(OUTPUT "vitasdk-${host_native}-${build_date}.tar.bz2"
     COMMAND ${CMAKE_COMMAND} -E tar "cfvj" "vitasdk-${host_native}-${build_date}.tar.bz2" "${CMAKE_INSTALL_PREFIX}"
-    DEPENDS vita-toolchain_${target_suffix} binutils_${target_suffix} vita-headers newlib pthread-embedded samples vdpm vita-makepkg
+    DEPENDS vita-toolchain_${target_suffix} binutils_${target_suffix} gdb_${target_suffix} vita-headers newlib pthread-embedded samples vdpm vita-makepkg
     DEPENDS gcc-final ${version_info_file}
     COMMENT "Creating vitasdk-${host_os}-${build_date}.tar.bz2"
     )
