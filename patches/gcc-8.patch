@@ -1,0 +1,49 @@
+diff -Nru a/src/gcc/gcc/config/arm/arm-c.c b/src/gcc/gcc/config/arm/arm-c.c
+--- a/src/gcc/gcc/config/arm/arm-c.c	2018-02-09 13:23:46.000000000 +0100
++++ b/src/gcc/gcc/config/arm/arm-c.c	2018-12-30 23:53:45.126193932 +0100
+@@ -229,6 +229,8 @@
+   builtin_assert ("cpu=arm");
+   builtin_assert ("machine=arm");
+ 
++  builtin_define ("__vita__");
++
+   arm_cpu_builtins (pfile);
+ }
+ 
+diff -Nru a/src/gcc/gcc/gcc.c b/src/gcc/gcc/gcc.c
+--- a/src/gcc/gcc/gcc.c	2018-02-09 07:44:06.000000000 +0100
++++ b/src/gcc/gcc/gcc.c	2018-12-30 23:54:38.202862228 +0100
+@@ -666,8 +666,9 @@
+ #endif
+ 
+ /* config.h can define LIB_SPEC to override the default libraries.  */
++#undef LIB_SPEC
+ #ifndef LIB_SPEC
+-#define LIB_SPEC "%{!shared:%{g*:-lg} %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}}"
++#define LIB_SPEC "%{!shared:%{g*:-lg} %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}} -lSceRtc_stub -lSceSysmem_stub -lSceKernelThreadMgr_stub -lSceKernelModulemgr_stub -lSceIofilemgr_stub -lSceProcessmgr_stub -lSceLibKernel_stub -lSceNet_stub"
+ #endif
+ 
+ /* When using -fsplit-stack we need to wrap pthread_create, in order
+diff -Nru a/src/gcc/gcc/graphite.h b/src/gcc/gcc/graphite.h
+--- a/src/gcc/gcc/graphite.h	2018-01-03 11:03:58.000000000 +0100
++++ b/src/gcc/gcc/graphite.h	2018-12-30 23:55:06.626196431 +0100
+@@ -37,6 +37,8 @@
+ #include <isl/schedule.h>
+ #include <isl/ast_build.h>
+ #include <isl/schedule_node.h>
++#include <isl/id.h>
++#include <isl/space.h>
+ 
+ typedef struct poly_dr *poly_dr_p;
+ 
+diff -Nru a/src/gcc/gcc/opts.c b/src/gcc/gcc/opts.c
+--- a/src/gcc/gcc/opts.c	2018-02-20 11:04:13.000000000 +0100
++++ b/src/gcc/gcc/opts.c	2018-12-30 23:56:04.982864878 +0100
+@@ -526,7 +526,6 @@
+ 
+     /* -O3 optimizations.  */
+     { OPT_LEVELS_3_PLUS, OPT_ftree_loop_distribute_patterns, NULL, 1 },
+-    { OPT_LEVELS_3_PLUS, OPT_ftree_loop_distribution, NULL, 1 },
+     { OPT_LEVELS_3_PLUS, OPT_floop_interchange, NULL, 1 },
+     { OPT_LEVELS_3_PLUS, OPT_fpredictive_commoning, NULL, 1 },
+     { OPT_LEVELS_3_PLUS, OPT_fsplit_paths, NULL, 1 },

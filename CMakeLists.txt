@@ -8,8 +8,8 @@ cmake_minimum_required(VERSION 3.2.0)
 project(vitasdk)
 
 # Use the following gcc version
-set(GCC_VERSION 7.3.0)
-set(GCC_HASH SHA256=832ca6ae04636adbb430e865a1451adf6979ab44ca1c8374f61fba65645ce15c)
+set(GCC_VERSION 8.2.0)
+set(GCC_HASH SHA256=196c3c04ba2613f893283977e6011b2345d1cd1af9abeac58e916b1aab3e0080)
 
 set(ZLIB_VERSION 1.2.11)
 set(ZLIB_HASH SHA256=4ff941449631ace0d4d203e3483be9dbc9da454084111f97ea0a2114e19bf066)
@@ -20,26 +20,26 @@ set(LIBZIP_HASH SHA256=6cf9840e427db96ebf3936665430bab204c9ebbd0120c326459077ed9
 set(LIBELF_VERSION 0.8.13)
 set(LIBELF_HASH SHA256=591a9b4ec81c1f2042a97aa60564e0cb79d041c52faa7416acb38bc95bd2c76d)
 
-set(LIBYAML_VERSION 0.1.7)
-set(LIBYAML_HASH SHA256=8088e457264a98ba451a90b8661fcb4f9d6f478f7265d48322a196cec2480729)
+set(LIBYAML_VERSION 0.2.1)
+set(LIBYAML_HASH SHA256=78281145641a080fb32d6e7a87b9c0664d611dcb4d542e90baf731f51cbb59cd)
 
 set(GMP_VERSION 6.1.2)
 set(GMP_HASH SHA256=5275bb04f4863a13516b2f39392ac5e272f5e1bb8057b18aec1c9b79d73d8fb2)
 
-set(MPFR_VERSION 4.0.0)
-set(MPFR_HASH SHA256=6aa31fbf3bd1f9f95bcfa241590a9d11cb0f874e2bb93b99c9e2de8eaea6d5fd)
+set(MPFR_VERSION 4.0.1)
+set(MPFR_HASH SHA256=a4d97610ba8579d380b384b225187c250ef88cfe1d5e7226b89519374209b86b)
 
 set(MPC_VERSION 1.1.0)
 set(MPC_HASH SHA256=6985c538143c1208dcb1ac42cedad6ff52e267b47e5f970183a3e75125b43c2e)
 
-set(ISL_VERSION 0.18)
-set(ISL_HASH SHA256=6b8b0fd7f81d0a957beb3679c81bbb34ccc7568d5682844d8924424a0dadcb1b)
+set(ISL_VERSION 0.20)
+set(ISL_HASH SHA256=b587e083eb65a8b394e833dea1744f21af3f0e413a448c17536b5549ae42a4c2)
 
-set(EXPAT_VERSION 2.2.5)
-set(EXPAT_HASH SHA256=d9dc32efba7e74f788fcc4f212a43216fc37cf5f23f4c2339664d473353aedf6)
+set(EXPAT_VERSION 2.2.6)
+set(EXPAT_HASH SHA256=17b43c2716d521369f82fc2dc70f359860e90fa440bea65b3b85f0b246ea81f2)
 
-set(BINUTILS_VERSION 2.30)
-set(BINUTILS_HASH SHA256=6e46b8aeae2f727a36f0bd9505e405768a72218f1796f0d09757d45209871ae6)
+set(BINUTILS_VERSION 2.31.1)
+set(BINUTILS_HASH SHA256=5d20086ecf5752cc7d9134246e9588fa201740d540f7eb84d795b1f7a93bca86)
 
 # Branches to fetch the different project targets. Can be overriden from command line.
 set(NEWLIB_TAG vita CACHE string "newlib branch name, commit id or tag")
@@ -317,6 +317,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         --with-sysroot=${toolchain_install_dir}
         --disable-nls
         --disable-werror
+        --disable-separate-code
         --enable-interwork
         --enable-plugins
         "--with-pkgversion=${pkgversion}"
@@ -446,7 +447,7 @@ ExternalProject_add(gcc-base
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
-    PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc-6.patch
+    PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc-8.patch
     CONFIGURE_COMMAND CFLAGS=${extra_cflags} CXXFLAGS=${extra_cflags} ${compiler_flags}
     ${wrapper_command} <SOURCE_DIR>/configure
     --build=${build_native}
@@ -534,7 +535,7 @@ if(CMAKE_TOOLCHAIN_FILE)
         URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
         URL_HASH ${GCC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc-6.patch
+        PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc-8.patch
         CONFIGURE_COMMAND CFLAGS=${extra_cflags} CXXFLAGS=${extra_cflags} ${compiler_flags} ${toolchain_tools}
         ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
@@ -587,7 +588,7 @@ ExternalProject_add(gcc-final
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
-    PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc-6.patch
+    PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc-8.patch
     CONFIGURE_COMMAND CFLAGS=${extra_cflags}
     CXXFLAGS=${extra_cflags} ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
     ${wrapper_command} <SOURCE_DIR>/configure
