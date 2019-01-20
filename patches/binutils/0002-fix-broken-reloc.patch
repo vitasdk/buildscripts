@@ -1,0 +1,11 @@
+diff -urN binutils-2.31.1.orig/bfd/elf32-arm.c binutils-2.31.1/bfd/elf32-arm.c
+--- binutils-2.31.1.orig/bfd/elf32-arm.c	2018-07-10 16:12:05.000000000 +0900
++++ binutils-2.31.1/bfd/elf32-arm.c	2019-01-20 22:48:31.649324435 +0900
+@@ -13517,6 +13517,7 @@
+ 	  else
+ 	    unwind_type = 2;
+ 
++	  elide = 0;
+ 	  if (elide && !bfd_link_relocatable (info))
+ 	    {
+ 	      add_unwind_table_edit (&unwind_edit_head, &unwind_edit_tail,
