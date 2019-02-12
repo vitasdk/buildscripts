@@ -434,11 +434,11 @@ list(APPEND pthread_tools
     )
 
 # Prevent GCC wrapping system includes in extern "C" (modern systems should define this)
-set(extra_cflags -DNO_IMPLICIT_EXTERN_C)
+set(GCC_CFLAGS "-DNO_IMPLICIT_EXTERN_C")
 
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" AND ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     # GCC on OSX (Clang in diguise) needs more bracket nesting depth to compile gcc
-	list(APPEND extra_cflags -fbracket-depth=512)
+    set(GCC_CFLAGS "${GCC_CFLAGS} -fbracket-depth=512")
 endif()
 
 # Common gcc configure options
@@ -478,8 +478,7 @@ ExternalProject_add(gcc-base
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
     PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-8.patch
-    CONFIGURE_COMMAND CFLAGS=${extra_cflags} CXXFLAGS=${extra_cflags} ${compiler_flags}
-    ${wrapper_command} <SOURCE_DIR>/configure
+    CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
     --build=${build_native}
     # compile a native compiler so keep host == build
     --host=${build_native}
@@ -496,6 +495,8 @@ ExternalProject_add(gcc-base
     ${common_gcc_configure_args}
     --disable-threads
     --without-headers
+    "CFLAGS=${GCC_CFLAGS}"
+    "CXXFLAGS=${GCC_CFLAGS}"
     BUILD_COMMAND $(MAKE) all-gcc
     INSTALL_COMMAND $(MAKE) install-gcc
     )
@@ -566,7 +567,7 @@ if(CMAKE_TOOLCHAIN_FILE)
         URL_HASH ${GCC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-8.patch
-        CONFIGURE_COMMAND CFLAGS=${extra_cflags} CXXFLAGS=${extra_cflags} ${compiler_flags} ${toolchain_tools}
+        CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools}
         ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         # compile a native compiler so keep host == build
@@ -584,6 +585,8 @@ if(CMAKE_TOOLCHAIN_FILE)
         ${common_gcc_configure_args}
         --disable-threads
         --with-headers=yes
+        "CFLAGS=${GCC_CFLAGS}"
+        "CXXFLAGS=${GCC_CFLAGS}"
         BUILD_COMMAND ${toolchain_tools} ${wrapper_command} $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
         INSTALL_COMMAND $(MAKE) install
         )
@@ -619,8 +622,7 @@ ExternalProject_add(gcc-final
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
     PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-8.patch
-    CONFIGURE_COMMAND CFLAGS=${extra_cflags}
-    CXXFLAGS=${extra_cflags} ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
+    CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
     ${wrapper_command} <SOURCE_DIR>/configure
     --build=${build_native}
     --host=${host_native}
@@ -637,6 +639,8 @@ ExternalProject_add(gcc-final
     ${common_gcc_configure_args}
     --with-headers=yes
     --enable-threads=posix
+    "CFLAGS=${GCC_CFLAGS}"
+    "CXXFLAGS=${GCC_CFLAGS}"
     BUILD_COMMAND ${toolchain_tools} ${compiler_target_tools} ${wrapper_command}
     $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
     INSTALL_COMMAND $(MAKE) install
