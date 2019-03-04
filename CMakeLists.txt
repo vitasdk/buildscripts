@@ -8,8 +8,8 @@ cmake_minimum_required(VERSION 3.2.0)
 project(vitasdk)
 
 # Use the following gcc version
-set(GCC_VERSION 8.2.0)
-set(GCC_HASH SHA256=196c3c04ba2613f893283977e6011b2345d1cd1af9abeac58e916b1aab3e0080)
+set(GCC_VERSION 8.3.0)
+set(GCC_HASH SHA256=64baadfe6cc0f4947a84cb12d7f0dfaf45bb58b7e92461639596c21e02d97d2c)
 
 set(ZLIB_VERSION 1.2.11)
 set(ZLIB_HASH SHA256=4ff941449631ace0d4d203e3483be9dbc9da454084111f97ea0a2114e19bf066)
@@ -26,8 +26,8 @@ set(LIBYAML_HASH SHA256=78281145641a080fb32d6e7a87b9c0664d611dcb4d542e90baf731f5
 set(GMP_VERSION 6.1.2)
 set(GMP_HASH SHA256=5275bb04f4863a13516b2f39392ac5e272f5e1bb8057b18aec1c9b79d73d8fb2)
 
-set(MPFR_VERSION 4.0.1)
-set(MPFR_HASH SHA256=a4d97610ba8579d380b384b225187c250ef88cfe1d5e7226b89519374209b86b)
+set(MPFR_VERSION 4.0.2)
+set(MPFR_HASH SHA256=c05e3f02d09e0e9019384cdd58e0f19c64e6db1fd6f5ecf77b4b1c61ca253acc)
 
 set(MPC_VERSION 1.1.0)
 set(MPC_HASH SHA256=6985c538143c1208dcb1ac42cedad6ff52e267b47e5f970183a3e75125b43c2e)
@@ -38,8 +38,8 @@ set(ISL_HASH SHA256=b587e083eb65a8b394e833dea1744f21af3f0e413a448c17536b5549ae42
 set(EXPAT_VERSION 2.2.6)
 set(EXPAT_HASH SHA256=17b43c2716d521369f82fc2dc70f359860e90fa440bea65b3b85f0b246ea81f2)
 
-set(BINUTILS_VERSION 2.31.1)
-set(BINUTILS_HASH SHA256=5d20086ecf5752cc7d9134246e9588fa201740d540f7eb84d795b1f7a93bca86)
+set(BINUTILS_VERSION 2.32)
+set(BINUTILS_HASH SHA256=0ab6c55dd86a92ed561972ba15b9b70a8b9f75557f896446c82e8b36e473ee04)
 
 set(GDB_VERSION 8.2)
 set(GDB_HASH SHA256=c3a441a29c7c89720b734e5a9c6289c0a06be7e0c76ef538f7bbcef389347c39)
@@ -126,7 +126,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
     set(suffix "_${toolchain_suffix}")
 
     ExternalProject_Add(zlib${suffix}
-        URL http://downloads.sourceforge.net/project/libpng/zlib/${ZLIB_VERSION}/zlib-1.2.11.tar.xz
+        URL http://downloads.sourceforge.net/project/libpng/zlib/${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.xz
         URL_HASH ${ZLIB_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/zlib.patch

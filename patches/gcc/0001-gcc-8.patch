@@ -24,18 +24,6 @@ diff -Nru a/src/gcc/gcc/gcc.c b/src/gcc/gcc/gcc.c
  #endif
  
  /* When using -fsplit-stack we need to wrap pthread_create, in order
-diff -Nru a/src/gcc/gcc/graphite.h b/src/gcc/gcc/graphite.h
---- a/src/gcc/gcc/graphite.h	2018-01-03 11:03:58.000000000 +0100
-+++ b/src/gcc/gcc/graphite.h	2018-12-30 23:55:06.626196431 +0100
-@@ -37,6 +37,8 @@
- #include <isl/schedule.h>
- #include <isl/ast_build.h>
- #include <isl/schedule_node.h>
-+#include <isl/id.h>
-+#include <isl/space.h>
- 
- typedef struct poly_dr *poly_dr_p;
- 
 diff -Nru a/src/gcc/gcc/opts.c b/src/gcc/gcc/opts.c
 --- a/src/gcc/gcc/opts.c	2018-02-20 11:04:13.000000000 +0100
 +++ b/src/gcc/gcc/opts.c	2018-12-30 23:56:04.982864878 +0100
