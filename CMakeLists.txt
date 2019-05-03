@@ -8,8 +8,8 @@ cmake_minimum_required(VERSION 3.2.0)
 project(vitasdk)
 
 # Use the following gcc version
-set(GCC_VERSION 8.3.0)
-set(GCC_HASH SHA256=64baadfe6cc0f4947a84cb12d7f0dfaf45bb58b7e92461639596c21e02d97d2c)
+set(GCC_VERSION 9.1.0)
+set(GCC_HASH SHA256=79a66834e96a6050d8fe78db2c3b32fb285b230b855d0a66288235bc04b327a0)
 
 set(ZLIB_VERSION 1.2.11)
 set(ZLIB_HASH SHA256=4ff941449631ace0d4d203e3483be9dbc9da454084111f97ea0a2114e19bf066)
@@ -20,8 +20,8 @@ set(LIBZIP_HASH SHA256=6cf9840e427db96ebf3936665430bab204c9ebbd0120c326459077ed9
 set(LIBELF_VERSION 0.8.13)
 set(LIBELF_HASH SHA256=591a9b4ec81c1f2042a97aa60564e0cb79d041c52faa7416acb38bc95bd2c76d)
 
-set(LIBYAML_VERSION 0.2.1)
-set(LIBYAML_HASH SHA256=78281145641a080fb32d6e7a87b9c0664d611dcb4d542e90baf731f51cbb59cd)
+set(LIBYAML_VERSION 0.2.2)
+set(LIBYAML_HASH SHA256=4a9100ab61047fd9bd395bcef3ce5403365cafd55c1e0d0299cde14958e47be9)
 
 set(GMP_VERSION 6.1.2)
 set(GMP_HASH SHA256=5275bb04f4863a13516b2f39392ac5e272f5e1bb8057b18aec1c9b79d73d8fb2)
@@ -32,8 +32,8 @@ set(MPFR_HASH SHA256=c05e3f02d09e0e9019384cdd58e0f19c64e6db1fd6f5ecf77b4b1c61ca2
 set(MPC_VERSION 1.1.0)
 set(MPC_HASH SHA256=6985c538143c1208dcb1ac42cedad6ff52e267b47e5f970183a3e75125b43c2e)
 
-set(ISL_VERSION 0.20)
-set(ISL_HASH SHA256=b587e083eb65a8b394e833dea1744f21af3f0e413a448c17536b5549ae42a4c2)
+set(ISL_VERSION 0.21)
+set(ISL_HASH SHA256=777058852a3db9500954361e294881214f6ecd4b594c00da5eee974cd6a54960)
 
 set(EXPAT_VERSION 2.2.6)
 set(EXPAT_HASH SHA256=17b43c2716d521369f82fc2dc70f359860e90fa440bea65b3b85f0b246ea81f2)
@@ -45,13 +45,13 @@ set(GDB_VERSION 8.2)
 set(GDB_HASH SHA256=c3a441a29c7c89720b734e5a9c6289c0a06be7e0c76ef538f7bbcef389347c39)
 
 # Branches to fetch the different project targets. Can be overriden from command line.
-set(NEWLIB_TAG vita CACHE string "newlib branch name, commit id or tag")
-set(SAMPLES_TAG master CACHE string "samples branch name, commit id or tag")
-set(HEADERS_TAG master CACHE string "vita-headers branch name, commit id or tag")
-set(TOOLCHAIN_TAG master CACHE string "vita-toolchain branch name, commit id or tag")
-set(PTHREAD_TAG master CACHE string "pthread-embedded branch name, commit id or tag")
-set(VDPM_TAG master CACHE string "vdpm branch name, commit id or tag")
-set(VITA_MAKEPKG_TAG master CACHE string "vita-makepkg branch name, commit id or tag")
+set(NEWLIB_TAG vita CACHE STRING "newlib branch name, commit id or tag")
+set(SAMPLES_TAG master CACHE STRING "samples branch name, commit id or tag")
+set(HEADERS_TAG master CACHE STRING "vita-headers branch name, commit id or tag")
+set(TOOLCHAIN_TAG master CACHE STRING "vita-toolchain branch name, commit id or tag")
+set(PTHREAD_TAG master CACHE STRING "pthread-embedded branch name, commit id or tag")
+set(VDPM_TAG master CACHE STRING "vdpm branch name, commit id or tag")
+set(VITA_MAKEPKG_TAG master CACHE STRING "vita-makepkg branch name, commit id or tag")
 
 # Location to save the downloaded tarballs. Can be overriden from command line.
 set(DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/downloads CACHE PATH "Default download path for tarballs")
@@ -257,7 +257,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_add(isl${suffix}
         DEPENDS gmp${suffix}
-        URL http://isl.gforge.inria.fr/isl-${ISL_VERSION}.tar.bz2
+        URL http://isl.gforge.inria.fr/isl-${ISL_VERSION}.tar.xz
         URL_HASH ${ISL_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
