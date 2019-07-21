@@ -1,0 +1,111 @@
+diff --git a/gdb/Makefile.in b/gdb/Makefile.in
+index 13627e0..325d4d1 100644
+--- a/gdb/Makefile.in
++++ b/gdb/Makefile.in
+@@ -691,6 +691,7 @@ ALL_TARGET_OBS = \
+ 	arm-obsd-tdep.o \
+ 	arm-symbian-tdep.o \
+ 	arm-tdep.o \
++	arm-vita-tdep.o \
+ 	arm-wince-tdep.o \
+ 	avr-tdep.o \
+ 	bfin-linux-tdep.o \
+diff --git a/gdb/arm-vita-tdep.c b/gdb/arm-vita-tdep.c
+new file mode 100644
+index 0000000..6dbc071
+--- /dev/null
++++ b/gdb/arm-vita-tdep.c
+@@ -0,0 +1,54 @@
++
++/* 
++   Copyright (C) 2019 David "Davee" Morgan
++
++   This program is free software; you can redistribute it and/or modify
++   it under the terms of the GNU General Public License as published by
++   the Free Software Foundation; either version 3 of the License, or
++   (at your option) any later version.
++
++   This program is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++   GNU General Public License for more details.
++
++   You should have received a copy of the GNU General Public License
++   along with this program.  If not, see <http://www.gnu.org/licenses/>.
++*/
++
++#include "defs.h"
++#include "arm-tdep.h"
++#include "osabi.h"
++
++#include <string.h>
++
++static bfd_boolean find_vitalink_section(bfd *abfd, asection *section, void *)
++{
++    return strncmp(section->name, ".vitalink", strlen(".vitalink")) == 0;
++}
++
++static void
++arm_vita_init_abi (struct gdbarch_info info, struct gdbarch *gdbarch)
++{
++    // enable single stepping for target
++    set_gdbarch_software_single_step (gdbarch, arm_software_single_step);
++}
++
++static enum gdb_osabi
++arm_vita_osabi_sniffer (bfd *abfd)
++{
++    // for vita we look for .vitalink. section
++    if (bfd_sections_find_if(abfd, find_vitalink_section, NULL) != NULL)
++        return GDB_OSABI_VITA;
++    else
++        return GDB_OSABI_UNKNOWN;
++}
++
++void
++_initialize_arm_vita_tdep (void)
++{
++    gdbarch_register_osabi_sniffer (bfd_arch_arm, bfd_target_elf_flavour,
++                                   arm_vita_osabi_sniffer);
++    gdbarch_register_osabi (bfd_arch_arm, 0, GDB_OSABI_VITA,
++                            arm_vita_init_abi);
++}
+diff --git a/gdb/configure.tgt b/gdb/configure.tgt
+index f197160..83d2b5e 100644
+--- a/gdb/configure.tgt
++++ b/gdb/configure.tgt
+@@ -178,6 +178,10 @@ arm*-*-symbianelf*)
+ 	# Target: SymbianOS/arm
+ 	gdb_target_obs="arm-symbian-tdep.o"
+ 	;;
++arm*-vita-eabi)
++	# Target: PS Vita
++	gdb_target_obs="arm-vita-tdep.o"
++	;;
+ arm*-*-*)
+ 	# Target: ARM embedded system
+ 	gdb_sim=../sim/arm/libsim.a
+diff --git a/gdb/defs.h b/gdb/defs.h
+index fc42170..6170507 100644
+--- a/gdb/defs.h
++++ b/gdb/defs.h
+@@ -495,6 +495,7 @@ enum gdb_osabi
+   GDB_OSABI_LYNXOS178,
+   GDB_OSABI_NEWLIB,
+   GDB_OSABI_SDE,
++  GDB_OSABI_VITA,
+ 
+   GDB_OSABI_INVALID		/* keep this last */
+ };
+diff --git a/gdb/osabi.c b/gdb/osabi.c
+index 7d0540b..4bac562 100644
+--- a/gdb/osabi.c
++++ b/gdb/osabi.c
+@@ -80,6 +80,7 @@ static const struct osabi_names gdb_osabi_names[] =
+   { "LynxOS178", NULL },
+   { "Newlib", NULL },
+   { "SDE", NULL },
++  { "PSVita", NULL },
+ 
+   { "<invalid>", NULL }
+ };
