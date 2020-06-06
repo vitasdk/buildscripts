@@ -41,8 +41,8 @@ set(EXPAT_HASH SHA256=17b43c2716d521369f82fc2dc70f359860e90fa440bea65b3b85f0b246
 set(BINUTILS_VERSION 2.32)
 set(BINUTILS_HASH SHA256=0ab6c55dd86a92ed561972ba15b9b70a8b9f75557f896446c82e8b36e473ee04)
 
-set(GDB_VERSION 8.2)
-set(GDB_HASH SHA256=c3a441a29c7c89720b734e5a9c6289c0a06be7e0c76ef538f7bbcef389347c39)
+set(GDB_VERSION 9.2)
+set(GDB_HASH SHA256=360cd7ae79b776988e89d8f9a01c985d0b1fa21c767a4295e5f88cb49175c555)
 
 # Branches to fetch the different project targets. Can be overriden from command line.
 set(NEWLIB_TAG vita CACHE STRING "newlib branch name, commit id or tag")
