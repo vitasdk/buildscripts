@@ -624,7 +624,6 @@ ExternalProject_add(gcc-final
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
     PATCH_COMMAND
         patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-8.patch
-        && patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0002-gcc-9-pthread.patch
     CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
     ${wrapper_command} <SOURCE_DIR>/configure
     --build=${build_native}
