@@ -177,10 +177,14 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL_HASH ${LIBZIP_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libzip.patch
-        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${toolchain_deps_dir}
-        ${toolchain_cmake_args} ${libzip_configure}
-        -DZLIB_INCLUDE_DIR=${toolchain_deps_dir}/include
-        -DZLIB_LIBRARY=${toolchain_deps_dir}/lib/libz.a
+        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        --build=${build_native}
+        --host=${toolchain_host}
+        --prefix=${toolchain_deps_dir}
+        --libdir=${toolchain_deps_dir}/lib
+        --disable-shared
+        --enable-static
+        "CFLAGS=${libzip_configure} -DZLIB_INCLUDE_DIR=${toolchain_deps_dir}/include -DZLIB_LIBRARY=${toolchain_deps_dir}/lib/libz.a"
         )
 
     ExternalProject_add(libelf${suffix}
