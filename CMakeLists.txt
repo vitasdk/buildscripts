@@ -292,6 +292,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         ${GIT_SHALLOW_SUPPORT}
         # Set prefix to "/" here to be able to install twice
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=/ ${toolchain_cmake_args}
+        -DTOOLCHAIN_DEPS_DIR=${toolchain_deps_dir}
         BUILD_COMMAND $(MAKE)
         INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir}
         # Save the commit id for tracking purposes
