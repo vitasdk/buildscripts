@@ -288,15 +288,6 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         ${GIT_SHALLOW_SUPPORT}
         # Set prefix to "/" here to be able to install twice
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=/ ${toolchain_cmake_args}
-        -Dlibelf_INCLUDE_DIR=${toolchain_deps_dir}/include
-        -Dlibelf_LIBRARY=${toolchain_deps_dir}/lib/libelf.a
-        -Dzlib_INCLUDE_DIR=${toolchain_deps_dir}/include
-        -Dzlib_LIBRARY=${toolchain_deps_dir}/lib/libz.a
-        -Dlibzip_INCLUDE_DIR=${toolchain_deps_dir}/include
-        -Dlibzip_CONFIG_INCLUDE_DIR=${toolchain_deps_dir}/lib/libzip/include
-        -Dlibzip_LIBRARY=${toolchain_deps_dir}/lib/libzip.a
-        -Dlibyaml_INCLUDE_DIR=${toolchain_deps_dir}/include
-        -Dlibyaml_LIBRARY=${toolchain_deps_dir}/lib/libyaml.a
         BUILD_COMMAND $(MAKE)
         INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir}
         # Save the commit id for tracking purposes
