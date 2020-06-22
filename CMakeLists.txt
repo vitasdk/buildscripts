@@ -146,7 +146,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
             )
 
         # Tell libzip to use zlib static library (only on windows)
-        set(libzip_configure -DCMAKE_C_FLAGS=-DZIP_STATIC)
+        set(libzip_configure -DZIP_STATIC)
     else()
         ExternalProject_Add_Step(zlib${suffix}
             delete_shared
@@ -184,7 +184,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         --libdir=${toolchain_deps_dir}/lib
         --disable-shared
         --enable-static
-        "CFLAGS=${libzip_configure} -DZLIB_INCLUDE_DIR=${toolchain_deps_dir}/include -DZLIB_LIBRARY=${toolchain_deps_dir}/lib/libz.a"
+        --with-zlib=${toolchain_deps_dir}
+        "CFLAGS=${libzip_configure}"
         )
 
     ExternalProject_add(libelf${suffix}
