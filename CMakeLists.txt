@@ -288,7 +288,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         ${GIT_SHALLOW_SUPPORT}
         # Set prefix to "/" here to be able to install twice
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=/ ${toolchain_cmake_args}
-        -Dlibelf_INCLUDE_DIR=${toolchain_deps_dir}/include
+        -Dlibelf_INCLUDE_DIR=${toolchain_deps_dir}/include/libelf
         -Dlibelf_LIBRARY=${toolchain_deps_dir}/lib/libelf.a
         -Dzlib_INCLUDE_DIR=${toolchain_deps_dir}/include
         -Dzlib_LIBRARY=${toolchain_deps_dir}/lib/libz.a
