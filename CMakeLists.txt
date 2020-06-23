@@ -14,9 +14,6 @@ set(GCC_HASH SHA256=b6898a23844b656f1b68691c5c012036c2e694ac4b53a8918d4712ad876e
 set(ZLIB_VERSION 1.2.11)
 set(ZLIB_HASH SHA256=4ff941449631ace0d4d203e3483be9dbc9da454084111f97ea0a2114e19bf066)
 
-set(LIBZIP_VERSION 1.2.0) # Outdated
-set(LIBZIP_HASH SHA256=6cf9840e427db96ebf3936665430bab204c9ebbd0120c326459077ed9c907d9f)
-
 set(LIBELF_VERSION 0.8.13)
 set(LIBELF_HASH SHA256=591a9b4ec81c1f2042a97aa60564e0cb79d041c52faa7416acb38bc95bd2c76d)
 
@@ -45,6 +42,7 @@ set(GDB_VERSION 9.2)
 set(GDB_HASH SHA256=360cd7ae79b776988e89d8f9a01c985d0b1fa21c767a4295e5f88cb49175c555)
 
 # Branches to fetch the different project targets. Can be overriden from command line.
+set(LIBZIP_TAG master CACHE STRING "libzip branch name, commit id or tag")
 set(NEWLIB_TAG vita CACHE STRING "newlib branch name, commit id or tag")
 set(SAMPLES_TAG master CACHE STRING "samples branch name, commit id or tag")
 set(HEADERS_TAG master CACHE STRING "vita-headers branch name, commit id or tag")
@@ -173,18 +171,14 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_Add(libzip${suffix}
         DEPENDS zlib${suffix}
-        URL https://github.com/devnoname120/libzip/releases/download/${LIBZIP_VERSION}/libzip-${LIBZIP_VERSION}.tar.gz
-        URL_HASH ${LIBZIP_HASH}
-        DOWNLOAD_DIR ${DOWNLOAD_DIR}
+        GIT_REPOSITORY https://github.com/vitasdk/libzip
+        GIT_TAG ${LIBZIP_TAG}
+        ${GIT_SHALLOW_SUPPORT}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libzip.patch
-        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
-        --build=${build_native}
-        --host=${toolchain_host}
-        --prefix=${toolchain_deps_dir}
-        --libdir=${toolchain_deps_dir}/lib
-        --disable-shared
-        --enable-static
-        "CFLAGS=${libzip_configure} -DZLIB_INCLUDE_DIR=${toolchain_deps_dir}/include -DZLIB_LIBRARY=${toolchain_deps_dir}/lib/libz.a"
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${toolchain_deps_dir}
+        ${toolchain_cmake_args} ${libzip_configure}
+        -DZLIB_INCLUDE_DIR=${toolchain_deps_dir}/include
+        -DZLIB_LIBRARY=${toolchain_deps_dir}/lib/libz.a
         )
 
     ExternalProject_add(libelf${suffix}
