@@ -1,9 +1,23 @@
+From c8e88878beab01fadb2e59e0c23a37257c9bba82 Mon Sep 17 00:00:00 2001
+From: Sunguk Lee <d3m3vilurr@gmail.com>
+Date: Sat, 6 Jun 2020 23:06:47 +0900
+Subject: [PATCH] Apply vita patch
+
+---
+ gdb/Makefile.in     |  1 +
+ gdb/arm-vita-tdep.c | 54 +++++++++++++++++++++++++++++++++++++++++++++
+ gdb/configure.tgt   |  4 ++++
+ gdb/defs.h          |  1 +
+ gdb/osabi.c         |  1 +
+ 5 files changed, 61 insertions(+)
+ create mode 100644 gdb/arm-vita-tdep.c
+
 diff --git a/gdb/Makefile.in b/gdb/Makefile.in
-index 13627e0..325d4d1 100644
+index c3e074b21f..5ab1e1e999 100644
 --- a/gdb/Makefile.in
 +++ b/gdb/Makefile.in
-@@ -691,6 +691,7 @@ ALL_TARGET_OBS = \
- 	arm-obsd-tdep.o \
+@@ -701,6 +701,7 @@ ALL_TARGET_OBS = \
+ 	arm-pikeos-tdep.o \
  	arm-symbian-tdep.o \
  	arm-tdep.o \
 +	arm-vita-tdep.o \
@@ -12,7 +26,7 @@ index 13627e0..325d4d1 100644
  	bfin-linux-tdep.o \
 diff --git a/gdb/arm-vita-tdep.c b/gdb/arm-vita-tdep.c
 new file mode 100644
-index 0000000..6dbc071
+index 0000000000..6dbc071fe1
 --- /dev/null
 +++ b/gdb/arm-vita-tdep.c
 @@ -0,0 +1,54 @@
@@ -71,10 +85,10 @@ index 0000000..6dbc071
 +                            arm_vita_init_abi);
 +}
 diff --git a/gdb/configure.tgt b/gdb/configure.tgt
-index f197160..83d2b5e 100644
+index caa42be1c0..b4607a7604 100644
 --- a/gdb/configure.tgt
 +++ b/gdb/configure.tgt
-@@ -178,6 +178,10 @@ arm*-*-symbianelf*)
+@@ -185,6 +185,10 @@ arm*-*-symbianelf*)
  	# Target: SymbianOS/arm
  	gdb_target_obs="arm-symbian-tdep.o"
  	;;
@@ -84,28 +98,31 @@ index f197160..83d2b5e 100644
 +	;;
  arm*-*-*)
  	# Target: ARM embedded system
- 	gdb_sim=../sim/arm/libsim.a
+ 	gdb_target_obs="arm-pikeos-tdep.o"
 diff --git a/gdb/defs.h b/gdb/defs.h
-index fc42170..6170507 100644
+index 567f214b81..d795cae8bd 100644
 --- a/gdb/defs.h
 +++ b/gdb/defs.h
-@@ -495,6 +495,7 @@ enum gdb_osabi
-   GDB_OSABI_LYNXOS178,
+@@ -496,6 +496,7 @@ enum gdb_osabi
    GDB_OSABI_NEWLIB,
    GDB_OSABI_SDE,
+   GDB_OSABI_PIKEOS,
 +  GDB_OSABI_VITA,
  
    GDB_OSABI_INVALID		/* keep this last */
  };
 diff --git a/gdb/osabi.c b/gdb/osabi.c
-index 7d0540b..4bac562 100644
+index dec1bddc4c..c07a99dd9b 100644
 --- a/gdb/osabi.c
 +++ b/gdb/osabi.c
-@@ -80,6 +80,7 @@ static const struct osabi_names gdb_osabi_names[] =
-   { "LynxOS178", NULL },
+@@ -81,6 +81,7 @@ static const struct osabi_names gdb_osabi_names[] =
    { "Newlib", NULL },
    { "SDE", NULL },
+   { "PikeOS", NULL },
 +  { "PSVita", NULL },
  
    { "<invalid>", NULL }
  };
+-- 
+2.27.0
+

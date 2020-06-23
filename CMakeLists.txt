@@ -8,14 +8,11 @@ cmake_minimum_required(VERSION 3.2.0)
 project(vitasdk)
 
 # Use the following gcc version
-set(GCC_VERSION 9.1.0)
-set(GCC_HASH SHA256=79a66834e96a6050d8fe78db2c3b32fb285b230b855d0a66288235bc04b327a0)
+set(GCC_VERSION 10.1.0)
+set(GCC_HASH SHA256=b6898a23844b656f1b68691c5c012036c2e694ac4b53a8918d4712ad876e7ea2)
 
 set(ZLIB_VERSION 1.2.11)
 set(ZLIB_HASH SHA256=4ff941449631ace0d4d203e3483be9dbc9da454084111f97ea0a2114e19bf066)
-
-set(LIBZIP_VERSION 1.2.0) # Outdated
-set(LIBZIP_HASH SHA256=6cf9840e427db96ebf3936665430bab204c9ebbd0120c326459077ed9c907d9f)
 
 set(LIBELF_VERSION 0.8.13)
 set(LIBELF_HASH SHA256=591a9b4ec81c1f2042a97aa60564e0cb79d041c52faa7416acb38bc95bd2c76d)
@@ -38,13 +35,14 @@ set(ISL_HASH SHA256=777058852a3db9500954361e294881214f6ecd4b594c00da5eee974cd6a5
 set(EXPAT_VERSION 2.2.6)
 set(EXPAT_HASH SHA256=17b43c2716d521369f82fc2dc70f359860e90fa440bea65b3b85f0b246ea81f2)
 
-set(BINUTILS_VERSION 2.32)
-set(BINUTILS_HASH SHA256=0ab6c55dd86a92ed561972ba15b9b70a8b9f75557f896446c82e8b36e473ee04)
+set(BINUTILS_VERSION 2.34)
+set(BINUTILS_HASH SHA256=f00b0e8803dc9bab1e2165bd568528135be734df3fabf8d0161828cd56028952)
 
-set(GDB_VERSION 8.2)
-set(GDB_HASH SHA256=c3a441a29c7c89720b734e5a9c6289c0a06be7e0c76ef538f7bbcef389347c39)
+set(GDB_VERSION 9.2)
+set(GDB_HASH SHA256=360cd7ae79b776988e89d8f9a01c985d0b1fa21c767a4295e5f88cb49175c555)
 
 # Branches to fetch the different project targets. Can be overriden from command line.
+set(LIBZIP_TAG master CACHE STRING "libzip branch name, commit id or tag")
 set(NEWLIB_TAG vita CACHE STRING "newlib branch name, commit id or tag")
 set(SAMPLES_TAG master CACHE STRING "samples branch name, commit id or tag")
 set(HEADERS_TAG master CACHE STRING "vita-headers branch name, commit id or tag")
@@ -173,9 +171,9 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_Add(libzip${suffix}
         DEPENDS zlib${suffix}
-        URL https://github.com/devnoname120/libzip/releases/download/${LIBZIP_VERSION}/libzip-${LIBZIP_VERSION}.tar.gz
-        URL_HASH ${LIBZIP_HASH}
-        DOWNLOAD_DIR ${DOWNLOAD_DIR}
+        GIT_REPOSITORY https://github.com/vitasdk/libzip
+        GIT_TAG ${LIBZIP_TAG}
+        ${GIT_SHALLOW_SUPPORT}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libzip.patch
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${toolchain_deps_dir}
         ${toolchain_cmake_args} ${libzip_configure}
@@ -288,6 +286,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         ${GIT_SHALLOW_SUPPORT}
         # Set prefix to "/" here to be able to install twice
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=/ ${toolchain_cmake_args}
+        -DTOOLCHAIN_DEPS_DIR=${toolchain_deps_dir}
         -Dlibelf_INCLUDE_DIR=${toolchain_deps_dir}/include/libelf
         -Dlibelf_LIBRARY=${toolchain_deps_dir}/lib/libelf.a
         -Dzlib_INCLUDE_DIR=${toolchain_deps_dir}/include
@@ -474,7 +473,7 @@ endif()
 
 # Build a basic gcc compiler, needed to compile newlib
 ExternalProject_add(gcc-base
-    DEPENDS gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix}
+    DEPENDS gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix}
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
@@ -563,7 +562,7 @@ fix_repo_update(newlib)
 # Using gcc-base doesn't work since is missing some headers.
 if(CMAKE_TOOLCHAIN_FILE)
     ExternalProject_add(gcc-complete
-        DEPENDS newlib gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix}
+        DEPENDS newlib gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix}
         URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
         URL_HASH ${GCC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
@@ -617,7 +616,7 @@ ExternalProject_Add(pthread-embedded
 fix_repo_update(pthread-embedded)
 
 ExternalProject_add(gcc-final
-    DEPENDS gmp_${target_suffix} mpfr_${target_suffix} mpc_${target_suffix} isl_${target_suffix}
+    DEPENDS gmp_${target_suffix} mpfr_${target_suffix} mpc_${target_suffix} isl_${target_suffix} libelf_${target_suffix}
     DEPENDS newlib ${GCC_DEPENDS} pthread-embedded
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
     URL_HASH ${GCC_HASH}
