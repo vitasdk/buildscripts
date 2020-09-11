@@ -1,30 +1,15 @@
-FROM ubuntu:trusty
-MAINTAINER codestation404@gmail.com
+# First stage of Dockerfile
+FROM alpine:latest
 
-RUN apt-get update && \
-  DEBIAN_FRONTEND=noninteractive apt-get install -y cmake git build-essential autoconf texinfo && \
-  rm -rf /var/lib/apt/lists/*
+COPY . /src
 
-ENV OUTPUT_DIR=/out
+RUN apk add build-base cmake git bash autoconf texinfo patch pkgconfig
+RUN cd /src && mkdir build && cd build && cmake .. && make -j$(nproc)
 
-RUN adduser --disabled-login --gecos 'user' user && passwd -d user
+# Second stage of Dockerfile
+FROM alpine:latest  
 
-USER user
-WORKDIR /home/user
+ENV VITASDK /home/user/vitasdk
+ENV PATH ${VITASDK}/bin:$PATH
 
-RUN mkdir /home/user/.ssh && chmod 700 /home/user/.ssh -R && \
-  ssh-keyscan github.com >> /home/user/.ssh/known_hosts
-
-RUN git clone https://github.com/codestation/vitasdk-cmake
-
-RUN mkdir build
-WORKDIR /home/user/build
-RUN cmake /home/user/vitasdk-cmake
-RUN make -j4
-RUN mv vitasdk /home/user
-
-WORKDIR /home/user
-RUN echo VITASDK=/home/user/vitasdk >> /home/user/.bashrc
-RUN echo PATH=\$VITASDK/bin:\$PATH >> /home/user/.bashrc
-
-RUN rm -rf /home/user/build /home/user/vitasdk-cmake
+COPY --from=0 /src/build/vitasdk ${VITASDK}
