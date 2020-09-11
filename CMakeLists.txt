@@ -464,7 +464,7 @@ endif()
 
 # Build a basic gcc compiler, needed to compile newlib
 ExternalProject_add(gcc-base
-    DEPENDS gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix}
+    DEPENDS gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix} binutils_${build_suffix}
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
@@ -607,7 +607,7 @@ ExternalProject_Add(pthread-embedded
 fix_repo_update(pthread-embedded)
 
 ExternalProject_add(gcc-final
-    DEPENDS gmp_${target_suffix} mpfr_${target_suffix} mpc_${target_suffix} isl_${target_suffix} libelf_${target_suffix}
+    DEPENDS gmp_${target_suffix} mpfr_${target_suffix} mpc_${target_suffix} isl_${target_suffix} libelf_${target_suffix} binutils_${build_suffix}
     DEPENDS newlib ${GCC_DEPENDS} pthread-embedded
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
     URL_HASH ${GCC_HASH}
