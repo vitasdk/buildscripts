@@ -36,7 +36,8 @@ set(EXPAT_VERSION 2.2.6)
 set(EXPAT_HASH SHA256=17b43c2716d521369f82fc2dc70f359860e90fa440bea65b3b85f0b246ea81f2)
 
 set(BINUTILS_VERSION 2.34)
-set(BINUTILS_HASH SHA256=f00b0e8803dc9bab1e2165bd568528135be734df3fabf8d0161828cd56028952)
+set(BINUTILS_TAG vita-${BINUTILS_VERSION} CACHE STRING "binutils branch, commit, or tag")
+set(BINUTILS_URL https://github.com/DolceSDK/binutils/archive/${BINUTILS_TAG}.tar.gz)
 
 set(GDB_VERSION 9.2)
 set(GDB_HASH SHA256=360cd7ae79b776988e89d8f9a01c985d0b1fa21c767a4295e5f88cb49175c555)
@@ -297,12 +298,10 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
     fix_repo_update(vita-toolchain${suffix})
 
     ExternalProject_Add(binutils${suffix}
-        URL https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VERSION}.tar.xz
-        URL_HASH ${BINUTILS_HASH}
-        DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND
             patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0001-vita.patch
-            && patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0002-fix-broken-reloc.patch
+        URL ${BINUTILS_URL}
+        DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
