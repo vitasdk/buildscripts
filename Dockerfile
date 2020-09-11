@@ -12,4 +12,4 @@ FROM alpine:latest
 ENV VITASDK /home/user/vitasdk
 ENV PATH ${VITASDK}/bin:$PATH
 
-COPY --from=0 ${VITASDK} ${VITASDK}
+COPY --from=0 /src/build/vitasdk ${VITASDK}
