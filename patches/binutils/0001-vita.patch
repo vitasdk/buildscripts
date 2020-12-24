@@ -10,18 +10,7 @@ diff -Nru a/src/binutils/ld/scripttempl/elf.sc b/src/binutils/ld/scripttempl/elf
 +  . = . + 0x5C;
 +  /* SCE self module_proc_param size */
 +  . = . + 0x34;
-+  /*
-+   * SCE self info rsvd size(import table, etc...)
-+   * import library      ( 0x24 byte * number of import library)
-+   * import library name (0x100 byte * number of import library)
-+   * import opcode       ( 0x10 byte * number of import function * number of import library)
-+   * import NID          (    4 byte * number of import function * number of import library)
-+   * import pointer      (    4 byte * number of import function * number of import library)
-+   * export library      ( 0x20 byte * number of export library)
-+   * export library name (0x100 byte * number of export library)
-+   * export NID          (    4 byte * number of export function * number of export library)
-+   * export pointer      (    4 byte * number of export function * number of export library)
-+   */
++  /* SCE self info rsvd size(import table, etc...) */
 +  . = . + 0x7000;
 +  /* Hacky hackity hack. Need this because otherwise data segment is not aligned enough. */
 +  . = ALIGN(0x8000);
