@@ -1,19 +1,12 @@
 diff -Nru a/src/binutils/ld/scripttempl/elf.sc b/src/binutils/ld/scripttempl/elf.sc
---- a/src/binutils/ld/scripttempl/elf.sc
-+++ b/src/binutils/ld/scripttempl/elf.sc
-@@ -579,7 +579,25 @@
-   ${CREATE_SHLIB-${CREATE_PIE-${RELOCATING+. = ${DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}}
-   ${CREATE_SHLIB+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}
-   ${CREATE_PIE+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}
--
-+  /* SCE self module info size */
-+  . = . + 0x5C;
-+  /* SCE self module_proc_param size */
-+  . = . + 0x34;
-+  /* SCE self info rsvd size(import table, etc...) */
-+  . = . + 0x7000;
+--- a/src/binutils/ld/scripttempl/elf.sc	2018-07-11 17:43:55.000000000 +0200
++++ b/src/binutils/ld/scripttempl/elf.sc	2018-12-29 19:53:29.747662203 +0100
+@@ -580,6 +580,8 @@
+   ${CREATE_SHLIB+${RELOCATING+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}
+   ${CREATE_PIE+${RELOCATING+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}
+ 
 +  /* Hacky hackity hack. Need this because otherwise data segment is not aligned enough. */
-+  . = ALIGN(0x8000);
++  . = ALIGN(0x10000);
    /* Exception handling  */
    .eh_frame     ${RELOCATING-0} : ONLY_IF_RW { KEEP (*(.eh_frame)) ${RELOCATING+*(.eh_frame.*)} }
    .gnu_extab    ${RELOCATING-0} : ONLY_IF_RW { *(.gnu_extab) }
