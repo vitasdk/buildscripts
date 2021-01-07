@@ -18,6 +18,7 @@ jobs:
         mkdir build
         cd build
         cmake ..
+        cmake --version
         make -j$(nproc)
     - name: Upload artifacts
       if: ${{ success() }}
