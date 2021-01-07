@@ -18,7 +18,7 @@ jobs:
         mkdir build
         cd build
         cmake ..
-        make -j4 tarball
+        make -j$(nproc)
     - name: Upload artifacts
       if: ${{ success() }}
       uses: actions/upload-artifact@v2
