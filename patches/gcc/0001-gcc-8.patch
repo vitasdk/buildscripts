@@ -15,11 +15,12 @@ diff --git a/gcc/config/arm/arm.h b/gcc/config/arm/arm.h
 index 9ee6a4eb5..b89f85655 100644
 --- a/gcc/config/arm/arm.h
 +++ b/gcc/config/arm/arm.h
-@@ -669,6 +670,9 @@ extern int arm_arch_cmse;
+@@ -669,6 +670,10 @@ extern int arm_arch_cmse;
  #define WCHAR_TYPE_SIZE BITS_PER_WORD
  #endif
  
 +/* use int and unsigned int for int32_t and uint32_t */
++#undef STDINT_LONG32
 +#define STDINT_LONG32 0
 +
  /* Sized for fixed-point types.  */
