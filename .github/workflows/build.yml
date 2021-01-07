@@ -7,7 +7,8 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-latest
+    container: ubuntu:14.04
     steps:
     - uses: actions/checkout@v2
     - name: Install dependencies
@@ -18,7 +19,6 @@ jobs:
         mkdir build
         cd build
         cmake ..
-        cmake --version
         make -j$(nproc)
     - name: Upload artifacts
       if: ${{ success() }}
