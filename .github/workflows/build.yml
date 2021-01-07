@@ -20,6 +20,8 @@ jobs:
         sudo apt-get install -y cmake git build-essential autoconf texinfo bison flex
     - name: Build
       run: |
+        git config --global user.email "builds@travis-ci.com"
+        git config --global user.name "Travis CI"
         mkdir build
         cd build
         cmake ..
