@@ -20,6 +20,7 @@ index 9ee6a4eb5..b89f85655 100644
  #endif
  
 +/* use int and unsigned int for int32_t and uint32_t */
++#undef STDINT_LONG32
 +#define STDINT_LONG32 0
 +
  /* Sized for fixed-point types.  */
