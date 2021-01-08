@@ -37,7 +37,51 @@ index 4f57765b0..a4d5ffb14 100644
 +#undef LIB_SPEC
  #ifndef LIB_SPEC
 -#define LIB_SPEC "%{!shared:%{g*:-lg} %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}}"
-+#define LIB_SPEC "%{!shared:%{g*:-lg} %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}} -lSceRtc_stub -lSceSysmem_stub -lSceKernelThreadMgr_stub -lSceKernelModulemgr_stub -lSceIofilemgr_stub -lSceProcessmgr_stub -lSceLibKernel_stub -lSceNet_stub"
++#define LIB_SPEC "%{!shared:%{g*:-lc} %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}} -lSceRtc_stub -lSceSysmem_stub -lSceKernelThreadMgr_stub -lSceKernelModulemgr_stub -lSceIofilemgr_stub -lSceProcessmgr_stub -lSceLibKernel_stub -lSceNet_stub"
  #endif
  
  /* When using -fsplit-stack we need to wrap pthread_create, in order
+ 
+diff -ru a/libstdc++-v3/configure b/libstdc++-v3/configure
+--- a/libstdc++-v3/configure
++++ b/libstdc++-v3/configure
+@@ -5369,13 +5369,6 @@ $as_echo "$as_me: OS config directory is $os_include_dir" >&6;}
+ 
+ 
+ 
+-# Libtool setup.
+-if test "x${with_newlib}" != "xyes"; then
+-  enable_dlopen=yes
+-
+-
+-
+-fi
+ case `pwd` in
+   *\ * | *\    *)
+     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Libtool does not cope well with whitespace in \`pwd\`" >&5
+ 
+diff -ru a/libstdc++-v3/configure b/libstdc++-v3/configure
+--- a/libstdc++-v3/configure
++++ b/libstdc++-v3/configure
+@@ -48457,7 +48457,7 @@
+        ;;
+     esac
+     ;;
+-  *-linux* | *-uclinux* | *-gnu* | *-kfreebsd*-gnu | *-cygwin* | *-solaris*)
++  *-linux* | *-uclinux* | *-gnu* | *-kfreebsd*-gnu | *-cygwin* | *-solaris* | arm-vita-eabi*)
+ 
+   # All these tests are for C++; save the language and the compiler flags.
+   # The CXXFLAGS thing is suspicious, but based on similar bits previously
+
+diff -ru a/gcc/config/arm/unknown-elf.h b/gcc/config/arm/unknown-elf.h
+--- a/gcc/config/arm/unknown-elf.h
++++ b/gcc/config/arm/unknown-elf.h
+@@ -29,7 +29,7 @@
+ #endif
+ 
+ /* Now we define the strings used to build the spec file.  */
+-#define UNKNOWN_ELF_STARTFILE_SPEC	" crti%O%s crtbegin%O%s crt0%O%s"
++#define UNKNOWN_ELF_STARTFILE_SPEC	" crti%O%s crtbegin%O%s crt1%O%s"
+ 
+ #undef  STARTFILE_SPEC
+ #define STARTFILE_SPEC	\
