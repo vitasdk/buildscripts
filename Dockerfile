@@ -1,5 +1,5 @@
 # First stage of Dockerfile
-FROM alpine:latest
+FROM alpine:3.12
 
 COPY . /src
 
