@@ -7,8 +7,10 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    container: ubuntu:14.04
+    strategy:
+      matrix:
+        os: [	"ubuntu-16.04", "macos-10.15"]
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
     - name: Install dependencies
@@ -30,5 +32,5 @@ jobs:
       if: ${{ success() }}
       uses: actions/upload-artifact@v2
       with:
-        name: vitasdk.tar.bz2
+        name: vitasdk-${{ matrix.os }}
         path: build/*.tar.bz2
