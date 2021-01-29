@@ -6,15 +6,12 @@ on:
     types: [run_build]
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        os: [	"ubuntu-16.04", "macos-10.15"]
-    runs-on: ${{ matrix.os }}
+  build_linux:
+    runs-on: ubuntu-latest
+    container: ubuntu:14.04
     steps:
     - uses: actions/checkout@v2
     - name: Install dependencies
-      if: ${{ matrix.os == 'ubuntu-16.04' }}
       run: |
         sudo apt-get update
         sudo apt-get install -y software-properties-common
@@ -33,5 +30,23 @@ jobs:
       if: ${{ success() }}
       uses: actions/upload-artifact@v2
       with:
-        name: vitasdk-${{ matrix.os }}
+        name: vitasdk-linux
+        path: build/*.tar.bz2
+  build_macos:
+    runs-on: macos-10.15
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: |
+        git config --global user.email "builds@travis-ci.com"
+        git config --global user.name "Travis CI"
+        mkdir build
+        cd build
+        cmake ..
+        make -j$(nproc) tarball
+    - name: Upload artifacts
+      if: ${{ success() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: vitasdk-macos
         path: build/*.tar.bz2
