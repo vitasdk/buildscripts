@@ -8,8 +8,8 @@ cmake_minimum_required(VERSION 3.2.0)
 project(vitasdk)
 
 # Use the following gcc version
-set(GCC_VERSION 10.2.0)
-set(GCC_HASH SHA256=b8dd4368bb9c7f0b98188317ee0254dd8cc99d1e3a18d0ff146c855fe16c1d8c)
+set(GCC_VERSION 9.3.0)
+set(GCC_HASH SHA256=71e197867611f6054aa1119b13a0c0abac12834765fe2d81f35ac57f84f742d1)
 
 set(ZLIB_VERSION 1.2.11)
 set(ZLIB_HASH SHA256=4ff941449631ace0d4d203e3483be9dbc9da454084111f97ea0a2114e19bf066)
