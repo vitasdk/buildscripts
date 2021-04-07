@@ -186,7 +186,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL_HASH ${LIBELF_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libelf.patch
-        CONFIGURE_COMMAND CC=${cc_compiler} RANLIB=${ranlib} ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND autoreconf -i <SOURCE_DIR> COMMAND CC=${cc_compiler} RANLIB=${ranlib} ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
@@ -293,8 +293,6 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/vita-toolchain-version.txt
         ${UPDATE_DISCONNECTED_SUPPORT}
         )
-
-    fix_repo_update(vita-toolchain${suffix})
 
     ExternalProject_Add(binutils${suffix}
         URL https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VERSION}.tar.xz
@@ -516,8 +514,6 @@ ExternalProject_add(vita-headers
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
-fix_repo_update(vita-headers)
-
 ExternalProject_Add(newlib
     DEPENDS binutils_${target_suffix} gcc-base vita-headers
     GIT_REPOSITORY https://github.com/vitasdk/newlib
@@ -544,8 +540,6 @@ ExternalProject_Add(newlib
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/newlib-version.txt
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
-
-fix_repo_update(newlib)
 
 # Build a complete gcc compiler to be able to compile the full gcc for the host when crosscompiling.
 # Using gcc-base doesn't work since is missing some headers.
@@ -602,8 +596,6 @@ ExternalProject_Add(pthread-embedded
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
-fix_repo_update(pthread-embedded)
-
 ExternalProject_add(gcc-final
     DEPENDS gmp_${target_suffix} mpfr_${target_suffix} mpc_${target_suffix} isl_${target_suffix} libelf_${target_suffix}
     DEPENDS newlib ${GCC_DEPENDS} pthread-embedded
@@ -656,8 +648,6 @@ ExternalProject_Add(samples
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
-fix_repo_update(samples)
-
 ExternalProject_Add(vdpm
     GIT_REPOSITORY https://github.com/vitasdk/vdpm.git
     GIT_TAG ${VDPM_TAG}
@@ -672,8 +662,6 @@ ExternalProject_Add(vdpm
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
-fix_repo_update(vdpm)
-
 ExternalProject_Add(vita-makepkg
     GIT_REPOSITORY https://github.com/vitasdk/vita-makepkg.git
     GIT_TAG ${VITA_MAKEPKG_TAG}
@@ -687,8 +675,6 @@ ExternalProject_Add(vita-makepkg
     COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/makepkg.conf.sample ${CMAKE_INSTALL_PREFIX}/bin/makepkg.conf
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
-
-fix_repo_update(vita-makepkg)
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     getgcclib(libwinpthread-1.dll WINPTHREAD_DLL)

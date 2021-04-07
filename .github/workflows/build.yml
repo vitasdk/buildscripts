@@ -1,12 +1,13 @@
 name: Build
 
 on:
+  push:
   pull_request:
   repository_dispatch:
     types: [run_build]
 
 jobs:
-  build:
+  build-linux:
     runs-on: ubuntu-latest
     container: ubuntu:14.04
     steps:
@@ -30,5 +31,51 @@ jobs:
       if: ${{ success() }}
       uses: actions/upload-artifact@v2
       with:
-        name: vitasdk.tar.bz2
+        name: vitasdk-linux
+        path: build/*.tar.bz2
+  build-macos:
+    runs-on: macos-10.15
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: |
+        git config --global user.email "builds@travis-ci.com"
+        git config --global user.name "Travis CI"
+        mkdir build
+        cd build
+        cmake ..
+        make -j$(nproc) tarball
+    - name: Upload artifacts
+      if: ${{ success() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: vitasdk-macos
+        path: build/*.tar.bz2
+  build-windows:
+    runs-on: ubuntu-latest
+    container: ubuntu:14.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y software-properties-common
+        sudo add-apt-repository ppa:george-edison55/cmake-3.x
+        sudo apt-get update
+        sudo apt-get install -y cmake cmake-data git build-essential autoconf texinfo bison flex pkg-config g++-mingw-w64
+    - name: Build
+      run: |
+        git config --global user.email "builds@travis-ci.com"
+        git config --global user.name "Travis CI"
+        unset CXX
+        unset CC
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_TOOLCHAIN_FILE=toolchain-x86_64-w64-mingw32.cmake
+        make -j$(nproc) tarball
+    - name: Upload artifacts
+      if: ${{ success() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: vitasdk-windows
         path: build/*.tar.bz2
