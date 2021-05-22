@@ -506,6 +506,7 @@ ExternalProject_add(vita-headers
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
+ExternalProject_Add(musl
     DEPENDS binutils_${target_suffix} gcc-base vita-headers
     GIT_REPOSITORY https://github.com/DaveeFTW/musl
     GIT_TAG ${MUSL_TAG}
