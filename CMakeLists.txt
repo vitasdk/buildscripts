@@ -8,8 +8,8 @@ cmake_minimum_required(VERSION 3.2.0)
 project(vitasdk)
 
 # Use the following gcc version
-set(GCC_VERSION 10.1.0)
-set(GCC_HASH SHA256=b6898a23844b656f1b68691c5c012036c2e694ac4b53a8918d4712ad876e7ea2)
+set(GCC_VERSION 10.2.0)
+set(GCC_HASH SHA256=b8dd4368bb9c7f0b98188317ee0254dd8cc99d1e3a18d0ff146c855fe16c1d8c)
 
 set(ZLIB_VERSION 1.2.11)
 set(ZLIB_HASH SHA256=4ff941449631ace0d4d203e3483be9dbc9da454084111f97ea0a2114e19bf066)
@@ -32,8 +32,8 @@ set(MPC_HASH SHA256=6985c538143c1208dcb1ac42cedad6ff52e267b47e5f970183a3e75125b4
 set(ISL_VERSION 0.21)
 set(ISL_HASH SHA256=777058852a3db9500954361e294881214f6ecd4b594c00da5eee974cd6a54960)
 
-set(EXPAT_VERSION 2.2.6)
-set(EXPAT_HASH SHA256=17b43c2716d521369f82fc2dc70f359860e90fa440bea65b3b85f0b246ea81f2)
+set(EXPAT_VERSION 2.3.0)
+set(EXPAT_HASH SHA256=f122a20eada303f904d5e0513326c5b821248f2d4d2afbf5c6f1339e511c0586)
 
 set(BINUTILS_VERSION 2.34)
 set(BINUTILS_HASH SHA256=f00b0e8803dc9bab1e2165bd568528135be734df3fabf8d0161828cd56028952)
@@ -185,7 +185,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL_HASH ${LIBELF_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libelf.patch
-        CONFIGURE_COMMAND CC=${cc_compiler} RANLIB=${ranlib} ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND autoreconf -i <SOURCE_DIR> COMMAND CC=${cc_compiler} RANLIB=${ranlib} ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
@@ -293,8 +293,6 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         ${UPDATE_DISCONNECTED_SUPPORT}
         )
 
-    fix_repo_update(vita-toolchain${suffix})
-
     ExternalProject_Add(binutils${suffix}
         URL https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VERSION}.tar.xz
         URL_HASH ${BINUTILS_HASH}
@@ -302,6 +300,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         PATCH_COMMAND
             patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0001-vita.patch
             && patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0002-fix-broken-reloc.patch
+            && patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0003-fix-elf-vaddr.patch
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
@@ -507,9 +506,6 @@ ExternalProject_add(vita-headers
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
-fix_repo_update(vita-headers)
-
-ExternalProject_Add(musl
     DEPENDS binutils_${target_suffix} gcc-base vita-headers
     GIT_REPOSITORY https://github.com/DaveeFTW/musl
     GIT_TAG ${MUSL_TAG}
@@ -533,8 +529,6 @@ ExternalProject_Add(musl
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/musl-version.txt
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
-
-fix_repo_update(musl)
 
 # Build a complete gcc compiler to be able to compile the full gcc for the host when crosscompiling.
 # Using gcc-base doesn't work since is missing some headers.
@@ -629,8 +623,6 @@ ExternalProject_Add(samples
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
-fix_repo_update(samples)
-
 ExternalProject_Add(vdpm
     GIT_REPOSITORY https://github.com/vitasdk/vdpm.git
     GIT_TAG ${VDPM_TAG}
@@ -645,8 +637,6 @@ ExternalProject_Add(vdpm
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
-fix_repo_update(vdpm)
-
 ExternalProject_Add(vita-makepkg
     GIT_REPOSITORY https://github.com/vitasdk/vita-makepkg.git
     GIT_TAG ${VITA_MAKEPKG_TAG}
@@ -660,8 +650,6 @@ ExternalProject_Add(vita-makepkg
     COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/makepkg.conf.sample ${CMAKE_INSTALL_PREFIX}/bin/makepkg.conf
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
-
-fix_repo_update(vita-makepkg)
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     getgcclib(libwinpthread-1.dll WINPTHREAD_DLL)
