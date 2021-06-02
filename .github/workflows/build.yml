@@ -40,7 +40,7 @@ jobs:
         file: build/*.tar.bz2
         overwrite: true
         file_glob: true
-        tag: ${{ github.ref }}        
+        tag: musl-linux-v${{github.run_number}}     
         release_name: musl-linux-v${{github.run_number}}
   build-macos:
     runs-on: macos-10.15
@@ -67,7 +67,7 @@ jobs:
         file: build/*.tar.bz2
         overwrite: true
         file_glob: true
-        tag: ${{ github.ref }}        
+        tag: musl-macos-v${{github.run_number}}
         release_name: musl-macos-v${{github.run_number}}
   build-windows:
     runs-on: ubuntu-latest
@@ -104,5 +104,5 @@ jobs:
         file: build/*.tar.bz2
         overwrite: true
         file_glob: true
-        tag: ${{ github.ref }}        
+        tag: musl-windows-v${{github.run_number}}
         release_name: musl-windows-v${{github.run_number}}
