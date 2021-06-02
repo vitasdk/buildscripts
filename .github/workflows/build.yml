@@ -33,6 +33,15 @@ jobs:
       with:
         name: vitasdk-linux
         path: build/*.tar.bz2
+    - uses: svenstaro/upload-release-action@v2
+      if: contains(github.ref,'refs/heads/musl')
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: build/*.tar.bz2
+        overwrite: true
+        file_glob: true
+        tag: ${{ github.ref }}        
+        release_name: musl-linux-v${{github.run_number}}
   build-macos:
     runs-on: macos-10.15
     steps:
@@ -51,6 +60,15 @@ jobs:
       with:
         name: vitasdk-macos
         path: build/*.tar.bz2
+    - uses: svenstaro/upload-release-action@v2
+      if: contains(github.ref,'refs/heads/musl')
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: build/*.tar.bz2
+        overwrite: true
+        file_glob: true
+        tag: ${{ github.ref }}        
+        release_name: musl-macos-v${{github.run_number}}
   build-windows:
     runs-on: ubuntu-latest
     container: ubuntu:14.04
@@ -79,3 +97,12 @@ jobs:
       with:
         name: vitasdk-windows
         path: build/*.tar.bz2
+    - uses: svenstaro/upload-release-action@v2
+      if: contains(github.ref,'refs/heads/musl')
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: build/*.tar.bz2
+        overwrite: true
+        file_glob: true
+        tag: ${{ github.ref }}        
+        release_name: musl-windows-v${{github.run_number}}
