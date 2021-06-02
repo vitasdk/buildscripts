@@ -33,14 +33,14 @@ You can pass then on the cmake phrase like this `cmake .. -DFOO=ON`.
 
 If you want to fetch an specific revision of a part of the toolchain
 then you can pass the branch/tag/id from the command line. The available
-values are `NEWLIB_TAG`, `TOOLCHAIN_TAG`, `PTHREAD_TAG`, `HEADERS_TAG`
+values are `MUSL_TAG`, `TOOLCHAIN_TAG`, `HEADERS_TAG`
 and `SAMPLES_TAG`. For example:
 
 ``` sh
-cmake /path/to/cmakelists -DNEWLIB_TAG=0254c2dc0c2686f69580030af3cacc795c94d616
+cmake /path/to/cmakelists -DMUSL_TAG=0254c2dc0c2686f69580030af3cacc795c94d616
 ```
 
-This will configure the vitasdk to use that newlib commit instead of the `vita` branch.
+This will configure the vitasdk to use that musl commit instead of the `vita` branch.
 
 If you need to change the download directory used for the tarballs then do the following,
 for example:

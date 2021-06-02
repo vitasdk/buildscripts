@@ -43,11 +43,10 @@ set(GDB_HASH SHA256=360cd7ae79b776988e89d8f9a01c985d0b1fa21c767a4295e5f88cb49175
 
 # Branches to fetch the different project targets. Can be overriden from command line.
 set(LIBZIP_TAG master CACHE STRING "libzip branch name, commit id or tag")
-set(NEWLIB_TAG vita CACHE STRING "newlib branch name, commit id or tag")
+set(MUSL_TAG vita CACHE STRING "musl branch name, commit id or tag")
 set(SAMPLES_TAG master CACHE STRING "samples branch name, commit id or tag")
 set(HEADERS_TAG master CACHE STRING "vita-headers branch name, commit id or tag")
 set(TOOLCHAIN_TAG master CACHE STRING "vita-toolchain branch name, commit id or tag")
-set(PTHREAD_TAG master CACHE STRING "pthread-embedded branch name, commit id or tag")
 set(VDPM_TAG master CACHE STRING "vdpm branch name, commit id or tag")
 set(VITA_MAKEPKG_TAG master CACHE STRING "vita-makepkg branch name, commit id or tag")
 
@@ -416,13 +415,6 @@ list(APPEND compiler_target_tools
     CXX_FOR_TARGET=${binutils_prefix}-g++
     )
 
-# Compilers used to build pthread-embedded (no need to override PATH with this)
-list(APPEND pthread_tools
-    CC=${binutils_prefix}-gcc
-    CXX=${binutils_prefix}-g++
-    AR=${binutils_prefix}-ar
-    )
-
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" AND ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     # GCC on OSX (Clang in diguise) needs more bracket nesting depth to compile gcc
     set(GCC_CFLAGS "${GCC_CFLAGS} -fbracket-depth=512")
@@ -444,7 +436,6 @@ set(common_gcc_configure_args
     --disable-tls
     --with-gnu-as
     --with-gnu-ld
-    --with-newlib
     --disable-multilib
     --with-arch=armv7-a
     --with-tune=cortex-a9
@@ -458,7 +449,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     list(APPEND common_gcc_configure_args "--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm")
 endif()
 
-# Build a basic gcc compiler, needed to compile newlib
+# Build a basic gcc compiler, needed to compile musl
 ExternalProject_add(gcc-base
     DEPENDS gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix}
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
@@ -474,6 +465,7 @@ ExternalProject_add(gcc-base
     --libdir=${toolchain_build_install_dir}/lib
     --libexecdir=${toolchain_build_install_dir}/lib
     --with-sysroot=${toolchain_build_install_dir}/${target_arch}
+    --with-native-system-header-dir=/include
     --with-gmp=${toolchain_build_depends_dir}
     --with-mpfr=${toolchain_build_depends_dir}
     --with-mpc=${toolchain_build_depends_dir}
@@ -514,30 +506,28 @@ ExternalProject_add(vita-headers
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
-ExternalProject_Add(newlib
+ExternalProject_Add(musl
     DEPENDS binutils_${target_suffix} gcc-base vita-headers
-    GIT_REPOSITORY https://github.com/vitasdk/newlib
-    GIT_TAG ${NEWLIB_TAG}
+    GIT_REPOSITORY https://github.com/DaveeFTW/musl
+    GIT_TAG ${MUSL_TAG}
     ${GIT_SHALLOW_SUPPORT}
-    # Pass the compiler_target_tools here so newlib picks up the fresh gcc-base compiler
-    CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
-    ${wrapper_command} <SOURCE_DIR>/configure "CFLAGS_FOR_TARGET=-g -O2 -ffunction-sections -fdata-sections"
+    # Pass the compiler_target_tools here so musl picks up the fresh gcc-base compiler
+    CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools} ${compiler_target_tools} "CC=${binutils_prefix}-gcc" "CROSS_COMPILE=${binutils_prefix}-"
+    ${wrapper_command} <SOURCE_DIR>/configure "CFLAGS=-g -O2 -ffunction-sections -fdata-sections -DSYSCALL_NO_INLINE -I${CMAKE_INSTALL_PREFIX}/${target_arch}/include"
     --build=${build_native}
     --host=${host_native}
     --target=${target_arch}
     # Use this prefix so the install target can be run twice with different paths
     --prefix=/
     --with-build-sysroot=${CMAKE_INSTALL_PREFIX}/${target_arch}
-    --enable-newlib-io-long-long
-    --enable-newlib-register-fini
-    --disable-newlib-supplied-syscalls
     --disable-nls
+    --disable-shared
     BUILD_COMMAND ${compiler_flags} ${toolchain_tools} ${wrapper_command} $(MAKE)
-    INSTALL_COMMAND $(MAKE) install DESTDIR=${CMAKE_INSTALL_PREFIX}
-    # Install a copy of newlib in the toolchain directory (required for pthread-embedded target)
+    INSTALL_COMMAND $(MAKE) install DESTDIR=${CMAKE_INSTALL_PREFIX}/${target_arch}
+    # Install a copy of musl in the toolchain directory (required for pthread-embedded target)
     COMMAND $(MAKE) install DESTDIR=${toolchain_build_install_dir}
     # Save the commit id for tracking purposes
-    COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/newlib-version.txt
+    COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/musl-version.txt
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
@@ -545,7 +535,7 @@ ExternalProject_Add(newlib
 # Using gcc-base doesn't work since is missing some headers.
 if(CMAKE_TOOLCHAIN_FILE)
     ExternalProject_add(gcc-complete
-        DEPENDS newlib gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix}
+        DEPENDS musl gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix}
         URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
         URL_HASH ${GCC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
@@ -580,25 +570,9 @@ else()
     set(GCC_DEPENDS gcc-base)
 endif()
 
-ExternalProject_Add(pthread-embedded
-    DEPENDS binutils_${target_suffix} gcc-base newlib vita-headers
-    GIT_REPOSITORY https://github.com/vitasdk/pthread-embedded
-    GIT_TAG ${PTHREAD_TAG}
-    ${GIT_SHALLOW_SUPPORT}
-    # TODO: this project should have a proper makefile to support out-of-source builds
-    BUILD_IN_SOURCE 1
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ${compiler_flags} ${wrapper_command} $(MAKE)
-    -C <SOURCE_DIR>/platform/vita ${pthread_tools} PREFIX=${CMAKE_INSTALL_PREFIX}
-    INSTALL_COMMAND $(MAKE) -C <SOURCE_DIR>/platform/vita PREFIX=${CMAKE_INSTALL_PREFIX}/${target_arch} install
-    # Save the commit id for tracking purposes
-    COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/pthread-embedded-version.txt
-    ${UPDATE_DISCONNECTED_SUPPORT}
-    )
-
 ExternalProject_add(gcc-final
     DEPENDS gmp_${target_suffix} mpfr_${target_suffix} mpc_${target_suffix} isl_${target_suffix} libelf_${target_suffix}
-    DEPENDS newlib ${GCC_DEPENDS} pthread-embedded
+    DEPENDS musl ${GCC_DEPENDS}
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
@@ -612,6 +586,8 @@ ExternalProject_add(gcc-final
     --libdir=${CMAKE_INSTALL_PREFIX}/lib
     --libexecdir=${CMAKE_INSTALL_PREFIX}/lib
     --with-sysroot=${CMAKE_INSTALL_PREFIX}/${target_arch}
+    --with-build-sysroot=${CMAKE_INSTALL_PREFIX}/${target_arch}
+    --with-native-system-header-dir=/include
     --with-gmp=${toolchain_target_depends_dir}
     --with-mpfr=${toolchain_target_depends_dir}
     --with-mpc=${toolchain_target_depends_dir}
@@ -722,13 +698,13 @@ set(version_info_file ${CMAKE_INSTALL_PREFIX}/version_info.txt)
 add_custom_command(OUTPUT ${version_info_file}
     COMMAND ${CMAKE_COMMAND} -DINPUT_DIR=${CMAKE_BINARY_DIR} -DOUTPUT_FILE=${version_info_file}
     -P ${CMAKE_SOURCE_DIR}/cmake/create_version.cmake
-    DEPENDS vita-headers vita-toolchain_${target_suffix} newlib pthread-embedded samples
+    DEPENDS vita-headers vita-toolchain_${target_suffix} musl samples
     COMMENT "Creating version_info.txt"
     )
 
 add_custom_command(OUTPUT "vitasdk-${host_native}-${build_date}.tar.bz2"
     COMMAND ${CMAKE_COMMAND} -E tar "cfvj" "vitasdk-${host_native}-${build_date}.tar.bz2" "${CMAKE_INSTALL_PREFIX}"
-    DEPENDS vita-toolchain_${target_suffix} binutils_${target_suffix} gdb_${target_suffix} vita-headers newlib pthread-embedded samples vdpm vita-makepkg
+    DEPENDS vita-toolchain_${target_suffix} binutils_${target_suffix} gdb_${target_suffix} vita-headers musl samples vdpm vita-makepkg
     DEPENDS gcc-final ${version_info_file}
     COMMENT "Creating vitasdk-${host_os}-${build_date}.tar.bz2"
     )
