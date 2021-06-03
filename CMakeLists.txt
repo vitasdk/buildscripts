@@ -268,7 +268,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_add(expat${suffix}
-        URL http://downloads.sourceforge.net/sourceforge/expat/expat-${EXPAT_VERSION}.tar.bz2
+        URL https://github.com/libexpat/libexpat/releases/download/R_2_3_0/expat-${EXPAT_VERSION}.tar.bz2
         URL_HASH ${EXPAT_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
