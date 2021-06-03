@@ -619,7 +619,7 @@ ExternalProject_add(gcc-final
     --with-libelf=${toolchain_target_depends_dir}
     ${common_gcc_configure_args}
     --with-headers=yes
-    --enable-threads=posix
+    --enable-threads=yes
     "CFLAGS=${GCC_CFLAGS}"
     "CXXFLAGS=${GCC_CFLAGS}"
     BUILD_COMMAND ${toolchain_tools} ${compiler_target_tools} ${wrapper_command}
