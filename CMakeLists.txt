@@ -493,11 +493,13 @@ ExternalProject_add(vita-headers
     GIT_REPOSITORY https://github.com/vitasdk/vita-headers
     GIT_TAG ${HEADERS_TAG}
     ${GIT_SHALLOW_SUPPORT}
-    # TODO: vita-libs-gen should generate a proper makefile so this can be simplified
-    CONFIGURE_COMMAND ${vita_libs_gen_command} <SOURCE_DIR>/db.yml <BINARY_DIR>
-    BUILD_COMMAND $(MAKE) ARCH=${binutils_prefix}
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND VITA_LIBS_GEN=${vita_libs_gen_command}
+        ARCH=${binutils_prefix}
+        BYPASS_INSTALL=1
+        python <SOURCE_DIR>/build.py <BINARY_DIR>
     # Copy the generated .a files to the install directory
-    INSTALL_COMMAND ${CMAKE_COMMAND} -DGLOB_PATTERN=<BINARY_DIR>/*a
+    INSTALL_COMMAND ${CMAKE_COMMAND} -DGLOB_PATTERN=<BINARY_DIR>/*/*/*a
     -DINSTALL_DIR=${CMAKE_INSTALL_PREFIX}/${target_arch}/lib
     -P ${CMAKE_SOURCE_DIR}/cmake/install_files.cmake
     # Copy the include headers to the installation directory
@@ -507,8 +509,8 @@ ExternalProject_add(vita-headers
     COMMAND ${CMAKE_COMMAND} -E make_directory ${toolchain_build_install_dir}/${target_arch}/include
     COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include ${toolchain_build_install_dir}/${target_arch}/include
     # Copy the yml database to the installation directory
-    COMMAND ${CMAKE_COMMAND} -DGLOB_PATTERN=<SOURCE_DIR>/db.yml -DINSTALL_DIR=${CMAKE_INSTALL_PREFIX}/share
-    -P ${CMAKE_SOURCE_DIR}/cmake/install_files.cmake
+    #COMMAND ${CMAKE_COMMAND} -DGLOB_PATTERN=<SOURCE_DIR>/db.yml -DINSTALL_DIR=${CMAKE_INSTALL_PREFIX}/share
+    #-P ${CMAKE_SOURCE_DIR}/cmake/install_files.cmake
     # Save the commit id for tracking purposes
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/vita-headers-version.txt
     ${UPDATE_DISCONNECTED_SUPPORT}
