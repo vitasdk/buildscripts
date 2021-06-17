@@ -8,8 +8,8 @@ cmake_minimum_required(VERSION 3.2.0)
 project(vitasdk)
 
 # Use the following gcc version
-set(GCC_VERSION 10.3.0)
-set(GCC_HASH SHA256=64f404c1a650f27fc33da242e1f2df54952e3963a49e06e73f6940f3223ac344)
+set(GCC_VERSION 11.1.0)
+set(GCC_HASH SHA256=4c4a6fb8a8396059241c2e674b85b351c26a5d678274007f076957afa1cc9ddf)
 
 set(ZLIB_VERSION 1.2.11)
 set(ZLIB_HASH SHA256=4ff941449631ace0d4d203e3483be9dbc9da454084111f97ea0a2114e19bf066)
@@ -20,8 +20,8 @@ set(LIBELF_HASH SHA256=591a9b4ec81c1f2042a97aa60564e0cb79d041c52faa7416acb38bc95
 set(LIBYAML_VERSION 0.2.2)
 set(LIBYAML_HASH SHA256=4a9100ab61047fd9bd395bcef3ce5403365cafd55c1e0d0299cde14958e47be9)
 
-set(GMP_VERSION 6.1.2)
-set(GMP_HASH SHA256=5275bb04f4863a13516b2f39392ac5e272f5e1bb8057b18aec1c9b79d73d8fb2)
+set(GMP_VERSION 6.2.1)
+set(GMP_HASH SHA256=eae9326beb4158c386e39a356818031bd28f3124cf915f8c5b1dc4c7a36b4d7c)
 
 set(MPFR_VERSION 4.0.2)
 set(MPFR_HASH SHA256=c05e3f02d09e0e9019384cdd58e0f19c64e6db1fd6f5ecf77b4b1c61ca253acc)
@@ -185,7 +185,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL https://github.com/vitasdk/artifacts/releases/download/libelf-${LIBELF_VERSION}/libelf-${LIBELF_VERSION}.tar.gz
         URL_HASH ${LIBELF_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libelf.patch
+        PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/libelf-m1.patch
         CONFIGURE_COMMAND autoreconf -i <SOURCE_DIR> COMMAND CC=${cc_compiler} RANLIB=${ranlib} ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
@@ -464,7 +464,7 @@ ExternalProject_add(gcc-base
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
-    PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-8.patch
+    PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-11.1.0-m1.patch
     CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
     --build=${build_native}
     # compile a native compiler so keep host == build
@@ -551,7 +551,7 @@ if(CMAKE_TOOLCHAIN_FILE)
         URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
         URL_HASH ${GCC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-8.patch
+        PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-11.1.0-m1.patch
         CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools}
         ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
@@ -604,7 +604,7 @@ ExternalProject_add(gcc-final
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
-    PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-8.patch
+    PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-11.1.0-m1.patch
     CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
     ${wrapper_command} <SOURCE_DIR>/configure
     --build=${build_native}

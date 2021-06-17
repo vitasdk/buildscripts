@@ -1,0 +1,24 @@
+diff -ru libelf-0.8.13/config.sub libelf-0.8.13-m1/config.sub
+--- libelf-0.8.13/config.sub	2005-05-21 17:28:37.000000000 +0200
++++ libelf-0.8.13-m1/config.sub	2021-06-17 20:05:18.000000000 +0200
+@@ -285,6 +285,8 @@
+ 	i*86 | x86_64)
+ 	  basic_machine=$basic_machine-pc
+ 	  ;;
++	aarch64-apple|x86-64-apple)
++	  ;;
+ 	# Object if more than one company name word.
+ 	*-*-*)
+ 		echo Invalid configuration \`$1\': machine \`$basic_machine\' not recognized 1>&2
+diff -ru libelf-0.8.13/configure libelf-0.8.13-m1/configure
+--- libelf-0.8.13/configure	2008-05-23 10:18:03.000000000 +0200
++++ libelf-0.8.13-m1/configure	2021-06-17 19:12:37.000000000 +0200
+@@ -1595,7 +1595,7 @@
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   if test "$cross_compiling" = yes; then
+-  ac_cv_sizeof_long_long=0
++  ac_cv_sizeof_long_long=8
+ else
+   cat > conftest.$ac_ext <<EOF
+ #line 1602 "configure"
