@@ -434,7 +434,6 @@ set(common_gcc_configure_args
     --enable-languages=c,c++
     --disable-decimal-float
     --disable-libffi
-    --disable-libgomp
     --disable-libmudflap
     --disable-libquadmath
     --disable-libssp
@@ -482,6 +481,7 @@ ExternalProject_add(gcc-base
     ${common_gcc_configure_args}
     --disable-threads
     --without-headers
+    --disable-libgomp
     "CFLAGS=${GCC_CFLAGS}"
     "CXXFLAGS=${GCC_CFLAGS}"
     BUILD_COMMAND $(MAKE) all-gcc
