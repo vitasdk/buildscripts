@@ -41,3 +41,17 @@ index 4f57765b0..a4d5ffb14 100644
  #endif
  
  /* When using -fsplit-stack we need to wrap pthread_create, in order
+diff --git a/gcc/config/arm/arm.opt b/gcc/config/arm/arm.opt
+index af478a946b2..31d0ff7fd18 100644
+--- a/gcc/config/arm/arm.opt
++++ b/gcc/config/arm/arm.opt
+@@ -21,6 +21,9 @@
+ HeaderInclude
+ config/arm/arm-opts.h
+ 
++pthread
++Driver
++
+ Enum
+ Name(tls_type) Type(enum arm_tls_type)
+ TLS dialect to use:
