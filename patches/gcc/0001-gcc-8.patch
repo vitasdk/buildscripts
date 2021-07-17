@@ -55,3 +55,37 @@ index af478a946b2..31d0ff7fd18 100644
  Enum
  Name(tls_type) Type(enum arm_tls_type)
  TLS dialect to use:
+diff --git a/libgomp/configure b/libgomp/configure
+index 6161da579c0..68c31eaad2b 100755
+--- a/libgomp/configure
++++ b/libgomp/configure
+@@ -15720,29 +15720,6 @@ $as_echo "#define HAVE_UNAME 1" >>confdefs.h
+ fi
+ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+ 
+-# Check for gethostname.
+-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+-/* end confdefs.h.  */
+-#include <unistd.h>
+-int
+-main ()
+-{
+-
+-   char buf[256];
+-   if (gethostname (buf, sizeof (buf) - 1) == 0)
+-     buf[255] = '\0';
+-
+-  ;
+-  return 0;
+-}
+-_ACEOF
+-if ac_fn_c_try_compile "$LINENO"; then :
+-
+-$as_echo "#define HAVE_GETHOSTNAME 1" >>confdefs.h
+-
+-fi
+-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+-
+ # Check for getpid.
+ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
