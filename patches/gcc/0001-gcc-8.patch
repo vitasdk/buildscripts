@@ -37,7 +37,55 @@ index 4f57765b0..a4d5ffb14 100644
 +#undef LIB_SPEC
  #ifndef LIB_SPEC
 -#define LIB_SPEC "%{!shared:%{g*:-lg} %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}}"
-+#define LIB_SPEC "%{!shared:%{g*:-lg} %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}} -lSceRtc_stub -lSceSysmem_stub -lSceKernelThreadMgr_stub -lSceKernelModulemgr_stub -lSceIofilemgr_stub -lSceProcessmgr_stub -lSceLibKernel_stub -lSceNet_stub"
++#define LIB_SPEC "%{!shared:%{g*:-lg} %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}} %{pthread:--whole-archive -lpthread --no-whole-archive} -lSceRtc_stub -lSceSysmem_stub -lSceKernelThreadMgr_stub -lSceKernelModulemgr_stub -lSceIofilemgr_stub -lSceProcessmgr_stub -lSceLibKernel_stub -lSceNet_stub"
  #endif
  
  /* When using -fsplit-stack we need to wrap pthread_create, in order
+diff --git a/gcc/config/arm/arm.opt b/gcc/config/arm/arm.opt
+index af478a946b2..31d0ff7fd18 100644
+--- a/gcc/config/arm/arm.opt
++++ b/gcc/config/arm/arm.opt
+@@ -21,6 +21,9 @@
+ HeaderInclude
+ config/arm/arm-opts.h
+ 
++pthread
++Driver
++
+ Enum
+ Name(tls_type) Type(enum arm_tls_type)
+ TLS dialect to use:
+diff --git a/libgomp/configure b/libgomp/configure
+index 6161da579c0..68c31eaad2b 100755
+--- a/libgomp/configure
++++ b/libgomp/configure
+@@ -15720,29 +15720,6 @@ $as_echo "#define HAVE_UNAME 1" >>confdefs.h
+ fi
+ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+ 
+-# Check for gethostname.
+-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+-/* end confdefs.h.  */
+-#include <unistd.h>
+-int
+-main ()
+-{
+-
+-   char buf[256];
+-   if (gethostname (buf, sizeof (buf) - 1) == 0)
+-     buf[255] = '\0';
+-
+-  ;
+-  return 0;
+-}
+-_ACEOF
+-if ac_fn_c_try_compile "$LINENO"; then :
+-
+-$as_echo "#define HAVE_GETHOSTNAME 1" >>confdefs.h
+-
+-fi
+-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+-
+ # Check for getpid.
+ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
