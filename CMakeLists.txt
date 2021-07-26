@@ -536,6 +536,7 @@ ExternalProject_Add(newlib
     --enable-newlib-io-long-long
     --enable-newlib-register-fini
     --disable-newlib-supplied-syscalls
+    --enable-newlib-long-time_t
     --disable-nls
     BUILD_COMMAND ${compiler_flags} ${toolchain_tools} ${wrapper_command} $(MAKE)
     INSTALL_COMMAND $(MAKE) install DESTDIR=${CMAKE_INSTALL_PREFIX}
