@@ -17,12 +17,9 @@ jobs:
     - name: Install MSYS2 texinfo bison flex
       uses: msys2/setup-msys2@v2
       with:
-        msystem: MINGW32
-        install: base-devel git make texinfo flex bison patch binutils mingw-w64-i686-gcc mpc-devel python mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja
+        msystem: MINGW64
+        install: base-devel git make texinfo flex bison patch binutils mpc-devel python mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-gcc
         update: true
-    - name: Put MSYS2_MinGW64 on PATH
-      # there is not yet an environment variable for this path from msys2/setup-msys2
-      run: echo "D:/a/_temp/msys/msys64/mingw64/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Build
       run: |
         git config --global user.email "builds@travis-ci.com"
