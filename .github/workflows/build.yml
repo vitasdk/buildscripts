@@ -53,17 +53,16 @@ jobs:
         name: vitasdk-macos
         path: build/*.tar.bz2
   build-windows:
-    runs-on: ubuntu-latest
-    container: ubuntu:14.04
+    runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y software-properties-common
-        sudo add-apt-repository ppa:george-edison55/cmake-3.x
-        sudo apt-get update
-        sudo apt-get install -y cmake cmake-data git build-essential autoconf texinfo bison flex pkg-config g++-mingw-w64 python
+    - name: Install MSYS2 texinfo bison flex
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW32
+        install: base-devel git make texinfo flex bison patch binutils mingw-w64-i686-gcc mpc-devel
+        update: true
+        shell: msys2 {0}
     - name: Build
       run: |
         git config --global user.email "builds@travis-ci.com"
@@ -72,7 +71,7 @@ jobs:
         unset CC
         mkdir build
         cd build
-        cmake .. -DCMAKE_TOOLCHAIN_FILE=toolchain-x86_64-w64-mingw32.cmake
+        cmake ..
         make -j$(nproc) tarball
     - name: Upload artifacts
       if: ${{ success() }}
