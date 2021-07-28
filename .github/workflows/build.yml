@@ -7,56 +7,11 @@ on:
     types: [run_build]
 
 jobs:
-  build-linux:
-    runs-on: ubuntu-latest
-    container: ubuntu:14.04
-    steps:
-    - uses: actions/checkout@v2
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y software-properties-common
-        sudo add-apt-repository ppa:george-edison55/cmake-3.x
-        sudo apt-get update
-        sudo apt-get install -y cmake cmake-data git build-essential autoconf texinfo bison flex pkg-config python
-    - name: Build
-      run: |
-        git config --global user.email "builds@travis-ci.com"
-        git config --global user.name "Travis CI"
-        mkdir build
-        cd build
-        cmake ..
-        make -j$(nproc) tarball
-    - name: Upload artifacts
-      if: ${{ success() }}
-      uses: actions/upload-artifact@v2
-      with:
-        name: vitasdk-linux
-        path: build/*.tar.bz2
-  build-macos:
-    runs-on: macos-10.15
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
-    - name: Build
-      run: |
-        git config --global user.email "builds@travis-ci.com"
-        git config --global user.name "Travis CI"
-        mkdir build
-        cd build
-        cmake ..
-        make -j$(nproc) tarball
-    - name: Upload artifacts
-      if: ${{ success() }}
-      uses: actions/upload-artifact@v2
-      with:
-        name: vitasdk-macos
-        path: build/*.tar.bz2
   build-windows:
     runs-on: windows-latest
     defaults:
      run:
-      shell: msys2 {0}
+      shell: mingw64 {0}
     steps:
     - uses: actions/checkout@v2
     - name: Install MSYS2 texinfo bison flex
@@ -65,7 +20,6 @@ jobs:
         msystem: MINGW32
         install: base-devel git make texinfo flex bison patch binutils mingw-w64-i686-gcc mpc-devel python mingw-w64-x86_64-cmake
         update: true
-        shell: msys2 {0}
     - name: Build
       run: |
         git config --global user.email "builds@travis-ci.com"
