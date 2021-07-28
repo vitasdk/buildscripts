@@ -35,7 +35,7 @@ function(get_build_triplet triplet)
     if(host_arch STREQUAL "x86")
         set(host_arch "i686")
     endif()
-    if(host_arch STREQUAL "amd64")
+    if(host_arch STREQUAL "AMD64")
         set(host_arch "x86_64")
     endif()
 
