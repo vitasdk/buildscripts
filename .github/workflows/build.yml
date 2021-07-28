@@ -72,8 +72,6 @@ jobs:
         git config --global user.name "Travis CI"
         mkdir build
         cd build
-        export CC=x86_64-w64-mingw32-gcc
-        export CXX=x86_64-w64-mingw32-g++
         cmake ..
         make -j4 tarball
     - name: Upload artifacts
