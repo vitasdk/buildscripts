@@ -56,7 +56,7 @@ jobs:
     runs-on: windows-latest
     defaults:
      run:
-      shell: msys2
+      shell: msys2 {0}
     steps:
     - uses: actions/checkout@v2
     - name: Install MSYS2 texinfo bison flex
@@ -65,7 +65,7 @@ jobs:
         msystem: MINGW32
         install: base-devel git make texinfo flex bison patch binutils mingw-w64-i686-gcc mpc-devel
         update: true
-        shell: msys2
+        shell: msys2 {0}
     - name: Build
       run: |
         git config --global user.email "builds@travis-ci.com"
