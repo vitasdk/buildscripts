@@ -156,3 +156,15 @@ diff -Naur gcc-11.1.0/libgomp/configure gcc-11.1.0-m1/libgomp/configure
  # Check for getpid.
  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
  /* end confdefs.h.  */
+diff -Naur gcc-11.1.0/libgomp/libgomp_f.h.in gcc-11.1.0-m1/libgomp/libgomp_f.h.in
+--- gcc-11.1.0/libgomp/libgomp_f.h.in	2021-04-27 12:00:15.000000000 +0200
++++ gcc-11.1.0-m1/libgomp/libgomp_f.h.in	2021-08-01 00:46:30.000000000 +0200
+@@ -81,7 +81,7 @@
+ 	     || @OMP_LOCK_KIND@ != sizeof (*(omp_lock_arg_t) 0)
+ 	     || @OMP_NEST_LOCK_KIND@ != sizeof (*(omp_nest_lock_arg_t) 0)
+ 	     || @INTPTR_T_KIND@ != sizeof (omp_allocator_handle_t)
+-	     || 4 != sizeof (omp_alloctrait_key_t)
++//	     || 4 != sizeof (omp_alloctrait_key_t)
+ 	     || @INTPTR_T_KIND@ != sizeof (omp_alloctrait_value_t)
+ 	     || @INTPTR_T_KIND@ != sizeof (omp_memspace_handle_t)
+ 	     || @OMP_DEPEND_KIND@ != sizeof (omp_depend_t))
