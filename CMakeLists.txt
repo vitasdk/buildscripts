@@ -571,9 +571,9 @@ if(CMAKE_TOOLCHAIN_FILE)
         --with-isl=${toolchain_build_depends_dir}
         --with-libelf=${toolchain_build_depends_dir}
         ${common_gcc_configure_args}
-        --disable-threads
+        --enable-threads=posix
         --with-headers=yes
-        --disable-libgomp
+        --enable-libgomp
         "CFLAGS=${GCC_CFLAGS}"
         "CXXFLAGS=${GCC_CFLAGS}"
         BUILD_COMMAND ${toolchain_tools} ${wrapper_command} $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
