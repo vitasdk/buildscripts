@@ -55,8 +55,18 @@ diff -Naur gcc-11.1.0/gcc/config/arm/arm-c.c gcc-11.1.0-m1/gcc/config/arm/arm-c.
  
 diff -Naur gcc-11.1.0/gcc/config/arm/arm.h gcc-11.1.0-m1/gcc/config/arm/arm.h
 --- gcc-11.1.0/gcc/config/arm/arm.h	2021-04-27 12:00:13.000000000 +0200
-+++ gcc-11.1.0-m1/gcc/config/arm/arm.h	2021-07-31 20:05:02.000000000 +0200
-@@ -741,6 +741,10 @@
++++ gcc-11.1.0-m1/gcc/config/arm/arm.h	2021-08-01 13:45:13.000000000 +0200
+@@ -423,8 +423,7 @@
+ 
+ /* AAPCS based ABIs use short enums by default.  */
+ #ifndef ARM_DEFAULT_SHORT_ENUMS
+-#define ARM_DEFAULT_SHORT_ENUMS \
+-  (TARGET_AAPCS_BASED && arm_abi != ARM_ABI_AAPCS_LINUX)
++#define ARM_DEFAULT_SHORT_ENUMS 0
+ #endif
+ 
+ /* Map each of the micro-architecture variants to their corresponding
+@@ -741,6 +740,10 @@
  #define WCHAR_TYPE_SIZE BITS_PER_WORD
  #endif
  
@@ -156,15 +166,3 @@ diff -Naur gcc-11.1.0/libgomp/configure gcc-11.1.0-m1/libgomp/configure
  # Check for getpid.
  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
  /* end confdefs.h.  */
-diff -Naur gcc-11.1.0/libgomp/libgomp_f.h.in gcc-11.1.0-m1/libgomp/libgomp_f.h.in
---- gcc-11.1.0/libgomp/libgomp_f.h.in	2021-04-27 12:00:15.000000000 +0200
-+++ gcc-11.1.0-m1/libgomp/libgomp_f.h.in	2021-08-01 00:46:30.000000000 +0200
-@@ -81,7 +81,7 @@
- 	     || @OMP_LOCK_KIND@ != sizeof (*(omp_lock_arg_t) 0)
- 	     || @OMP_NEST_LOCK_KIND@ != sizeof (*(omp_nest_lock_arg_t) 0)
- 	     || @INTPTR_T_KIND@ != sizeof (omp_allocator_handle_t)
--	     || 4 != sizeof (omp_alloctrait_key_t)
-+//	     || 4 != sizeof (omp_alloctrait_key_t)
- 	     || @INTPTR_T_KIND@ != sizeof (omp_alloctrait_value_t)
- 	     || @INTPTR_T_KIND@ != sizeof (omp_memspace_handle_t)
- 	     || @OMP_DEPEND_KIND@ != sizeof (omp_depend_t))
