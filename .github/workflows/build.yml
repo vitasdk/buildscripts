@@ -33,6 +33,15 @@ jobs:
       with:
         name: vitasdk-linux
         path: build/*.tar.bz2
+    - uses: svenstaro/upload-release-action@v2
+      if: contains(github.ref,'refs/heads/softp')
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: build/*.tar.bz2
+        overwrite: true
+        file_glob: true
+        tag: softfp-linux-v2.${{github.run_number}}
+        release_name: softfp-linux-v2.${{github.run_number}}
   build-macos:
     runs-on: macos-10.15
     steps:
@@ -52,6 +61,15 @@ jobs:
       with:
         name: vitasdk-macos
         path: build/*.tar.bz2
+    - uses: svenstaro/upload-release-action@v2
+      if: contains(github.ref,'refs/heads/softp')
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: build/*.tar.bz2
+        overwrite: true
+        file_glob: true
+        tag: softfp-osx-v2.${{github.run_number}}
+        release_name: softfp-osx-v2.${{github.run_number}}
   build-windows:
     runs-on: ubuntu-latest
     container: ubuntu:14.04
@@ -80,3 +98,12 @@ jobs:
       with:
         name: vitasdk-windows
         path: build/*.tar.bz2
+    - uses: svenstaro/upload-release-action@v2
+      if: contains(github.ref,'refs/heads/softp')
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: build/*.tar.bz2
+        overwrite: true
+        file_glob: true
+        tag: softfp-win-v2.${{github.run_number}}
+        release_name: softfp-win-v2.${{github.run_number}}
