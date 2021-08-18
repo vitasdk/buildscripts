@@ -34,7 +34,7 @@ jobs:
         name: vitasdk-linux
         path: build/*.tar.bz2
     - uses: svenstaro/upload-release-action@v2
-      if: contains(github.ref,'refs/heads/softp')
+      if: contains(github.ref,'refs/heads/softfp')
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: build/*.tar.bz2
@@ -62,7 +62,7 @@ jobs:
         name: vitasdk-macos
         path: build/*.tar.bz2
     - uses: svenstaro/upload-release-action@v2
-      if: contains(github.ref,'refs/heads/softp')
+      if: contains(github.ref,'refs/heads/softfp')
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: build/*.tar.bz2
@@ -99,7 +99,7 @@ jobs:
         name: vitasdk-windows
         path: build/*.tar.bz2
     - uses: svenstaro/upload-release-action@v2
-      if: contains(github.ref,'refs/heads/softp')
+      if: contains(github.ref,'refs/heads/softfp')
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: build/*.tar.bz2
