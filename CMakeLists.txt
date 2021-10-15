@@ -30,7 +30,6 @@ set(MPC_VERSION 1.1.0)
 set(MPC_HASH SHA256=6985c538143c1208dcb1ac42cedad6ff52e267b47e5f970183a3e75125b43c2e)
 
 set(ISL_VERSION 0.21)
-set(ISL_HASH SHA256=777058852a3db9500954361e294881214f6ecd4b594c00da5eee974cd6a54960)
 
 set(EXPAT_VERSION 2.3.0)
 set(EXPAT_HASH SHA256=f122a20eada303f904d5e0513326c5b821248f2d4d2afbf5c6f1339e511c0586)
@@ -255,10 +254,10 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_add(isl${suffix}
         DEPENDS gmp${suffix}
-        URL http://isl.gforge.inria.fr/isl-${ISL_VERSION}.tar.xz
-        URL_HASH ${ISL_HASH}
+        GIT_REPOSITORY https://github.com/Meinersbur/isl
+        GIT_TAG isl-${ISL_VERSION}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND cd <SOURCE_DIR> && ./autogen.sh COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
