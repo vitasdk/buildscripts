@@ -3,7 +3,7 @@ FROM alpine:3.12
 
 COPY . /src
 
-RUN apk add build-base cmake git bash autoconf texinfo patch pkgconfig python3 && ln -sf python3 /usr/bin/python
+RUN apk add build-base cmake git bash autoconf automake libtool texinfo patch pkgconfig python3 && ln -sf python3 /usr/bin/python
 RUN cd /src && mkdir build && cd build && cmake .. && make -j$(nproc)
 
 # Second stage of Dockerfile
