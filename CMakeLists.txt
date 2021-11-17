@@ -46,7 +46,6 @@ set(NEWLIB_TAG vita CACHE STRING "newlib branch name, commit id or tag")
 set(SAMPLES_TAG master CACHE STRING "samples branch name, commit id or tag")
 set(HEADERS_TAG master CACHE STRING "vita-headers branch name, commit id or tag")
 set(TOOLCHAIN_TAG master CACHE STRING "vita-toolchain branch name, commit id or tag")
-set(PSP2RELA_TAG master CACHE STRING "psp2rela branch name, commit id or tag")
 set(PTHREAD_TAG master CACHE STRING "pthread-embedded branch name, commit id or tag")
 set(VDPM_TAG master CACHE STRING "vdpm branch name, commit id or tag")
 set(VITA_MAKEPKG_TAG master CACHE STRING "vita-makepkg branch name, commit id or tag")
@@ -294,20 +293,6 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         ${UPDATE_DISCONNECTED_SUPPORT}
         )
 
-    ExternalProject_Add(psp2rela${suffix}
-        DEPENDS zlib${suffix}
-        GIT_REPOSITORY https://github.com/Princess-of-Sleeping/psp2rela
-        GIT_TAG ${PSP2RELA_TAG}
-        ${GIT_SHALLOW_SUPPORT}
-        # Set prefix to "/" here to be able to install twice
-        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=/
-        BUILD_COMMAND $(MAKE)
-        INSTALL_COMMAND $(MAKE) install
-        # Save the commit id for tracking purposes
-        COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/psp2rela-version.txt
-        ${UPDATE_DISCONNECTED_SUPPORT}
-        )
-
     ExternalProject_Add(binutils${suffix}
         URL https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VERSION}.tar.xz
         URL_HASH ${BINUTILS_HASH}
@@ -374,15 +359,6 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
             COMMAND $(MAKE) -C <BINARY_DIR> install DESTDIR=${CMAKE_INSTALL_PREFIX}
             COMMENT "Installing vita-toolchain to ${CMAKE_INSTALL_PREFIX}"
             )
-    endif()
-
-    if("${host_native}" STREQUAL "${build_native}")
-        ExternalProject_Add_Step(psp2rela${suffix}
-          install_sdk
-          DEPENDEES build
-          COMMAND $(MAKE) -C <BINARY_DIR> install DESTDIR=${CMAKE_INSTALL_PREFIX}
-          COMMENT "Installing psp2rela to ${CMAKE_INSTALL_PREFIX}"
-          )
     endif()
 endfunction()
 
