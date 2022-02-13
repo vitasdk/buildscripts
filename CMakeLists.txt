@@ -537,6 +537,7 @@ ExternalProject_Add(newlib
     --disable-newlib-supplied-syscalls
     --enable-newlib-long-time_t
     --disable-nls
+    --enable-newlib-iconv
     BUILD_COMMAND ${compiler_flags} ${toolchain_tools} ${wrapper_command} $(MAKE)
     INSTALL_COMMAND $(MAKE) install DESTDIR=${CMAKE_INSTALL_PREFIX}
     # Install a copy of newlib in the toolchain directory (required for pthread-embedded target)
