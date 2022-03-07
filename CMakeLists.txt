@@ -176,6 +176,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libzip.patch
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${toolchain_deps_dir}
         ${toolchain_cmake_args} ${libzip_configure}
+        -D_LARGEFILE_SOURCE=1
+        -D_FILE_OFFSET_BITS=64
         -DZLIB_INCLUDE_DIR=${toolchain_deps_dir}/include
         -DZLIB_LIBRARY=${toolchain_deps_dir}/lib/libz.a
         )
