@@ -1,8 +1,8 @@
 diff --git a/gcc/config/arm/arm-c.c b/gcc/config/arm/arm-c.c
-index 6e256ee0a..54e390c38 100644
+index 7468a20bd..3496590c4 100644
 --- a/gcc/config/arm/arm-c.c
 +++ b/gcc/config/arm/arm-c.c
-@@ -230,6 +230,8 @@ arm_cpu_cpp_builtins (struct cpp_reader * pfile)
+@@ -372,6 +372,8 @@ arm_cpu_cpp_builtins (struct cpp_reader * pfile)
    builtin_assert ("cpu=arm");
    builtin_assert ("machine=arm");
  
@@ -12,10 +12,10 @@ index 6e256ee0a..54e390c38 100644
  }
  
 diff --git a/gcc/config/arm/arm.h b/gcc/config/arm/arm.h
-index 9ee6a4eb5..b89f85655 100644
+index 30e1d6dc9..a48a086cb 100644
 --- a/gcc/config/arm/arm.h
 +++ b/gcc/config/arm/arm.h
-@@ -669,6 +670,10 @@ extern int arm_arch_cmse;
+@@ -731,6 +731,10 @@ extern const int arm_arch_cde_coproc_bits[];
  #define WCHAR_TYPE_SIZE BITS_PER_WORD
  #endif
  
@@ -26,11 +26,25 @@ index 9ee6a4eb5..b89f85655 100644
  /* Sized for fixed-point types.  */
  
  #define SHORT_FRACT_TYPE_SIZE 8
+diff --git a/gcc/config/arm/arm.opt b/gcc/config/arm/arm.opt
+index cd3d8e1be..523b92aa1 100644
+--- a/gcc/config/arm/arm.opt
++++ b/gcc/config/arm/arm.opt
+@@ -30,6 +30,9 @@ const char *x_arm_cpu_string
+ TargetSave
+ const char *x_arm_tune_string
+ 
++pthread
++Driver
++
+ Enum
+ Name(tls_type) Type(enum arm_tls_type)
+ TLS dialect to use:
 diff --git a/gcc/gcc.c b/gcc/gcc.c
-index 4f57765b0..a4d5ffb14 100644
+index 9f790db0d..27a38bb02 100644
 --- a/gcc/gcc.c
 +++ b/gcc/gcc.c
-@@ -674,8 +674,9 @@ proper position among the other output files.  */
+@@ -673,8 +673,9 @@ proper position among the other output files.  */
  #endif
  
  /* config.h can define LIB_SPEC to override the default libraries.  */
@@ -41,25 +55,42 @@ index 4f57765b0..a4d5ffb14 100644
  #endif
  
  /* When using -fsplit-stack we need to wrap pthread_create, in order
-diff --git a/gcc/config/arm/arm.opt b/gcc/config/arm/arm.opt
-index af478a946b2..31d0ff7fd18 100644
---- a/gcc/config/arm/arm.opt
-+++ b/gcc/config/arm/arm.opt
-@@ -21,6 +21,9 @@
- HeaderInclude
- config/arm/arm-opts.h
+diff --git a/gcc/genconditions.c b/gcc/genconditions.c
+index 3a5b85d11..3ca61913f 100644
+--- a/gcc/genconditions.c
++++ b/gcc/genconditions.c
+@@ -58,7 +58,7 @@ write_header (void)
+ /* It is necessary, but not entirely safe, to include the headers below\n\
+    in a generator program.  As a defensive measure, don't do so when the\n\
+    table isn't going to have anything in it.  */\n\
+-#if GCC_VERSION >= 3001\n\
++#if GCC_VERSION >= 3001 && __clang_major__ < 9\n\
+ \n\
+ /* Do not allow checking to confuse the issue.  */\n\
+ #undef CHECKING_P\n\
+@@ -170,7 +170,7 @@ struct c_test\n\
+    vary at run time.  It works in 3.0.1 and later; 3.0 only when not\n\
+    optimizing.  */\n\
+ \n\
+-#if GCC_VERSION >= 3001\n\
++#if GCC_VERSION >= 3001 && __clang_major__ < 9\n\
+ static const struct c_test insn_conditions[] = {\n");
  
-+pthread
-+Driver
-+
- Enum
- Name(tls_type) Type(enum arm_tls_type)
- TLS dialect to use:
+   traverse_c_tests (write_one_condition, 0);
+@@ -191,7 +191,7 @@ write_writer (void)
+ 	"  unsigned int i;\n"
+         "  const char *p;\n"
+         "  puts (\"(define_conditions [\");\n"
+-	"#if GCC_VERSION >= 3001\n"
++	"#if GCC_VERSION >= 3001 && __clang_major__ < 9\n"
+ 	"  for (i = 0; i < ARRAY_SIZE (insn_conditions); i++)\n"
+ 	"    {\n"
+ 	"      printf (\"  (%d \\\"\", insn_conditions[i].value);\n"
 diff --git a/libgomp/configure b/libgomp/configure
-index 6161da579c0..68c31eaad2b 100755
+index 5240f7e9d..de5dc96e4 100755
 --- a/libgomp/configure
 +++ b/libgomp/configure
-@@ -15720,29 +15720,6 @@ $as_echo "#define HAVE_UNAME 1" >>confdefs.h
+@@ -15768,29 +15768,6 @@ $as_echo "#define HAVE_UNAME 1" >>confdefs.h
  fi
  rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
  
