@@ -1,7 +1,8 @@
-diff -r -u zlib-1.2.12/CMakeLists.txt zlib-1.2.12-patched/CMakeLists.txt
---- zlib-1.2.12/CMakeLists.txt	2022-03-27 18:39:42.000000000 -0500
-+++ zlib-1.2.12-patched/CMakeLists.txt	2022-03-28 22:10:09.518039100 -0500
-@@ -225,25 +225,3 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index b412dc7..a62204a 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -189,25 +189,3 @@ endif()
  if(NOT SKIP_INSTALL_FILES AND NOT SKIP_INSTALL_ALL )
      install(FILES ${ZLIB_PC} DESTINATION "${INSTALL_PKGCONFIG_DIR}")
  endif()
