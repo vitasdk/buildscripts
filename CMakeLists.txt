@@ -181,22 +181,38 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         -DZLIB_INCLUDE_DIR=${toolchain_deps_dir}/include
         -DZLIB_LIBRARY=${toolchain_deps_dir}/lib/libz.a
         )
-
-    ExternalProject_add(libelf${suffix}
-        URL https://github.com/vitasdk/artifacts/releases/download/libelf-${LIBELF_VERSION}/libelf-${LIBELF_VERSION}.tar.gz
-        URL_HASH ${LIBELF_HASH}
-        DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libelf.patch || true
-        COMMAND ${CMAKE_COMMAND} -E copy /usr/share/misc/config.sub <SOURCE_DIR>
-        COMMAND ${CMAKE_COMMAND} -E copy /usr/share/misc/config.guess <SOURCE_DIR>
-        CONFIGURE_COMMAND autoreconf -i <SOURCE_DIR> COMMAND CC=${cc_compiler} RANLIB=${ranlib} ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
-        --build=${build_native}
-        --host=${toolchain_host}
-        --prefix=${toolchain_deps_dir}
-        --libdir=${toolchain_deps_dir}/lib
-        --disable-shared
-        --disable-nls
-        )
+    
+    if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+        ExternalProject_add(libelf${suffix}
+            URL https://github.com/vitasdk/artifacts/releases/download/libelf-${LIBELF_VERSION}/libelf-${LIBELF_VERSION}.tar.gz
+            URL_HASH ${LIBELF_HASH}
+            DOWNLOAD_DIR ${DOWNLOAD_DIR}
+            PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libelf.patch || true
+            CONFIGURE_COMMAND autoreconf -i <SOURCE_DIR> COMMAND CC=${cc_compiler} RANLIB=${ranlib} ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+            --build=${build_native}
+            --host=${toolchain_host}
+            --prefix=${toolchain_deps_dir}
+            --libdir=${toolchain_deps_dir}/lib
+            --disable-shared
+            --disable-nls
+            )
+    else()
+        ExternalProject_add(libelf${suffix}
+            URL https://github.com/vitasdk/artifacts/releases/download/libelf-${LIBELF_VERSION}/libelf-${LIBELF_VERSION}.tar.gz
+            URL_HASH ${LIBELF_HASH}
+            DOWNLOAD_DIR ${DOWNLOAD_DIR}
+            PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libelf.patch || true
+            COMMAND ${CMAKE_COMMAND} -E copy /usr/share/misc/config.sub <SOURCE_DIR>
+            COMMAND ${CMAKE_COMMAND} -E copy /usr/share/misc/config.guess <SOURCE_DIR>
+            CONFIGURE_COMMAND autoreconf -i <SOURCE_DIR> COMMAND CC=${cc_compiler} RANLIB=${ranlib} ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+            --build=${build_native}
+            --host=${toolchain_host}
+            --prefix=${toolchain_deps_dir}
+            --libdir=${toolchain_deps_dir}/lib
+            --disable-shared
+            --disable-nls
+            )
+    endif()
 
     ExternalProject_add(libyaml${suffix}
         URL http://pyyaml.org/download/libyaml/yaml-${LIBYAML_VERSION}.tar.gz
