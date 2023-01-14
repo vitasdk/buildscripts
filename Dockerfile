@@ -7,9 +7,13 @@ RUN apk add build-base cmake git bash autoconf automake libtool texinfo patch pk
 RUN cd /src && mkdir build && cd build && cmake .. && make -j$(nproc)
 
 # Second stage of Dockerfile
-FROM alpine:latest  
+FROM alpine:latest
 
-ENV VITASDK /home/user/vitasdk
+ENV VITASDK /usr/local/vitasdk
 ENV PATH ${VITASDK}/bin:$PATH
 
-COPY --from=0 /src/build/vitasdk ${VITASDK}
+RUN adduser -D user &&\
+    echo "export VITASDK=${VITASDK}" > /etc/profile.d/vitasdk.sh && \
+    echo 'export PATH=$PATH:$VITASDK/bin'  >> /etc/profile.d/vitasdk.sh
+
+COPY --from=0 --chown=user /src/build/vitasdk ${VITASDK}
