@@ -126,7 +126,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL https://zlib.net/zlib-${ZLIB_VERSION}.tar.xz
         URL_HASH ${ZLIB_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/zlib.patch
+        PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/zlib.patch || true
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${toolchain_deps_dir}
         ${toolchain_cmake_args}
         )
@@ -173,26 +173,46 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         GIT_REPOSITORY https://github.com/vitasdk/libzip
         GIT_TAG ${LIBZIP_TAG}
         ${GIT_SHALLOW_SUPPORT}
-        PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libzip.patch
+        PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libzip.patch || true
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${toolchain_deps_dir}
         ${toolchain_cmake_args} ${libzip_configure}
+        -D_LARGEFILE_SOURCE=1
+        -D_FILE_OFFSET_BITS=64
         -DZLIB_INCLUDE_DIR=${toolchain_deps_dir}/include
         -DZLIB_LIBRARY=${toolchain_deps_dir}/lib/libz.a
         )
-
-    ExternalProject_add(libelf${suffix}
-        URL https://github.com/vitasdk/artifacts/releases/download/libelf-${LIBELF_VERSION}/libelf-${LIBELF_VERSION}.tar.gz
-        URL_HASH ${LIBELF_HASH}
-        DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libelf.patch
-        CONFIGURE_COMMAND autoreconf -i <SOURCE_DIR> COMMAND CC=${cc_compiler} RANLIB=${ranlib} ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
-        --build=${build_native}
-        --host=${toolchain_host}
-        --prefix=${toolchain_deps_dir}
-        --libdir=${toolchain_deps_dir}/lib
-        --disable-shared
-        --disable-nls
-        )
+    
+    if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+        ExternalProject_add(libelf${suffix}
+            URL https://github.com/vitasdk/artifacts/releases/download/libelf-${LIBELF_VERSION}/libelf-${LIBELF_VERSION}.tar.gz
+            URL_HASH ${LIBELF_HASH}
+            DOWNLOAD_DIR ${DOWNLOAD_DIR}
+            PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libelf.patch || true
+            CONFIGURE_COMMAND autoreconf -i <SOURCE_DIR> COMMAND CC=${cc_compiler} RANLIB=${ranlib} ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+            --build=${build_native}
+            --host=${toolchain_host}
+            --prefix=${toolchain_deps_dir}
+            --libdir=${toolchain_deps_dir}/lib
+            --disable-shared
+            --disable-nls
+            )
+    else()
+        ExternalProject_add(libelf${suffix}
+            URL https://github.com/vitasdk/artifacts/releases/download/libelf-${LIBELF_VERSION}/libelf-${LIBELF_VERSION}.tar.gz
+            URL_HASH ${LIBELF_HASH}
+            DOWNLOAD_DIR ${DOWNLOAD_DIR}
+            PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libelf.patch || true
+            COMMAND ${CMAKE_COMMAND} -E copy /usr/share/misc/config.sub <SOURCE_DIR>
+            COMMAND ${CMAKE_COMMAND} -E copy /usr/share/misc/config.guess <SOURCE_DIR>
+            CONFIGURE_COMMAND autoreconf -i <SOURCE_DIR> COMMAND CC=${cc_compiler} RANLIB=${ranlib} ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+            --build=${build_native}
+            --host=${toolchain_host}
+            --prefix=${toolchain_deps_dir}
+            --libdir=${toolchain_deps_dir}/lib
+            --disable-shared
+            --disable-nls
+            )
+    endif()
 
     ExternalProject_add(libyaml${suffix}
         URL http://pyyaml.org/download/libyaml/yaml-${LIBYAML_VERSION}.tar.gz
@@ -298,9 +318,9 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL_HASH ${BINUTILS_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND
-            patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0001-vita.patch
-            && patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0002-fix-broken-reloc.patch
-            && patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0003-fix-elf-vaddr.patch
+            patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0001-vita.patch || true
+            && patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0002-fix-broken-reloc.patch || true
+            && patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0003-fix-elf-vaddr.patch || true
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
@@ -322,7 +342,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL https://ftp.gnu.org/gnu/gdb/gdb-${GDB_VERSION}.tar.xz
         URL_HASH ${GDB_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gdb.patch
+        PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gdb.patch || true
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
@@ -462,7 +482,7 @@ ExternalProject_add(gcc-base
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
-    PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-8.patch
+    PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-8.patch || true
     CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
     --build=${build_native}
     # compile a native compiler so keep host == build
@@ -554,7 +574,7 @@ if(CMAKE_TOOLCHAIN_FILE)
         URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
         URL_HASH ${GCC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-8.patch
+        PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-8.patch || true
         CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools}
         ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
@@ -610,7 +630,7 @@ ExternalProject_add(gcc-final
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
-    PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-8.patch
+    PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-8.patch || true
     CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
     ${wrapper_command} <SOURCE_DIR>/configure
     --build=${build_native}
