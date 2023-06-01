@@ -1,7 +1,7 @@
-diff --git a/gcc/config/arm/arm-c.c b/gcc/config/arm/arm-c.c
+diff --git a/gcc/config/arm/arm-c.cc b/gcc/config/arm/arm-c.cc
 index 7468a20bd..3496590c4 100644
---- a/gcc/config/arm/arm-c.c
-+++ b/gcc/config/arm/arm-c.c
+--- a/gcc/config/arm/arm-c.cc
++++ b/gcc/config/arm/arm-c.cc
 @@ -372,6 +372,8 @@ arm_cpu_cpp_builtins (struct cpp_reader * pfile)
    builtin_assert ("cpu=arm");
    builtin_assert ("machine=arm");
@@ -36,12 +36,12 @@ index 30e1d6dc9..bd5f7b19c 100644
  
  /* Max number of bytes we can move from memory to memory
 diff --git a/gcc/config/arm/arm.opt b/gcc/config/arm/arm.opt
-index cd3d8e1be..523b92aa1 100644
+index 3a49b51ec..840b2b3c4 100644
 --- a/gcc/config/arm/arm.opt
 +++ b/gcc/config/arm/arm.opt
-@@ -30,6 +30,9 @@ const char *x_arm_cpu_string
- TargetSave
- const char *x_arm_tune_string
+@@ -33,6 +33,9 @@ unsigned aarch_enable_bti = 0
+ TargetVariable
+ enum aarch_key_type aarch_ra_sign_key = AARCH_KEY_A
  
 +pthread
 +Driver
@@ -49,10 +49,10 @@ index cd3d8e1be..523b92aa1 100644
  Enum
  Name(tls_type) Type(enum arm_tls_type)
  TLS dialect to use:
-diff --git a/gcc/gcc.c b/gcc/gcc.c
+diff --git a/gcc/gcc.cc b/gcc/gcc.cc
 index 9f790db0d..27a38bb02 100644
---- a/gcc/gcc.c
-+++ b/gcc/gcc.c
+--- a/gcc/gcc.cc
++++ b/gcc/gcc.cc
 @@ -673,8 +673,9 @@ proper position among the other output files.  */
  #endif
  
@@ -98,3 +98,16 @@ index 5240f7e9d..de5dc96e4 100755
  # Check for getpid.
  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
  /* end confdefs.h.  */
+diff --git a/libgomp/libgomp_f.h.in b/libgomp/libgomp_f.h.in
+index d8e61c8b6..9d120f62c 100644
+--- a/libgomp/libgomp_f.h.in
++++ b/libgomp/libgomp_f.h.in
+@@ -81,7 +81,7 @@ omp_check_defines (void)
+ 	     || @OMP_LOCK_KIND@ != sizeof (*(omp_lock_arg_t) 0)
+ 	     || @OMP_NEST_LOCK_KIND@ != sizeof (*(omp_nest_lock_arg_t) 0)
+ 	     || @INTPTR_T_KIND@ != sizeof (omp_allocator_handle_t)
+-	     || 4 != sizeof (omp_alloctrait_key_t)
++	     || 1 != sizeof (omp_alloctrait_key_t)
+ 	     || @INTPTR_T_KIND@ != sizeof (omp_alloctrait_value_t)
+ 	     || @INTPTR_T_KIND@ != sizeof (omp_memspace_handle_t)
+ 	     || @OMP_DEPEND_KIND@ != sizeof (omp_depend_t))

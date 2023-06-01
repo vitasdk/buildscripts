@@ -4,7 +4,7 @@ diff -urN binutils-2.31.1.orig/bfd/elf32-arm.c binutils-2.31.1/bfd/elf32-arm.c
 @@ -13517,6 +13517,7 @@
  	  else
  	    unwind_type = 2;
- 
+
 +	  elide = 0;
  	  if (elide && !bfd_link_relocatable (info))
  	    {
