@@ -40,8 +40,8 @@ set(EXPAT_HASH SHA256=f122a20eada303f904d5e0513326c5b821248f2d4d2afbf5c6f1339e51
 set(BINUTILS_VERSION 2.34)
 set(BINUTILS_HASH SHA256=f00b0e8803dc9bab1e2165bd568528135be734df3fabf8d0161828cd56028952)
 
-set(GDB_VERSION 9.2)
-set(GDB_HASH SHA256=360cd7ae79b776988e89d8f9a01c985d0b1fa21c767a4295e5f88cb49175c555)
+set(GDB_VERSION 13.2)
+set(GDB_HASH SHA256=fd5bebb7be1833abdb6e023c2f498a354498281df9d05523d8915babeb893f0a)
 
 # Branches to fetch the different project targets. Can be overriden from command line.
 set(LIBZIP_TAG master CACHE STRING "libzip branch name, commit id or tag")
@@ -342,17 +342,26 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_Add(gdb${suffix}
+        DEPENDS expat${suffix} gmp${suffix} mpfr${suffix} zlib${suffix} zstd${suffix}
         URL https://ftp.gnu.org/gnu/gdb/gdb-${GDB_VERSION}.tar.xz
         URL_HASH ${GDB_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gdb.patch
-        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --target=${target_arch}
         # Set prefix to "/" here to be able to install twice
         --prefix=/
         --with-sysroot=${toolchain_install_dir}
+        --with-libexpat-prefix=${toolchain_deps_dir}
+        --with-libgmp-prefix=${toolchain_deps_dir}
+        --with-libmpfr-prefix=${toolchain_deps_dir}
+        --with-zstd
+        # Avoid linking against system libs
+        --disable-source-highlight
+        --without-guile
+        "PKG_CONFIG_PATH=${toolchain_deps_dir}/lib/pkgconfig"
         BUILD_COMMAND $(MAKE)
         INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir}
         )
