@@ -17,8 +17,8 @@ set(ZLIB_HASH SHA256=b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f84
 set(LIBELF_VERSION 0.8.13)
 set(LIBELF_HASH SHA256=591a9b4ec81c1f2042a97aa60564e0cb79d041c52faa7416acb38bc95bd2c76d)
 
-set(LIBYAML_VERSION 0.2.2)
-set(LIBYAML_HASH SHA256=4a9100ab61047fd9bd395bcef3ce5403365cafd55c1e0d0299cde14958e47be9)
+set(LIBYAML_VERSION 0.2.5)
+set(LIBYAML_HASH SHA256=fa240dbf262be053f3898006d502d514936c818e422afdcf33921c63bed9bf2e)
 
 set(GMP_VERSION 6.1.2)
 set(GMP_HASH SHA256=5275bb04f4863a13516b2f39392ac5e272f5e1bb8057b18aec1c9b79d73d8fb2)
@@ -197,10 +197,11 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_add(libyaml${suffix}
-        URL http://pyyaml.org/download/libyaml/yaml-${LIBYAML_VERSION}.tar.gz
+        URL https://github.com/yaml/libyaml/archive/${LIBYAML_VERSION}.tar.gz
         URL_HASH ${LIBYAML_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND autoreconf -fvi <SOURCE_DIR>
+        COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
