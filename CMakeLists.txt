@@ -37,8 +37,8 @@ set(ISL_VERSION 0.21)
 set(EXPAT_VERSION 2.3.0)
 set(EXPAT_HASH SHA256=f122a20eada303f904d5e0513326c5b821248f2d4d2afbf5c6f1339e511c0586)
 
-set(BINUTILS_VERSION 2.34)
-set(BINUTILS_HASH SHA256=f00b0e8803dc9bab1e2165bd568528135be734df3fabf8d0161828cd56028952)
+set(BINUTILS_VERSION 2.41)
+set(BINUTILS_HASH SHA256=ae9a5789e23459e59606e6714723f2d3ffc31c03174191ef0d015bdf06007450)
 
 set(GDB_VERSION 13.2)
 set(GDB_HASH SHA256=fd5bebb7be1833abdb6e023c2f498a354498281df9d05523d8915babeb893f0a)
@@ -317,14 +317,14 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_Add(binutils${suffix}
-        URL https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VERSION}.tar.xz
+        DEPENDS zstd${suffix}
+        URL https://ftpmirror.gnu.org/binutils/binutils-${BINUTILS_VERSION}.tar.xz
         URL_HASH ${BINUTILS_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        PATCH_COMMAND
-            patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0001-vita.patch
-            && patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0002-fix-broken-reloc.patch
-            && patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0003-fix-elf-vaddr.patch
-        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0001-vita.patch
+        COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0002-fix-broken-reloc.patch
+        COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0003-fix-elf-vaddr.patch
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --target=${target_arch}
@@ -337,6 +337,9 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         --enable-interwork
         --enable-plugins
         "--with-pkgversion=${pkgversion}"
+        # Binutils and gdb search for zstd using pkg-config
+        --with-zstd
+        "PKG_CONFIG_PATH=${toolchain_deps_dir}/lib/pkgconfig"
         BUILD_COMMAND $(MAKE)
         INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir}
         )
