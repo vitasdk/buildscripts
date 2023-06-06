@@ -20,8 +20,8 @@ set(LIBELF_HASH SHA256=591a9b4ec81c1f2042a97aa60564e0cb79d041c52faa7416acb38bc95
 set(LIBYAML_VERSION 0.2.5)
 set(LIBYAML_HASH SHA256=fa240dbf262be053f3898006d502d514936c818e422afdcf33921c63bed9bf2e)
 
-set(GMP_VERSION 6.1.2)
-set(GMP_HASH SHA256=5275bb04f4863a13516b2f39392ac5e272f5e1bb8057b18aec1c9b79d73d8fb2)
+set(GMP_VERSION 6.3.0)
+set(GMP_HASH SHA256=a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898)
 
 set(MPFR_VERSION 4.0.2)
 set(MPFR_HASH SHA256=c05e3f02d09e0e9019384cdd58e0f19c64e6db1fd6f5ecf77b4b1c61ca253acc)
@@ -212,17 +212,17 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_add(gmp${suffix}
-        URL http://ftp.gnu.org/gnu/gmp/gmp-${GMP_VERSION}.tar.bz2
+        URL https://ftpmirror.gnu.org/gmp/gmp-${GMP_VERSION}.tar.xz
         URL_HASH ${GMP_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        CONFIGURE_COMMAND CPPFLAGS=-fexceptions ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND autoreconf -fvi <SOURCE_DIR>
+        COMMAND ${CMAKE_COMMAND} -E env CPPFLAGS=-fexceptions ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
         --libdir=${toolchain_deps_dir}/lib
         --enable-cxx
         --disable-shared
-        BUILD_COMMAND ${compiler_flags} ${wrapper_command} $(MAKE)
         )
 
     ExternalProject_add(mpfr${suffix}
