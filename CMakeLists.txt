@@ -154,6 +154,9 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
             COMMAND ${CMAKE_COMMAND} -E remove
             ${toolchain_deps_dir}/lib/libz.so
             ${toolchain_deps_dir}/lib/libz.so.1
+            ${toolchain_deps_dir}/lib/libz.dylib
+            ${toolchain_deps_dir}/lib/libz.1.dylib
+            ${toolchain_deps_dir}/lib/libz.1.2.13.dylib
             COMMENT "Delete shared libraries, if present"
             )
     endif()
