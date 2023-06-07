@@ -8,8 +8,8 @@ cmake_minimum_required(VERSION 3.7.0)
 project(vitasdk)
 
 # Use the following gcc version
-set(GCC_VERSION 10.3.0)
-set(GCC_HASH SHA256=64f404c1a650f27fc33da242e1f2df54952e3963a49e06e73f6940f3223ac344)
+set(GCC_VERSION 13.2.0)
+set(GCC_HASH SHA256=e275e76442a6067341a27f04c5c6b83d8613144004c0413528863dc6b5c743da)
 
 set(ZLIB_VERSION 1.2.13)
 set(ZLIB_HASH SHA256=b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30)
@@ -493,12 +493,12 @@ endif()
 
 # Build a basic gcc compiler, needed to compile newlib
 ExternalProject_add(gcc-base
-    DEPENDS gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix}
-    URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
+    DEPENDS gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix} zstd_${build_suffix}
+    URL https://ftpmirror.gnu.org/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
-    PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-10.patch
-    CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+    PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-13-vita.patch
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flag} ${wrapper_command} <SOURCE_DIR>/configure
     --build=${build_native}
     # compile a native compiler so keep host == build
     --host=${build_native}
@@ -512,6 +512,7 @@ ExternalProject_add(gcc-base
     --with-mpc=${toolchain_build_depends_dir}
     --with-isl=${toolchain_build_depends_dir}
     --with-libelf=${toolchain_build_depends_dir}
+    --with-zstd=${toolchain_build_depends_dir}
     ${common_gcc_configure_args}
     --disable-threads
     --without-headers
@@ -591,12 +592,12 @@ ExternalProject_Add(newlib
 # Using gcc-base doesn't work since is missing some headers.
 if(CMAKE_TOOLCHAIN_FILE)
     ExternalProject_add(gcc-complete
-        DEPENDS newlib gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix}
-        URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
+        DEPENDS newlib gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix} zstd_${build_suffix}
+        URL https://ftpmirror.gnu.org/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
         URL_HASH ${GCC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-10.patch
-        CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools}
+        PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-13-vita.patch
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags} ${toolchain_tools} 
         ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         # compile a native compiler so keep host == build
@@ -611,13 +612,14 @@ if(CMAKE_TOOLCHAIN_FILE)
         --with-mpc=${toolchain_build_depends_dir}
         --with-isl=${toolchain_build_depends_dir}
         --with-libelf=${toolchain_build_depends_dir}
+        --with-zstd=${toolchain_build_depends_dir}
         ${common_gcc_configure_args}
         --enable-threads=posix
         --with-headers=yes
         --enable-libgomp
         "CFLAGS=${GCC_CFLAGS}"
         "CXXFLAGS=${GCC_CFLAGS}"
-        BUILD_COMMAND ${toolchain_tools} ${wrapper_command} $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
+        BUILD_COMMAND ${CMAKE_COMMAND} -E env ${toolchain_tools} ${wrapper_command} $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
         INSTALL_COMMAND $(MAKE) install
         )
     # Add this target as dependency of the final gcc target
@@ -646,13 +648,13 @@ ExternalProject_Add(pthread-embedded
     )
 
 ExternalProject_add(gcc-final
-    DEPENDS gmp_${target_suffix} mpfr_${target_suffix} mpc_${target_suffix} isl_${target_suffix} libelf_${target_suffix}
+    DEPENDS gmp_${target_suffix} mpfr_${target_suffix} mpc_${target_suffix} isl_${target_suffix} libelf_${target_suffix} zstd_${target_suffix}
     DEPENDS newlib ${GCC_DEPENDS} pthread-embedded
-    URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
+    URL https://ftpmirror.gnu.org/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
-    PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-10.patch
-    CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
+    PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-13-vita.patch
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
     ${wrapper_command} <SOURCE_DIR>/configure
     --build=${build_native}
     --host=${host_native}
@@ -666,13 +668,14 @@ ExternalProject_add(gcc-final
     --with-mpc=${toolchain_target_depends_dir}
     --with-isl=${toolchain_target_depends_dir}
     --with-libelf=${toolchain_target_depends_dir}
+    --with-zstd=${toolchain_target_depends_dir}
     ${common_gcc_configure_args}
     --with-headers=yes
     --enable-threads=posix
     --enable-libgomp
     "CFLAGS=${GCC_CFLAGS}"
     "CXXFLAGS=${GCC_CFLAGS}"
-    BUILD_COMMAND ${toolchain_tools} ${compiler_target_tools} ${wrapper_command}
+    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${toolchain_tools} ${compiler_target_tools} ${wrapper_command}
     $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
     INSTALL_COMMAND $(MAKE) install
     # Remove gcc docs to reduce size
