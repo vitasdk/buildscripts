@@ -9,16 +9,14 @@ on:
 jobs:
   build-linux:
     runs-on: ubuntu-latest
-    container: ubuntu:14.04
     steps:
     - uses: actions/checkout@v3
+    - uses: actions/setup-python@v2
     - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y software-properties-common
-        sudo add-apt-repository ppa:george-edison55/cmake-3.x
-        sudo apt-get update
-        sudo apt-get install -y cmake cmake-data git build-essential autoconf automake libtool texinfo bison flex pkg-config python
+        sudo apt-get install -y cmake cmake-data git build-essential autoconf automake libtool texinfo bison flex pkg-config
     - name: Build
       run: |
         git config --global user.email "builds@travis-ci.com"
@@ -55,16 +53,14 @@ jobs:
         path: build/*.tar.bz2
   build-windows:
     runs-on: ubuntu-latest
-    container: ubuntu:14.04
     steps:
     - uses: actions/checkout@v3
+    - uses: actions/setup-python@v2
     - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y software-properties-common
-        sudo add-apt-repository ppa:george-edison55/cmake-3.x
-        sudo apt-get update
-        sudo apt-get install -y cmake cmake-data git build-essential autoconf automake libtool texinfo bison flex pkg-config g++-mingw-w64 python
+        sudo apt-get install -y cmake cmake-data git build-essential autoconf automake libtool texinfo bison flex pkg-config g++-mingw-w64
     - name: Build
       run: |
         git config --global user.email "builds@travis-ci.com"
