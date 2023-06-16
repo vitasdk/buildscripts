@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v2
@@ -52,7 +52,10 @@ jobs:
         name: vitasdk-macos
         path: build/*.tar.bz2
   build-windows:
-    runs-on: ubuntu-latest
+    # TODO match as build-linux
+    # we don't know reason yet, mingw build was failed when libelf compille.
+    # mingw output have to be static linking, and that this reason, we are able to use 22.04 in here
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v2
