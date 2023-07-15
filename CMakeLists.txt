@@ -492,13 +492,17 @@ ExternalProject_add(vita-headers
     GIT_REPOSITORY https://github.com/vitasdk/vita-headers
     GIT_TAG ${HEADERS_TAG}
     ${GIT_SHALLOW_SUPPORT}
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND VITA_LIBS_GEN=${vita_libs_gen_command}
-        ARCH=${binutils_prefix}
-        BYPASS_INSTALL=1
-        python <SOURCE_DIR>/build.py <BINARY_DIR>
+    # CONFIGURE_COMMAND ""
+    # BUILD_COMMAND VITA_LIBS_GEN=${vita_libs_gen_command}
+    #     ARCH=${binutils_prefix}
+    #     BYPASS_INSTALL=1
+    #     python <SOURCE_DIR>/build.py <BINARY_DIR>
+    CONFIGURE_COMMAND ${vita_libs_gen_command}-2 -yml=<SOURCE_DIR>/db -output=<BINARY_DIR>
+    BUILD_COMMAND ARCH=${binutils_prefix}
+        make
     # Copy the generated .a files to the install directory
-    INSTALL_COMMAND ${CMAKE_COMMAND} -DGLOB_PATTERN=<BINARY_DIR>/*/*/*a
+    # INSTALL_COMMAND ${CMAKE_COMMAND} -DGLOB_PATTERN=<BINARY_DIR>/*/*/*a
+    INSTALL_COMMAND ${CMAKE_COMMAND} -DGLOB_PATTERN=<BINARY_DIR>/*.a
     -DINSTALL_DIR=${CMAKE_INSTALL_PREFIX}/${target_arch}/lib
     -P ${CMAKE_SOURCE_DIR}/cmake/install_files.cmake
     # Copy the include headers to the installation directory
