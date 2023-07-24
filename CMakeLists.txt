@@ -3,7 +3,7 @@
 # Distributed under the MIT License (http://opensource.org/licenses/MIT)
 #
 
-cmake_minimum_required(VERSION 3.2.0)
+cmake_minimum_required(VERSION 3.7.0)
 
 project(vitasdk)
 
@@ -13,6 +13,9 @@ set(GCC_HASH SHA256=64f404c1a650f27fc33da242e1f2df54952e3963a49e06e73f6940f3223a
 
 set(ZLIB_VERSION 1.2.13)
 set(ZLIB_HASH SHA256=b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30)
+
+set(ZSTD_VERSION 1.5.5)
+set(ZSTD_HASH SHA256=98e9c3d949d1b924e28e01eccb7deed865eefebf25c2f21c702e5cd5b63b85e1)
 
 set(LIBELF_VERSION 0.8.13)
 set(LIBELF_HASH SHA256=591a9b4ec81c1f2042a97aa60564e0cb79d041c52faa7416acb38bc95bd2c76d)
@@ -154,6 +157,22 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
             COMMENT "Delete shared libraries, if present"
             )
     endif()
+
+    ExternalProject_Add(zstd${suffix}
+        URL https://github.com/facebook/zstd/archive/refs/tags/v${ZSTD_VERSION}.tar.gz
+        URL_HASH ${ZSTD_HASH}
+        SOURCE_SUBDIR "build/cmake"
+        CMAKE_ARGS ${toolchain_cmake_args}
+        "-DCMAKE_INSTALL_PREFIX=${toolchain_deps_dir}"
+        "-DCMAKE_BUILD_TYPE=Release"
+        "-DZSTD_BUILD_CONTRIB=OFF"
+        "-DZSTD_BUILD_PROGRAMS=OFF"
+        "-DZSTD_BUILD_SHARED=OFF"
+        "-DZSTD_BUILD_STATIC=ON"
+        "-DZSTD_BUILD_TESTS=OFF"
+        "-DZSTD_LEGACY_SUPPORT=OFF"
+        "-DZSTD_MULTITHREAD_SUPPORT=OFF"
+    )
 
     # Different configurations for the unix/windows builds of the toolchain
     if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
