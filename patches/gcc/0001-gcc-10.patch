@@ -49,6 +49,24 @@ index cd3d8e1be..523b92aa1 100644
  Enum
  Name(tls_type) Type(enum arm_tls_type)
  TLS dialect to use:
+diff --git a/gcc/cp/g++spec.c b/gcc/cp/g++spec.c
+index 0ab63bcd2..be91f3e75 100644
+--- a/gcc/cp/g++spec.c
++++ b/gcc/cp/g++spec.c
+@@ -348,6 +348,13 @@ lang_specific_driver (struct cl_decoded_option **in_decoded_options,
+ 		       CL_DRIVER, &new_decoded_options[j]);
+       added_libraries++;
+       j++;
++
++      /* pthreads are required for c++ threads.  */
++      generate_option (OPT_l,
++		       "pthread", 1,
++		       CL_DRIVER, &new_decoded_options[j]);
++      added_libraries++;
++      j++;
+       /* Add target-dependent static library, if necessary.  */
+       if ((static_link || library > 1) && LIBSTDCXX_STATIC != NULL)
+ 	{
 diff --git a/gcc/gcc.c b/gcc/gcc.c
 index 9f790db0d..27a38bb02 100644
 --- a/gcc/gcc.c
@@ -129,3 +147,18 @@ index 5240f7e9d..de5dc96e4 100755
  # Check for getpid.
  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
  /* end confdefs.h.  */
+diff --git a/libstdc++-v3/config/os/newlib/os_defines.h b/libstdc++-v3/config/os/newlib/os_defines.h
+index a31de17e7..bc2f4c7aa 100644
+--- a/libstdc++-v3/config/os/newlib/os_defines.h
++++ b/libstdc++-v3/config/os/newlib/os_defines.h
+@@ -33,6 +33,10 @@
+ // System-specific #define, typedefs, corrections, etc, go here.  This
+ // file will come before all others.
+ 
++#ifdef __vita__
++#define _GLIBCXX_GTHREAD_USE_WEAK 0
++#endif
++
+ #ifdef __CYGWIN__
+ #define _GLIBCXX_GTHREAD_USE_WEAK 0
+ 
