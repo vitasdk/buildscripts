@@ -8,15 +8,23 @@ on:
 
 jobs:
   build-linux:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
+    container: ubuntu:14.04
     steps:
     - uses: actions/checkout@v3
-    - uses: actions/setup-python@v2
     - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y software-properties-common
-        sudo apt-get install -y cmake cmake-data git build-essential autoconf automake libtool texinfo bison flex pkg-config
+        sudo add-apt-repository ppa:george-edison55/cmake-3.x
+        sudo apt-get update
+        sudo apt-get install -y cmake cmake-data git build-essential autoconf automake libtool texinfo bison flex pkg-config python
+    - name: Build CMake 3.4.1
+      run: |
+        sudo apt-get install -y wget libcurl4-openssl-dev
+        wget http://www.cmake.org/files/v3.4/cmake-3.4.1.tar.gz && tar -xvzf cmake-3.4.1.tar.gz 
+        cd cmake-3.4.1/ && ./configure --system-curl --parallel=$(nproc) && make -j$(nproc) && sudo make install
+        update-alternatives --install /usr/bin/cmake cmake /usr/local/bin/cmake 1 --force
     - name: Build
       run: |
         git config --global user.email "builds@travis-ci.com"
@@ -31,52 +39,4 @@ jobs:
       with:
         name: vitasdk-linux
         path: build/*.tar.bz2
-  build-macos:
-    runs-on: macos-12
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v2
-    - name: Build
-      run: |
-        git config --global user.email "builds@travis-ci.com"
-        git config --global user.name "Travis CI"
-        brew install autoconf automake libtool
-        mkdir build
-        cd build
-        cmake ..
-        make -j$(nproc) tarball
-    - name: Upload artifacts
-      if: ${{ success() }}
-      uses: actions/upload-artifact@v3
-      with:
-        name: vitasdk-macos
-        path: build/*.tar.bz2
-  build-windows:
-    # TODO match as build-linux
-    # we don't know reason yet, mingw build was failed when libelf compille.
-    # mingw output have to be static linking, and that this reason, we are able to use 22.04 in here
-    runs-on: ubuntu-22.04
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v2
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y software-properties-common
-        sudo apt-get install -y cmake cmake-data git build-essential autoconf automake libtool texinfo bison flex pkg-config g++-mingw-w64
-    - name: Build
-      run: |
-        git config --global user.email "builds@travis-ci.com"
-        git config --global user.name "Travis CI"
-        unset CXX
-        unset CC
-        mkdir build
-        cd build
-        cmake .. -DCMAKE_TOOLCHAIN_FILE=toolchain-x86_64-w64-mingw32.cmake
-        make -j$(nproc) tarball
-    - name: Upload artifacts
-      if: ${{ success() }}
-      uses: actions/upload-artifact@v3
-      with:
-        name: vitasdk-windows
-        path: build/*.tar.bz2
+
