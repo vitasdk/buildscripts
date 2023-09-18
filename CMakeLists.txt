@@ -38,8 +38,9 @@ set(MPC_HASH SHA256=ab642492f5cf882b74aa0cb730cd410a81edcdbec895183ce930e706c1c7
 
 set(ISL_VERSION 0.21)
 
-set(EXPAT_VERSION 2.3.0)
-set(EXPAT_HASH SHA256=f122a20eada303f904d5e0513326c5b821248f2d4d2afbf5c6f1339e511c0586)
+set(EXPAT_VERSION 2.5.0)
+set(EXPAT_HASH SHA256=6f0e6e01f7b30025fa05c85fdad1e5d0ec7fd35d9f61b22f34998de11969ff67)
+string(REPLACE "." "_" EXPAT_TAG_VERSION "${EXPAT_VERSION}")
 
 set(BINUTILS_VERSION 2.41)
 set(BINUTILS_HASH SHA256=ae9a5789e23459e59606e6714723f2d3ffc31c03174191ef0d015bdf06007450)
@@ -297,9 +298,10 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_add(expat${suffix}
-        URL https://github.com/libexpat/libexpat/releases/download/R_2_3_0/expat-${EXPAT_VERSION}.tar.bz2
+        URL https://github.com/libexpat/libexpat/releases/download/R_${EXPAT_TAG_VERSION}/expat-${EXPAT_VERSION}.tar.bz2
         URL_HASH ${EXPAT_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
+        PATCH_COMMAND autoreconf -fvi <SOURCE_DIR>
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
