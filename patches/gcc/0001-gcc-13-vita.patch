@@ -1,21 +1,20 @@
-diff --git a/gcc/config/arm/arm-c.c b/gcc/config/arm/arm-c.c
-index 7468a20bd..3496590c4 100644
---- a/gcc/config/arm/arm-c.c
-+++ b/gcc/config/arm/arm-c.c
-@@ -372,6 +372,8 @@ arm_cpu_cpp_builtins (struct cpp_reader * pfile)
+diff --git a/gcc/config/arm/arm-c.cc b/gcc/config/arm/arm-c.cc
+index 59c0d8c..6468c67 100644
+--- a/gcc/config/arm/arm-c.cc
++++ b/gcc/config/arm/arm-c.cc
+@@ -415,6 +415,7 @@ arm_cpu_cpp_builtins (struct cpp_reader * pfile)
    builtin_assert ("cpu=arm");
    builtin_assert ("machine=arm");
  
 +  builtin_define ("__vita__");
-+
    arm_cpu_builtins (pfile);
  }
  
 diff --git a/gcc/config/arm/arm.h b/gcc/config/arm/arm.h
-index 30e1d6dc9..bd5f7b19c 100644
+index 7d40b8b..a9b9f55 100644
 --- a/gcc/config/arm/arm.h
 +++ b/gcc/config/arm/arm.h
-@@ -731,6 +731,10 @@ extern const int arm_arch_cde_coproc_bits[];
+@@ -744,6 +744,10 @@ extern const int arm_arch_cde_coproc_bits[];
  #define WCHAR_TYPE_SIZE BITS_PER_WORD
  #endif
  
@@ -26,7 +25,7 @@ index 30e1d6dc9..bd5f7b19c 100644
  /* Sized for fixed-point types.  */
  
  #define SHORT_FRACT_TYPE_SIZE 8
-@@ -1996,7 +2000,7 @@ enum arm_auto_incmodes
+@@ -2116,7 +2120,7 @@ enum arm_auto_incmodes
  /* signed 'char' is most compatible, but RISC OS wants it unsigned.
     unsigned is probably best, but may break some code.  */
  #ifndef DEFAULT_SIGNED_CHAR
@@ -36,12 +35,12 @@ index 30e1d6dc9..bd5f7b19c 100644
  
  /* Max number of bytes we can move from memory to memory
 diff --git a/gcc/config/arm/arm.opt b/gcc/config/arm/arm.opt
-index cd3d8e1be..523b92aa1 100644
+index 3a49b51..840b2b3 100644
 --- a/gcc/config/arm/arm.opt
 +++ b/gcc/config/arm/arm.opt
-@@ -30,6 +30,9 @@ const char *x_arm_cpu_string
- TargetSave
- const char *x_arm_tune_string
+@@ -33,6 +33,9 @@ unsigned aarch_enable_bti = 0
+ TargetVariable
+ enum aarch_key_type aarch_ra_sign_key = AARCH_KEY_A
  
 +pthread
 +Driver
@@ -49,11 +48,11 @@ index cd3d8e1be..523b92aa1 100644
  Enum
  Name(tls_type) Type(enum arm_tls_type)
  TLS dialect to use:
-diff --git a/gcc/gcc.c b/gcc/gcc.c
-index 9f790db0d..27a38bb02 100644
---- a/gcc/gcc.c
-+++ b/gcc/gcc.c
-@@ -673,8 +673,9 @@ proper position among the other output files.  */
+diff --git a/gcc/gcc.cc b/gcc/gcc.cc
+index 16bb07f..8c440dc 100644
+--- a/gcc/gcc.cc
++++ b/gcc/gcc.cc
+@@ -732,8 +732,9 @@ proper position among the other output files.  */
  #endif
  
  /* config.h can define LIB_SPEC to override the default libraries.  */
@@ -64,10 +63,10 @@ index 9f790db0d..27a38bb02 100644
  #endif
  
  /* When using -fsplit-stack we need to wrap pthread_create, in order
-diff --git a/gcc/genconditions.c b/gcc/genconditions.c
-index 3a5b85d11..3ca61913f 100644
---- a/gcc/genconditions.c
-+++ b/gcc/genconditions.c
+diff --git a/gcc/genconditions.cc b/gcc/genconditions.cc
+index 28655fa..27cb71b 100644
+--- a/gcc/genconditions.cc
++++ b/gcc/genconditions.cc
 @@ -58,7 +58,7 @@ write_header (void)
  /* It is necessary, but not entirely safe, to include the headers below\n\
     in a generator program.  As a defensive measure, don't do so when the\n\
@@ -92,14 +91,14 @@ index 3a5b85d11..3ca61913f 100644
          "  puts (\"(define_conditions [\");\n"
 -	"#if GCC_VERSION >= 3001\n"
 +	"#if GCC_VERSION >= 3001 && __clang_major__ < 9\n"
- 	"  for (i = 0; i < ARRAY_SIZE (insn_conditions); i++)\n"
+ 	"  for (i = 0; i < ARRAY_SIZE (insn_conditions) - 1; i++)\n"
  	"    {\n"
  	"      printf (\"  (%d \\\"\", insn_conditions[i].value);\n"
 diff --git a/libgomp/configure b/libgomp/configure
-index 5240f7e9d..de5dc96e4 100755
+index fd0e337..2366415 100755
 --- a/libgomp/configure
 +++ b/libgomp/configure
-@@ -15768,29 +15768,6 @@ $as_echo "#define HAVE_UNAME 1" >>confdefs.h
+@@ -15552,28 +15552,6 @@ $as_echo "#define HAVE_UNAME 1" >>confdefs.h
  fi
  rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
  
@@ -125,7 +124,19 @@ index 5240f7e9d..de5dc96e4 100755
 -
 -fi
 -rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
--
+ 
  # Check for getpid.
  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
- /* end confdefs.h.  */
+diff --git a/libgomp/libgomp_f.h.in b/libgomp/libgomp_f.h.in
+index d8e61c8..9d120f6 100644
+--- a/libgomp/libgomp_f.h.in
++++ b/libgomp/libgomp_f.h.in
+@@ -81,7 +81,7 @@ omp_check_defines (void)
+ 	     || @OMP_LOCK_KIND@ != sizeof (*(omp_lock_arg_t) 0)
+ 	     || @OMP_NEST_LOCK_KIND@ != sizeof (*(omp_nest_lock_arg_t) 0)
+ 	     || @INTPTR_T_KIND@ != sizeof (omp_allocator_handle_t)
+-	     || 4 != sizeof (omp_alloctrait_key_t)
++	     || 1 != sizeof (omp_alloctrait_key_t)
+ 	     || @INTPTR_T_KIND@ != sizeof (omp_alloctrait_value_t)
+ 	     || @INTPTR_T_KIND@ != sizeof (omp_memspace_handle_t)
+ 	     || @OMP_DEPEND_KIND@ != sizeof (omp_depend_t))
