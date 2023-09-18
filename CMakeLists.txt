@@ -15,8 +15,8 @@ endif()
 set(GCC_VERSION 13.2.0)
 set(GCC_HASH SHA256=e275e76442a6067341a27f04c5c6b83d8613144004c0413528863dc6b5c743da)
 
-set(ZLIB_VERSION 1.2.13)
-set(ZLIB_HASH SHA256=b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30)
+set(ZLIB_VERSION 1.3)
+set(ZLIB_HASH SHA256=8a9ba2898e1d0d774eca6ba5b4627a11e5588ba85c8851336eb38de4683050a7)
 
 set(ZSTD_VERSION 1.5.5)
 set(ZSTD_HASH SHA256=98e9c3d949d1b924e28e01eccb7deed865eefebf25c2f21c702e5cd5b63b85e1)
@@ -126,7 +126,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
     set(suffix "_${toolchain_suffix}")
 
     ExternalProject_Add(zlib${suffix}
-        URL https://www.zlib.net/fossils/zlib-${ZLIB_VERSION}.tar.gz
+        URL https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.xz
         URL_HASH ${ZLIB_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/zlib.patch
