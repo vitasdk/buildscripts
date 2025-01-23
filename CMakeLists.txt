@@ -12,8 +12,8 @@ if(POLICY CMP0135)
 endif()
 
 # Use the following gcc version
-set(GCC_VERSION 13.2.0)
-set(GCC_HASH SHA256=e275e76442a6067341a27f04c5c6b83d8613144004c0413528863dc6b5c743da)
+set(GCC_VERSION 13.3.0)
+set(GCC_HASH SHA256=0845e9621c9543a13f484e94584a49ffc0129970e9914624235fc1d061a0c083)
 
 set(ZLIB_VERSION 1.3)
 set(ZLIB_HASH SHA256=8a9ba2898e1d0d774eca6ba5b4627a11e5588ba85c8851336eb38de4683050a7)
@@ -468,7 +468,7 @@ list(APPEND pthread_tools
 
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" AND ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     # GCC on OSX (Clang in diguise) needs more bracket nesting depth to compile gcc
-    set(GCC_CFLAGS "${GCC_CFLAGS} -fbracket-depth=512")
+    set(GCC_CFLAGS "${GCC_CFLAGS} -fbracket-depth=512 -Wno-mismatched-tags -Wno-deprecated-declarations")
 endif()
 
 # Common gcc configure options
