@@ -1,5 +1,5 @@
 diff --git a/gdb/Makefile.in b/gdb/Makefile.in
-index fa7c81a..258cc35 100644
+index fa7c81a0fab..258cc35ac88 100644
 --- a/gdb/Makefile.in
 +++ b/gdb/Makefile.in
 @@ -771,6 +771,7 @@ ALL_TARGET_OBS = \
@@ -12,7 +12,7 @@ index fa7c81a..258cc35 100644
  	bfin-linux-tdep.o \
 diff --git a/gdb/arm-vita-tdep.c b/gdb/arm-vita-tdep.c
 new file mode 100644
-index 0000000..5fdcea0
+index 00000000000..5fdcea08b5d
 --- /dev/null
 +++ b/gdb/arm-vita-tdep.c
 @@ -0,0 +1,53 @@
@@ -70,7 +70,7 @@ index 0000000..5fdcea0
 +                            arm_vita_init_abi);
 +}
 diff --git a/gdb/configure.tgt b/gdb/configure.tgt
-index e84e222..61202f9 100644
+index e84e222ba0d..61202f9e3ae 100644
 --- a/gdb/configure.tgt
 +++ b/gdb/configure.tgt
 @@ -198,6 +198,10 @@ arm*-*-openbsd*)
@@ -85,7 +85,7 @@ index e84e222..61202f9 100644
  	# Target: ARM embedded system
  	gdb_target_obs="arm-pikeos-tdep.o"
 diff --git a/gdb/osabi.c b/gdb/osabi.c
-index d18802a..8bc8f8b 100644
+index d18802ac3a4..8bc8f8bbbb4 100644
 --- a/gdb/osabi.c
 +++ b/gdb/osabi.c
 @@ -82,6 +82,7 @@ static const struct osabi_names gdb_osabi_names[] =
@@ -97,7 +97,7 @@ index d18802a..8bc8f8b 100644
    { "<invalid>", NULL }
  };
 diff --git a/gdb/osabi.h b/gdb/osabi.h
-index 35f14ec..14504ce 100644
+index 35f14ec433c..14504ce650f 100644
 --- a/gdb/osabi.h
 +++ b/gdb/osabi.h
 @@ -46,6 +46,7 @@ enum gdb_osabi
@@ -108,3 +108,95 @@ index 35f14ec..14504ce 100644
  
    GDB_OSABI_INVALID		/* keep this last */
  };
+diff --git a/gdb/python/py-gdb-readline.c b/gdb/python/py-gdb-readline.c
+index ea0f78c9ad8..4aa270b41ac 100644
+--- a/gdb/python/py-gdb-readline.c
++++ b/gdb/python/py-gdb-readline.c
+@@ -52,13 +52,11 @@ gdbpy_readline_wrapper (FILE *sys_stdin, FILE *sys_stdout,
+       if (except.reason == RETURN_QUIT)
+ 	return NULL;
+ 
+-      /* The thread state is nulled during gdbpy_readline_wrapper,
+-	 with the original value saved in the following undocumented
+-	 variable (see Python's Parser/myreadline.c and
+-	 Modules/readline.c).  */
+-      PyEval_RestoreThread (_PyOS_ReadlineTState);
++
++      /* This readline callback is called without the GIL held.  */
++      gdbpy_gil gil;
++
+       gdbpy_convert_exception (except);
+-      PyEval_SaveThread ();
+       return NULL;
+     }
+ 
+diff --git a/gdb/python/python-internal.h b/gdb/python/python-internal.h
+index c41a43bac96..96c0008ae25 100644
+--- a/gdb/python/python-internal.h
++++ b/gdb/python/python-internal.h
+@@ -706,6 +706,30 @@ class gdbpy_allow_threads
+   PyThreadState *m_save;
+ };
+ 
++/* A helper class to save and restore the GIL, but without touching
++   the other globals that are handled by gdbpy_enter.  */
++
++class gdbpy_gil
++{
++public:
++
++  gdbpy_gil ()
++    : m_state (PyGILState_Ensure ())
++  {
++  }
++
++  ~gdbpy_gil ()
++  {
++    PyGILState_Release (m_state);
++  }
++
++  DISABLE_COPY_AND_ASSIGN (gdbpy_gil);
++
++private:
++
++  PyGILState_STATE m_state;
++};
++
+ /* Use this after a TRY_EXCEPT to throw the appropriate Python
+    exception.  */
+ #define GDB_PY_HANDLE_EXCEPTION(Exception)	\
+diff --git a/gdb/python/python.c b/gdb/python/python.c
+index 9d558119e09..4e0692abed8 100644
+--- a/gdb/python/python.c
++++ b/gdb/python/python.c
+@@ -255,30 +255,6 @@ gdbpy_enter::finalize ()
+   python_gdbarch = target_gdbarch ();
+ }
+ 
+-/* A helper class to save and restore the GIL, but without touching
+-   the other globals that are handled by gdbpy_enter.  */
+-
+-class gdbpy_gil
+-{
+-public:
+-
+-  gdbpy_gil ()
+-    : m_state (PyGILState_Ensure ())
+-  {
+-  }
+-
+-  ~gdbpy_gil ()
+-  {
+-    PyGILState_Release (m_state);
+-  }
+-
+-  DISABLE_COPY_AND_ASSIGN (gdbpy_gil);
+-
+-private:
+-
+-  PyGILState_STATE m_state;
+-};
+-
+ /* Set the quit flag.  */
+ 
+ static void
