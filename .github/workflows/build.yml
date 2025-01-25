@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v5
     - name: Install dependencies
       run: |
         sudo apt-get update
@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v5
     - name: Install dependencies
       run: |
         sudo apt-get update
@@ -59,7 +59,7 @@ jobs:
     runs-on: macos-12
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v5
     - name: Build
       run: |
         git config --global user.email "builds@travis-ci.com"
@@ -82,7 +82,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v5
     - name: Install dependencies
       run: |
         sudo apt-get update
