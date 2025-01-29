@@ -10,8 +10,8 @@ jobs:
   build-linux:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
     - name: Install dependencies
       run: |
         sudo apt-get update
@@ -27,15 +27,39 @@ jobs:
         make -j$(nproc) tarball
     - name: Upload artifacts
       if: ${{ success() }}
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: vitasdk-linux
+        path: build/*.tar.bz2
+  build-linux-arm64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y software-properties-common
+        sudo apt-get install -y cmake cmake-data git build-essential autoconf automake libtool texinfo bison flex pkg-config
+    - name: Build
+      run: |
+        git config --global user.email "builds@travis-ci.com"
+        git config --global user.name "Travis CI"
+        mkdir build
+        cd build
+        cmake ..
+        make -j$(nproc) tarball
+    - name: Upload artifacts
+      if: ${{ success() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: vitasdk-linux-arm64
         path: build/*.tar.bz2
   build-macos:
     runs-on: macos-12
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
     - name: Build
       run: |
         git config --global user.email "builds@travis-ci.com"
@@ -47,7 +71,7 @@ jobs:
         make -j$(nproc) tarball
     - name: Upload artifacts
       if: ${{ success() }}
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: vitasdk-macos
         path: build/*.tar.bz2
@@ -57,8 +81,8 @@ jobs:
     # mingw output have to be static linking, and that this reason, we are able to use 22.04 in here
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
     - name: Install dependencies
       run: |
         sudo apt-get update
@@ -76,7 +100,7 @@ jobs:
         make -j$(nproc) tarball
     - name: Upload artifacts
       if: ${{ success() }}
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: vitasdk-windows
         path: build/*.tar.bz2
