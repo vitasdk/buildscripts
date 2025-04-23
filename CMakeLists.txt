@@ -3,7 +3,7 @@
 # Distributed under the MIT License (http://opensource.org/licenses/MIT)
 #
 
-cmake_minimum_required(VERSION 3.2.0)
+cmake_minimum_required(VERSION 3.16)
 
 project(vitasdk)
 
