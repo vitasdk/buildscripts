@@ -1,24 +1,10 @@
-From c8e88878beab01fadb2e59e0c23a37257c9bba82 Mon Sep 17 00:00:00 2001
-From: Sunguk Lee <d3m3vilurr@gmail.com>
-Date: Sat, 6 Jun 2020 23:06:47 +0900
-Subject: [PATCH] Apply vita patch
-
----
- gdb/Makefile.in     |  1 +
- gdb/arm-vita-tdep.c | 54 +++++++++++++++++++++++++++++++++++++++++++++
- gdb/configure.tgt   |  4 ++++
- gdb/defs.h          |  1 +
- gdb/osabi.c         |  1 +
- 5 files changed, 61 insertions(+)
- create mode 100644 gdb/arm-vita-tdep.c
-
 diff --git a/gdb/Makefile.in b/gdb/Makefile.in
-index c3e074b21f..5ab1e1e999 100644
+index fa7c81a0fab..258cc35ac88 100644
 --- a/gdb/Makefile.in
 +++ b/gdb/Makefile.in
-@@ -701,6 +701,7 @@ ALL_TARGET_OBS = \
+@@ -771,6 +771,7 @@ ALL_TARGET_OBS = \
+ 	arm-obsd-tdep.o \
  	arm-pikeos-tdep.o \
- 	arm-symbian-tdep.o \
  	arm-tdep.o \
 +	arm-vita-tdep.o \
  	arm-wince-tdep.o \
@@ -26,12 +12,11 @@ index c3e074b21f..5ab1e1e999 100644
  	bfin-linux-tdep.o \
 diff --git a/gdb/arm-vita-tdep.c b/gdb/arm-vita-tdep.c
 new file mode 100644
-index 0000000000..6dbc071fe1
+index 00000000000..5fdcea08b5d
 --- /dev/null
 +++ b/gdb/arm-vita-tdep.c
-@@ -0,0 +1,54 @@
-+
-+/* 
+@@ -0,0 +1,53 @@
++/*
 +   Copyright (C) 2019 David "Davee" Morgan
 +
 +   This program is free software; you can redistribute it and/or modify
@@ -85,37 +70,25 @@ index 0000000000..6dbc071fe1
 +                            arm_vita_init_abi);
 +}
 diff --git a/gdb/configure.tgt b/gdb/configure.tgt
-index caa42be1c0..b4607a7604 100644
+index e84e222ba0d..61202f9e3ae 100644
 --- a/gdb/configure.tgt
 +++ b/gdb/configure.tgt
-@@ -185,6 +185,10 @@ arm*-*-symbianelf*)
- 	# Target: SymbianOS/arm
- 	gdb_target_obs="arm-symbian-tdep.o"
+@@ -198,6 +198,10 @@ arm*-*-openbsd*)
+ 	# Target: OpenBSD/arm
+ 	gdb_target_obs="arm-bsd-tdep.o arm-obsd-tdep.o"
  	;;
 +arm*-vita-eabi)
-+	# Target: PS Vita
-+	gdb_target_obs="arm-vita-tdep.o"
-+	;;
++  # Target: PS Vita
++  gdb_target_obs="arm-vita-tdep.o"
++  ;;
  arm*-*-*)
  	# Target: ARM embedded system
  	gdb_target_obs="arm-pikeos-tdep.o"
-diff --git a/gdb/defs.h b/gdb/defs.h
-index 567f214b81..d795cae8bd 100644
---- a/gdb/defs.h
-+++ b/gdb/defs.h
-@@ -496,6 +496,7 @@ enum gdb_osabi
-   GDB_OSABI_NEWLIB,
-   GDB_OSABI_SDE,
-   GDB_OSABI_PIKEOS,
-+  GDB_OSABI_VITA,
- 
-   GDB_OSABI_INVALID		/* keep this last */
- };
 diff --git a/gdb/osabi.c b/gdb/osabi.c
-index dec1bddc4c..c07a99dd9b 100644
+index d18802ac3a4..8bc8f8bbbb4 100644
 --- a/gdb/osabi.c
 +++ b/gdb/osabi.c
-@@ -81,6 +81,7 @@ static const struct osabi_names gdb_osabi_names[] =
+@@ -82,6 +82,7 @@ static const struct osabi_names gdb_osabi_names[] =
    { "Newlib", NULL },
    { "SDE", NULL },
    { "PikeOS", NULL },
@@ -123,6 +96,107 @@ index dec1bddc4c..c07a99dd9b 100644
  
    { "<invalid>", NULL }
  };
--- 
-2.27.0
-
+diff --git a/gdb/osabi.h b/gdb/osabi.h
+index 35f14ec433c..14504ce650f 100644
+--- a/gdb/osabi.h
++++ b/gdb/osabi.h
+@@ -46,6 +46,7 @@ enum gdb_osabi
+   GDB_OSABI_NEWLIB,
+   GDB_OSABI_SDE,
+   GDB_OSABI_PIKEOS,
++  GDB_OSABI_VITA,
+ 
+   GDB_OSABI_INVALID		/* keep this last */
+ };
+diff --git a/gdb/python/py-gdb-readline.c b/gdb/python/py-gdb-readline.c
+index ea0f78c9ad8..4aa270b41ac 100644
+--- a/gdb/python/py-gdb-readline.c
++++ b/gdb/python/py-gdb-readline.c
+@@ -52,13 +52,11 @@ gdbpy_readline_wrapper (FILE *sys_stdin, FILE *sys_stdout,
+       if (except.reason == RETURN_QUIT)
+ 	return NULL;
+ 
+-      /* The thread state is nulled during gdbpy_readline_wrapper,
+-	 with the original value saved in the following undocumented
+-	 variable (see Python's Parser/myreadline.c and
+-	 Modules/readline.c).  */
+-      PyEval_RestoreThread (_PyOS_ReadlineTState);
++
++      /* This readline callback is called without the GIL held.  */
++      gdbpy_gil gil;
++
+       gdbpy_convert_exception (except);
+-      PyEval_SaveThread ();
+       return NULL;
+     }
+ 
+diff --git a/gdb/python/python-internal.h b/gdb/python/python-internal.h
+index c41a43bac96..96c0008ae25 100644
+--- a/gdb/python/python-internal.h
++++ b/gdb/python/python-internal.h
+@@ -706,6 +706,30 @@ class gdbpy_allow_threads
+   PyThreadState *m_save;
+ };
+ 
++/* A helper class to save and restore the GIL, but without touching
++   the other globals that are handled by gdbpy_enter.  */
++
++class gdbpy_gil
++{
++public:
++
++  gdbpy_gil ()
++    : m_state (PyGILState_Ensure ())
++  {
++  }
++
++  ~gdbpy_gil ()
++  {
++    PyGILState_Release (m_state);
++  }
++
++  DISABLE_COPY_AND_ASSIGN (gdbpy_gil);
++
++private:
++
++  PyGILState_STATE m_state;
++};
++
+ /* Use this after a TRY_EXCEPT to throw the appropriate Python
+    exception.  */
+ #define GDB_PY_HANDLE_EXCEPTION(Exception)	\
+diff --git a/gdb/python/python.c b/gdb/python/python.c
+index 9d558119e09..4e0692abed8 100644
+--- a/gdb/python/python.c
++++ b/gdb/python/python.c
+@@ -255,30 +255,6 @@ gdbpy_enter::finalize ()
+   python_gdbarch = target_gdbarch ();
+ }
+ 
+-/* A helper class to save and restore the GIL, but without touching
+-   the other globals that are handled by gdbpy_enter.  */
+-
+-class gdbpy_gil
+-{
+-public:
+-
+-  gdbpy_gil ()
+-    : m_state (PyGILState_Ensure ())
+-  {
+-  }
+-
+-  ~gdbpy_gil ()
+-  {
+-    PyGILState_Release (m_state);
+-  }
+-
+-  DISABLE_COPY_AND_ASSIGN (gdbpy_gil);
+-
+-private:
+-
+-  PyGILState_STATE m_state;
+-};
+-
+ /* Set the quit flag.  */
+ 
+ static void

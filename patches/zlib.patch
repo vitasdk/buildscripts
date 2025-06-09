@@ -3,7 +3,7 @@ index b412dc7..7e847ee 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -1,4 +1,4 @@
--cmake_minimum_required(VERSION 2.4.4)
+-cmake_minimum_required(VERSION 2.4.4...3.15.0)
 +cmake_minimum_required(VERSION 3.16)
  set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
  

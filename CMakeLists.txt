@@ -7,38 +7,46 @@ cmake_minimum_required(VERSION 3.16)
 
 project(vitasdk)
 
-# Use the following gcc version
-set(GCC_VERSION 10.3.0)
-set(GCC_HASH SHA256=64f404c1a650f27fc33da242e1f2df54952e3963a49e06e73f6940f3223ac344)
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+endif()
 
-set(ZLIB_VERSION 1.2.13)
-set(ZLIB_HASH SHA256=b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30)
+# Use the following gcc version
+set(GCC_VERSION 13.3.0)
+set(GCC_HASH SHA256=0845e9621c9543a13f484e94584a49ffc0129970e9914624235fc1d061a0c083)
+
+set(ZLIB_VERSION 1.3)
+set(ZLIB_HASH SHA256=8a9ba2898e1d0d774eca6ba5b4627a11e5588ba85c8851336eb38de4683050a7)
+
+set(ZSTD_VERSION 1.5.5)
+set(ZSTD_HASH SHA256=98e9c3d949d1b924e28e01eccb7deed865eefebf25c2f21c702e5cd5b63b85e1)
 
 set(LIBELF_VERSION 0.8.13)
 set(LIBELF_HASH SHA256=591a9b4ec81c1f2042a97aa60564e0cb79d041c52faa7416acb38bc95bd2c76d)
 
-set(LIBYAML_VERSION 0.2.2)
-set(LIBYAML_HASH SHA256=4a9100ab61047fd9bd395bcef3ce5403365cafd55c1e0d0299cde14958e47be9)
+set(LIBYAML_VERSION 0.2.5)
+set(LIBYAML_HASH SHA256=fa240dbf262be053f3898006d502d514936c818e422afdcf33921c63bed9bf2e)
 
-set(GMP_VERSION 6.1.2)
-set(GMP_HASH SHA256=5275bb04f4863a13516b2f39392ac5e272f5e1bb8057b18aec1c9b79d73d8fb2)
+set(GMP_VERSION 6.3.0)
+set(GMP_HASH SHA256=a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898)
 
-set(MPFR_VERSION 4.0.2)
-set(MPFR_HASH SHA256=c05e3f02d09e0e9019384cdd58e0f19c64e6db1fd6f5ecf77b4b1c61ca253acc)
+set(MPFR_VERSION 4.2.1)
+set(MPFR_HASH SHA256=b9df93635b20e4089c29623b19420c4ac848a1b29df1cfd59f26cab0d2666aa0)
 
-set(MPC_VERSION 1.1.0)
-set(MPC_HASH SHA256=6985c538143c1208dcb1ac42cedad6ff52e267b47e5f970183a3e75125b43c2e)
+set(MPC_VERSION 1.3.1)
+set(MPC_HASH SHA256=ab642492f5cf882b74aa0cb730cd410a81edcdbec895183ce930e706c1c759b8)
 
 set(ISL_VERSION 0.21)
 
-set(EXPAT_VERSION 2.3.0)
-set(EXPAT_HASH SHA256=f122a20eada303f904d5e0513326c5b821248f2d4d2afbf5c6f1339e511c0586)
+set(EXPAT_VERSION 2.5.0)
+set(EXPAT_HASH SHA256=6f0e6e01f7b30025fa05c85fdad1e5d0ec7fd35d9f61b22f34998de11969ff67)
+string(REPLACE "." "_" EXPAT_TAG_VERSION "${EXPAT_VERSION}")
 
-set(BINUTILS_VERSION 2.34)
-set(BINUTILS_HASH SHA256=f00b0e8803dc9bab1e2165bd568528135be734df3fabf8d0161828cd56028952)
+set(BINUTILS_VERSION 2.41)
+set(BINUTILS_HASH SHA256=ae9a5789e23459e59606e6714723f2d3ffc31c03174191ef0d015bdf06007450)
 
-set(GDB_VERSION 9.2)
-set(GDB_HASH SHA256=360cd7ae79b776988e89d8f9a01c985d0b1fa21c767a4295e5f88cb49175c555)
+set(GDB_VERSION 13.2)
+set(GDB_HASH SHA256=fd5bebb7be1833abdb6e023c2f498a354498281df9d05523d8915babeb893f0a)
 
 # Branches to fetch the different project targets. Can be overriden from command line.
 set(LIBZIP_TAG master CACHE STRING "libzip branch name, commit id or tag")
@@ -53,12 +61,7 @@ set(VITA_MAKEPKG_TAG master CACHE STRING "vita-makepkg branch name, commit id or
 # Location to save the downloaded tarballs. Can be overriden from command line.
 set(DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/downloads CACHE PATH "Default download path for tarballs")
 
-set(OFFLINE YES CACHE BOOL "Check repo updates")
-set(UPDATE_DISCONNECTED_SUPPORT UPDATE_DISCONNECTED ${OFFLINE})
-
-if("${CMAKE_VERSION}" VERSION_GREATER 3.6.0)
-    set(GIT_SHALLOW_SUPPORT GIT_SHALLOW 1)
-endif()
+option(OFFLINE "Check repo updates" ON)
 
 # Installation directory. Can be overriden from command line.
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -123,7 +126,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
     set(suffix "_${toolchain_suffix}")
 
     ExternalProject_Add(zlib${suffix}
-        URL https://www.zlib.net/fossils/zlib-${ZLIB_VERSION}.tar.gz
+        URL https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.xz
         URL_HASH ${ZLIB_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/zlib.patch
@@ -151,9 +154,29 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
             COMMAND ${CMAKE_COMMAND} -E remove
             ${toolchain_deps_dir}/lib/libz.so
             ${toolchain_deps_dir}/lib/libz.so.1
+            ${toolchain_deps_dir}/lib/libz.dylib
+            ${toolchain_deps_dir}/lib/libz.1.dylib
+            ${toolchain_deps_dir}/lib/libz.1.2.13.dylib
             COMMENT "Delete shared libraries, if present"
             )
     endif()
+
+    ExternalProject_Add(zstd${suffix}
+        URL https://github.com/facebook/zstd/archive/refs/tags/v${ZSTD_VERSION}.tar.gz
+        URL_HASH ${ZSTD_HASH}
+        DOWNLOAD_DIR ${DOWNLOAD_DIR}
+        SOURCE_SUBDIR "build/cmake"
+        CMAKE_ARGS ${toolchain_cmake_args}
+        "-DCMAKE_INSTALL_PREFIX=${toolchain_deps_dir}"
+        "-DCMAKE_BUILD_TYPE=Release"
+        "-DZSTD_BUILD_CONTRIB=OFF"
+        "-DZSTD_BUILD_PROGRAMS=OFF"
+        "-DZSTD_BUILD_SHARED=OFF"
+        "-DZSTD_BUILD_STATIC=ON"
+        "-DZSTD_BUILD_TESTS=OFF"
+        "-DZSTD_LEGACY_SUPPORT=OFF"
+        "-DZSTD_MULTITHREAD_SUPPORT=OFF"
+    )
 
     # Different configurations for the unix/windows builds of the toolchain
     if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
@@ -172,7 +195,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         DEPENDS zlib${suffix}
         GIT_REPOSITORY https://github.com/vitasdk/libzip
         GIT_TAG ${LIBZIP_TAG}
-        ${GIT_SHALLOW_SUPPORT}
+        GIT_SHALLOW 1
+        UPDATE_DISCONNECTED ${OFFLINE}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libzip.patch
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${toolchain_deps_dir}
         ${toolchain_cmake_args} ${libzip_configure}
@@ -184,8 +208,10 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL https://github.com/vitasdk/artifacts/releases/download/libelf-${LIBELF_VERSION}/libelf-${LIBELF_VERSION}.tar.gz
         URL_HASH ${LIBELF_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libelf.patch
-        CONFIGURE_COMMAND autoreconf -i <SOURCE_DIR> COMMAND CC=${cc_compiler} RANLIB=${ranlib} ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libelf/0001-sizeof-longlong.patch
+        COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libelf/0002-update-automake-configs.patch
+        CONFIGURE_COMMAND autoreconf -fvi <SOURCE_DIR>
+        COMMAND ${CMAKE_COMMAND} -E env CC=${cc_compiler} RANLIB=${ranlib} ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
@@ -195,10 +221,11 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_add(libyaml${suffix}
-        URL http://pyyaml.org/download/libyaml/yaml-${LIBYAML_VERSION}.tar.gz
+        URL https://github.com/yaml/libyaml/archive/${LIBYAML_VERSION}.tar.gz
         URL_HASH ${LIBYAML_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND autoreconf -fvi <SOURCE_DIR>
+        COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
@@ -209,17 +236,17 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_add(gmp${suffix}
-        URL http://ftp.gnu.org/gnu/gmp/gmp-${GMP_VERSION}.tar.bz2
+        URL https://ftpmirror.gnu.org/gmp/gmp-${GMP_VERSION}.tar.xz
         URL_HASH ${GMP_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        CONFIGURE_COMMAND CPPFLAGS=-fexceptions ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND autoreconf -fvi <SOURCE_DIR>
+        COMMAND ${CMAKE_COMMAND} -E env CPPFLAGS=-fexceptions ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
         --libdir=${toolchain_deps_dir}/lib
         --enable-cxx
         --disable-shared
-        BUILD_COMMAND ${compiler_flags} ${wrapper_command} $(MAKE)
         )
 
     ExternalProject_add(mpfr${suffix}
@@ -227,7 +254,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL http://ftp.gnu.org/gnu/mpfr/mpfr-${MPFR_VERSION}.tar.bz2
         URL_HASH ${MPFR_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        PATCH_COMMAND autoreconf -fvi <SOURCE_DIR>
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
@@ -241,7 +269,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL https://ftp.gnu.org/gnu/mpc/mpc-${MPC_VERSION}.tar.gz
         URL_HASH ${MPC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
@@ -256,8 +284,11 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         DEPENDS gmp${suffix}
         GIT_REPOSITORY https://github.com/Meinersbur/isl
         GIT_TAG isl-${ISL_VERSION}
+        GIT_SHALLOW 1
+        UPDATE_DISCONNECTED ${OFFLINE}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        CONFIGURE_COMMAND cd <SOURCE_DIR> && ./autogen.sh COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND cd <SOURCE_DIR> && ./autogen.sh
+        COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
@@ -267,10 +298,11 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_add(expat${suffix}
-        URL https://github.com/libexpat/libexpat/releases/download/R_2_3_0/expat-${EXPAT_VERSION}.tar.bz2
+        URL https://github.com/libexpat/libexpat/releases/download/R_${EXPAT_TAG_VERSION}/expat-${EXPAT_VERSION}.tar.bz2
         URL_HASH ${EXPAT_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        PATCH_COMMAND autoreconf -fvi <SOURCE_DIR>
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
@@ -282,7 +314,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         DEPENDS libelf${suffix} zlib${suffix} libzip${suffix} libyaml${suffix}
         GIT_REPOSITORY https://github.com/vitasdk/vita-toolchain
         GIT_TAG ${TOOLCHAIN_TAG}
-        ${GIT_SHALLOW_SUPPORT}
+        GIT_SHALLOW 1
         # Set prefix to "/" here to be able to install twice
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=/ ${toolchain_cmake_args}
         -DTOOLCHAIN_DEPS_DIR=${toolchain_deps_dir}
@@ -290,18 +322,18 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir}
         # Save the commit id for tracking purposes
         COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/vita-toolchain-version.txt
-        ${UPDATE_DISCONNECTED_SUPPORT}
+        UPDATE_DISCONNECTED ${OFFLINE}
         )
 
     ExternalProject_Add(binutils${suffix}
-        URL https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VERSION}.tar.xz
+        DEPENDS zstd${suffix}
+        URL https://ftpmirror.gnu.org/binutils/binutils-${BINUTILS_VERSION}.tar.xz
         URL_HASH ${BINUTILS_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        PATCH_COMMAND
-            patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0001-vita.patch
-            && patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0002-fix-broken-reloc.patch
-            && patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0003-fix-elf-vaddr.patch
-        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0001-vita.patch
+        COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0002-fix-broken-reloc.patch
+        COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0003-fix-elf-vaddr.patch
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --target=${target_arch}
@@ -314,22 +346,34 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         --enable-interwork
         --enable-plugins
         "--with-pkgversion=${pkgversion}"
+        # Binutils and gdb search for zstd using pkg-config
+        --with-zstd
+        "PKG_CONFIG_PATH=${toolchain_deps_dir}/lib/pkgconfig"
         BUILD_COMMAND $(MAKE)
         INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir}
         )
 
     ExternalProject_Add(gdb${suffix}
+        DEPENDS expat${suffix} gmp${suffix} mpfr${suffix} zlib${suffix} zstd${suffix}
         URL https://ftp.gnu.org/gnu/gdb/gdb-${GDB_VERSION}.tar.xz
         URL_HASH ${GDB_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gdb.patch
-        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --target=${target_arch}
         # Set prefix to "/" here to be able to install twice
         --prefix=/
         --with-sysroot=${toolchain_install_dir}
+        --with-libexpat-prefix=${toolchain_deps_dir}
+        --with-libgmp-prefix=${toolchain_deps_dir}
+        --with-libmpfr-prefix=${toolchain_deps_dir}
+        --with-zstd
+        # Avoid linking against system libs
+        --disable-source-highlight
+        --without-guile
+        "PKG_CONFIG_PATH=${toolchain_deps_dir}/lib/pkgconfig"
         BUILD_COMMAND $(MAKE)
         INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir}
         )
@@ -424,7 +468,7 @@ list(APPEND pthread_tools
 
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" AND ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     # GCC on OSX (Clang in diguise) needs more bracket nesting depth to compile gcc
-    set(GCC_CFLAGS "${GCC_CFLAGS} -fbracket-depth=512")
+    set(GCC_CFLAGS "${GCC_CFLAGS} -fbracket-depth=512 -Wno-mismatched-tags -Wno-deprecated-declarations")
 endif()
 
 # Common gcc configure options
@@ -458,12 +502,12 @@ endif()
 
 # Build a basic gcc compiler, needed to compile newlib
 ExternalProject_add(gcc-base
-    DEPENDS gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix}
-    URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
+    DEPENDS gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix} zstd_${build_suffix}
+    URL https://ftpmirror.gnu.org/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
-    PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-10.patch
-    CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+    PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-13-vita.patch
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flag} ${wrapper_command} <SOURCE_DIR>/configure
     --build=${build_native}
     # compile a native compiler so keep host == build
     --host=${build_native}
@@ -477,6 +521,7 @@ ExternalProject_add(gcc-base
     --with-mpc=${toolchain_build_depends_dir}
     --with-isl=${toolchain_build_depends_dir}
     --with-libelf=${toolchain_build_depends_dir}
+    --with-zstd=${toolchain_build_depends_dir}
     ${common_gcc_configure_args}
     --disable-threads
     --without-headers
@@ -491,7 +536,7 @@ ExternalProject_add(vita-headers
     DEPENDS binutils_${build_suffix} vita-toolchain_${build_suffix}
     GIT_REPOSITORY https://github.com/vitasdk/vita-headers
     GIT_TAG ${HEADERS_TAG}
-    ${GIT_SHALLOW_SUPPORT}
+    GIT_SHALLOW 1
     # CONFIGURE_COMMAND ""
     # BUILD_COMMAND VITA_LIBS_GEN=${vita_libs_gen_command}
     #     ARCH=${binutils_prefix}
@@ -520,16 +565,16 @@ ExternalProject_add(vita-headers
     COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/db ${CMAKE_INSTALL_PREFIX}/share/vita-headers/db
     # Save the commit id for tracking purposes
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/vita-headers-version.txt
-    ${UPDATE_DISCONNECTED_SUPPORT}
+    UPDATE_DISCONNECTED ${OFFLINE}
     )
 
 ExternalProject_Add(newlib
     DEPENDS binutils_${target_suffix} gcc-base vita-headers
     GIT_REPOSITORY https://github.com/vitasdk/newlib
     GIT_TAG ${NEWLIB_TAG}
-    ${GIT_SHALLOW_SUPPORT}
+    GIT_SHALLOW 1
     # Pass the compiler_target_tools here so newlib picks up the fresh gcc-base compiler
-    CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flag} ${toolchain_tools} ${compiler_target_tools}
     ${wrapper_command} <SOURCE_DIR>/configure "CFLAGS_FOR_TARGET=-g -O2 -ffunction-sections -fdata-sections"
     --build=${build_native}
     --host=${host_native}
@@ -543,25 +588,25 @@ ExternalProject_Add(newlib
     --enable-newlib-long-time_t
     --disable-nls
     --enable-newlib-iconv
-    BUILD_COMMAND ${compiler_flags} ${toolchain_tools} ${wrapper_command} $(MAKE)
+    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags} ${toolchain_tools} ${wrapper_command} $(MAKE)
     INSTALL_COMMAND $(MAKE) install DESTDIR=${CMAKE_INSTALL_PREFIX}
     # Install a copy of newlib in the toolchain directory (required for pthread-embedded target)
     COMMAND $(MAKE) install DESTDIR=${toolchain_build_install_dir}
     # Save the commit id for tracking purposes
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/newlib-version.txt
-    ${UPDATE_DISCONNECTED_SUPPORT}
+    UPDATE_DISCONNECTED ${OFFLINE}
     )
 
 # Build a complete gcc compiler to be able to compile the full gcc for the host when crosscompiling.
 # Using gcc-base doesn't work since is missing some headers.
 if(CMAKE_TOOLCHAIN_FILE)
     ExternalProject_add(gcc-complete
-        DEPENDS newlib gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix}
-        URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
+        DEPENDS newlib gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix} zstd_${build_suffix}
+        URL https://ftpmirror.gnu.org/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
         URL_HASH ${GCC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-10.patch
-        CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools}
+        PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-13-vita.patch
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags} ${toolchain_tools} 
         ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         # compile a native compiler so keep host == build
@@ -576,13 +621,14 @@ if(CMAKE_TOOLCHAIN_FILE)
         --with-mpc=${toolchain_build_depends_dir}
         --with-isl=${toolchain_build_depends_dir}
         --with-libelf=${toolchain_build_depends_dir}
+        --with-zstd=${toolchain_build_depends_dir}
         ${common_gcc_configure_args}
         --enable-threads=posix
         --with-headers=yes
         --enable-libgomp
         "CFLAGS=${GCC_CFLAGS}"
         "CXXFLAGS=${GCC_CFLAGS}"
-        BUILD_COMMAND ${toolchain_tools} ${wrapper_command} $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
+        BUILD_COMMAND ${CMAKE_COMMAND} -E env ${toolchain_tools} ${wrapper_command} $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
         INSTALL_COMMAND $(MAKE) install
         )
     # Add this target as dependency of the final gcc target
@@ -596,28 +642,28 @@ ExternalProject_Add(pthread-embedded
     DEPENDS binutils_${target_suffix} gcc-base newlib vita-headers
     GIT_REPOSITORY https://github.com/vitasdk/pthread-embedded
     GIT_TAG ${PTHREAD_TAG}
-    ${GIT_SHALLOW_SUPPORT}
+    GIT_SHALLOW 1
     # TODO: this project should have a proper makefile to support out-of-source builds
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
-    BUILD_COMMAND ${compiler_flags} ${wrapper_command} $(MAKE)
+    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags} ${wrapper_command} $(MAKE)
     -C <SOURCE_DIR>/platform/vita ${pthread_tools} PREFIX=${CMAKE_INSTALL_PREFIX}
     INSTALL_COMMAND $(MAKE) -C <SOURCE_DIR>/platform/vita PREFIX=${CMAKE_INSTALL_PREFIX}/${target_arch} install
     # Install into the toolchain directory (required for libgomp target)
     COMMAND $(MAKE) install -C <SOURCE_DIR>/platform/vita PREFIX=${toolchain_build_install_dir}/${target_arch} install
     # Save the commit id for tracking purposes
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/pthread-embedded-version.txt
-    ${UPDATE_DISCONNECTED_SUPPORT}
+    UPDATE_DISCONNECTED ${OFFLINE}
     )
 
 ExternalProject_add(gcc-final
-    DEPENDS gmp_${target_suffix} mpfr_${target_suffix} mpc_${target_suffix} isl_${target_suffix} libelf_${target_suffix}
+    DEPENDS gmp_${target_suffix} mpfr_${target_suffix} mpc_${target_suffix} isl_${target_suffix} libelf_${target_suffix} zstd_${target_suffix}
     DEPENDS newlib ${GCC_DEPENDS} pthread-embedded
-    URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
+    URL https://ftpmirror.gnu.org/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
-    PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-10.patch
-    CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
+    PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-13-vita.patch
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
     ${wrapper_command} <SOURCE_DIR>/configure
     --build=${build_native}
     --host=${host_native}
@@ -631,13 +677,14 @@ ExternalProject_add(gcc-final
     --with-mpc=${toolchain_target_depends_dir}
     --with-isl=${toolchain_target_depends_dir}
     --with-libelf=${toolchain_target_depends_dir}
+    --with-zstd=${toolchain_target_depends_dir}
     ${common_gcc_configure_args}
     --with-headers=yes
     --enable-threads=posix
     --enable-libgomp
     "CFLAGS=${GCC_CFLAGS}"
     "CXXFLAGS=${GCC_CFLAGS}"
-    BUILD_COMMAND ${toolchain_tools} ${compiler_target_tools} ${wrapper_command}
+    BUILD_COMMAND ${CMAKE_COMMAND} -E env ${toolchain_tools} ${compiler_target_tools} ${wrapper_command}
     $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
     INSTALL_COMMAND $(MAKE) install
     # Remove gcc docs to reduce size
@@ -651,7 +698,7 @@ ExternalProject_add(gcc-final
 ExternalProject_Add(samples
     GIT_REPOSITORY https://github.com/vitasdk/samples
     GIT_TAG ${SAMPLES_TAG}
-    ${GIT_SHALLOW_SUPPORT}
+    GIT_SHALLOW 1
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
@@ -660,13 +707,13 @@ ExternalProject_Add(samples
     -P ${CMAKE_SOURCE_DIR}/cmake/install_files.cmake
     # Save the commit id for tracking purposes
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/samples-version.txt
-    ${UPDATE_DISCONNECTED_SUPPORT}
+    UPDATE_DISCONNECTED ${OFFLINE}
     )
 
 ExternalProject_Add(vdpm
     GIT_REPOSITORY https://github.com/vitasdk/vdpm.git
     GIT_TAG ${VDPM_TAG}
-    ${GIT_SHALLOW_SUPPORT}
+    GIT_SHALLOW 1
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
@@ -674,13 +721,13 @@ ExternalProject_Add(vdpm
     COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include ${CMAKE_INSTALL_PREFIX}/bin/include
     COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/vdpm ${CMAKE_INSTALL_PREFIX}/bin/
     COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/vitasdk-update ${CMAKE_INSTALL_PREFIX}/bin/
-    ${UPDATE_DISCONNECTED_SUPPORT}
+    UPDATE_DISCONNECTED ${OFFLINE}
     )
 
 ExternalProject_Add(vita-makepkg
     GIT_REPOSITORY https://github.com/vitasdk/vita-makepkg.git
     GIT_TAG ${VITA_MAKEPKG_TAG}
-    ${GIT_SHALLOW_SUPPORT}
+    GIT_SHALLOW 1
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
@@ -688,7 +735,7 @@ ExternalProject_Add(vita-makepkg
     COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/libmakepkg ${CMAKE_INSTALL_PREFIX}/bin/libmakepkg
     COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/vita-makepkg ${CMAKE_INSTALL_PREFIX}/bin/
     COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/makepkg.conf.sample ${CMAKE_INSTALL_PREFIX}/bin/makepkg.conf
-    ${UPDATE_DISCONNECTED_SUPPORT}
+    UPDATE_DISCONNECTED ${OFFLINE}
     )
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
