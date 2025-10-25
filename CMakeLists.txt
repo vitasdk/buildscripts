@@ -210,6 +210,13 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         "CFLAGS=-DYAML_DECLARE_STATIC"
         )
 
+    # GMP assembly doesn't work on ARM64 macOS - need to disable it
+    if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin" AND ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64")
+        set(gmp_asm_flag --disable-assembly)
+    else()
+        set(gmp_asm_flag "")
+    endif()
+
     ExternalProject_add(gmp${suffix}
         URL http://ftp.gnu.org/gnu/gmp/gmp-${GMP_VERSION}.tar.bz2
         URL_HASH ${GMP_HASH}
@@ -222,6 +229,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         --libdir=${toolchain_deps_dir}/lib
         --enable-cxx
         --disable-shared
+        ${gmp_asm_flag}
         BUILD_COMMAND ${compiler_flags} ${wrapper_command} $(MAKE)
         )
 
