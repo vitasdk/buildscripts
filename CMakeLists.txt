@@ -238,7 +238,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL http://ftp.gnu.org/gnu/mpfr/mpfr-${MPFR_VERSION}.tar.bz2
         URL_HASH ${MPFR_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        PATCH_COMMAND sh ${PROJECT_SOURCE_DIR}/cmake/update_config_files.sh <SOURCE_DIR>/build-aux
+        PATCH_COMMAND sh ${PROJECT_SOURCE_DIR}/cmake/update_config_files.sh <SOURCE_DIR>
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
@@ -253,7 +253,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL https://ftp.gnu.org/gnu/mpc/mpc-${MPC_VERSION}.tar.gz
         URL_HASH ${MPC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        PATCH_COMMAND sh ${PROJECT_SOURCE_DIR}/cmake/update_config_files.sh <SOURCE_DIR>/build-aux
+        PATCH_COMMAND sh ${PROJECT_SOURCE_DIR}/cmake/update_config_files.sh <SOURCE_DIR>
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
