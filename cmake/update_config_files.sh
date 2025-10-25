@@ -19,6 +19,10 @@ fi
 
 echo "Updating config.sub and config.guess in $SOURCE_DIR for ARM64 Mac support"
 
+# Remove old files if they exist and are read-only
+[ -f "$SOURCE_DIR/config.sub" ] && chmod +w "$SOURCE_DIR/config.sub" 2>/dev/null
+[ -f "$SOURCE_DIR/config.guess" ] && chmod +w "$SOURCE_DIR/config.guess" 2>/dev/null
+
 # Try to download latest config.sub
 if ! curl -L -o "$SOURCE_DIR/config.sub" \
     'https://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub;hb=HEAD'; then
