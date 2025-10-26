@@ -148,9 +148,11 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         ExternalProject_Add_Step(zlib${suffix}
             delete_shared
             DEPENDEES install
-            COMMAND ${CMAKE_COMMAND} -E remove
+            COMMAND ${CMAKE_COMMAND} -E remove -f
             ${toolchain_deps_dir}/lib/libz.so
             ${toolchain_deps_dir}/lib/libz.so.1
+            ${toolchain_deps_dir}/lib/libz.dylib
+            ${toolchain_deps_dir}/lib/libz.*.dylib
             COMMENT "Delete shared libraries, if present"
             )
     endif()
@@ -482,6 +484,7 @@ ExternalProject_add(gcc-base
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
     PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-10.patch
         && sh ${PROJECT_SOURCE_DIR}/cmake/update_config_files.sh <SOURCE_DIR>
+        && sh ${PROJECT_SOURCE_DIR}/cmake/fix_gcc_arm64_macos.sh <SOURCE_DIR>
     CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
     --build=${build_native}
     # compile a native compiler so keep host == build
@@ -581,6 +584,7 @@ if(CMAKE_TOOLCHAIN_FILE)
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-10.patch
             && sh ${PROJECT_SOURCE_DIR}/cmake/update_config_files.sh <SOURCE_DIR>
+            && sh ${PROJECT_SOURCE_DIR}/cmake/fix_gcc_arm64_macos.sh <SOURCE_DIR>
         CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools}
         ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
@@ -638,6 +642,7 @@ ExternalProject_add(gcc-final
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
     PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-10.patch
         && sh ${PROJECT_SOURCE_DIR}/cmake/update_config_files.sh <SOURCE_DIR>
+        && sh ${PROJECT_SOURCE_DIR}/cmake/fix_gcc_arm64_macos.sh <SOURCE_DIR>
     CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
     ${wrapper_command} <SOURCE_DIR>/configure
     --build=${build_native}
