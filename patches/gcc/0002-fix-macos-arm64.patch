@@ -1,0 +1,46 @@
+--- a/zlib/zutil.h
++++ b/zlib/zutil.h
+@@ -132,15 +132,6 @@
+ 
+ #if defined(MACOS) || defined(TARGET_OS_MAC)
+ #  define OS_CODE  7
+-#  ifndef Z_SOLO
+-#    if defined(__MWERKS__) && __dest_os != __be_os && __dest_os != __win32_os
+-#      include <unix.h> /* for fdopen */
+-#    else
+-#      ifndef fdopen
+-#        define fdopen(fd,mode) NULL /* No fdopen() */
+-#      endif
+-#    endif
+-#  endif
+ #endif
+ 
+ #ifdef __acorn
+--- a/include/safe-ctype.h
++++ b/include/safe-ctype.h
+@@ -120,6 +120,7 @@
+    So we include ctype.h here and then immediately redefine its macros.  */
+ 
+ #include <ctype.h>
++#ifndef __cplusplus
+ #undef isalpha
+ #define isalpha(c) do_not_use_isalpha_with_safe_ctype
+ #undef isalnum
+@@ -147,4 +148,5 @@
+ #undef tolower
+ #define tolower(c) do_not_use_tolower_with_safe_ctype
+ 
++#endif /* __cplusplus */
+ #endif /* SAFE_CTYPE_H */
+--- a/gcc/config.host
++++ b/gcc/config.host
+@@ -251,7 +251,7 @@
+     host_extra_gcc_objs="${host_extra_gcc_objs} driver-mingw32.o"
+     host_lto_plugin_soname=liblto_plugin-0.dll
+     ;;
+-  i[34567]86-*-darwin* | x86_64-*-darwin*)
++  i[34567]86-*-darwin* | x86_64-*-darwin* | aarch64-*-darwin* | arm64-*-darwin*)
+     out_host_hook_obj="${out_host_hook_obj} host-i386-darwin.o"
+     host_xmake_file="${host_xmake_file} i386/x-darwin"
+     ;;
+
