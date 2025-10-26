@@ -1,0 +1,24 @@
+--- a/gdb/gdbsupport/enum-flags.h
++++ b/gdb/gdbsupport/enum-flags.h
+@@ -79,6 +79,10 @@ template<> struct integer_for_size<4, 1> { typedef int32_t type; };
+ template<> struct integer_for_size<8, 1> { typedef int64_t type; };
+ 
+ template<typename T>
++#ifdef __clang__
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wenum-constexpr-conversion"
++#endif
+ struct enum_underlying_type
+ {
+   typedef typename
+@@ -86,6 +90,9 @@ struct enum_underlying_type
+     type;
+ };
+ 
++#ifdef __clang__
++#pragma clang diagnostic pop
++#endif
+ template <typename E>
+ class enum_flags
+ {
+
