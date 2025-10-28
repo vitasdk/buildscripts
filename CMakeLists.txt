@@ -199,7 +199,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_add(libyaml${suffix}
-        URL http://pyyaml.org/download/libyaml/yaml-${LIBYAML_VERSION}.tar.gz
+        URL https://pyyaml.org/download/libyaml/yaml-${LIBYAML_VERSION}.tar.gz
         URL_HASH ${LIBYAML_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND sh ${PROJECT_SOURCE_DIR}/cmake/update_config_files.sh <SOURCE_DIR>/config
@@ -213,19 +213,21 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         "CFLAGS=-DYAML_DECLARE_STATIC"
         )
 
-    # GMP assembly doesn't work on ARM64 macOS - need to disable it
-    if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin" AND ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64")
+    # GMP assembly causes issues on macOS - need to disable it and use PIC
+    if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
         set(gmp_asm_flag --disable-assembly)
+        set(gmp_env_command ${CMAKE_COMMAND} -E env "CFLAGS=-fPIC -fexceptions" "CXXFLAGS=-fPIC")
     else()
         set(gmp_asm_flag "")
+        set(gmp_env_command ${CMAKE_COMMAND} -E env "CPPFLAGS=-fexceptions")
     endif()
 
     ExternalProject_add(gmp${suffix}
-        URL http://ftp.gnu.org/gnu/gmp/gmp-${GMP_VERSION}.tar.bz2
+        URL https://ftpmirror.gnu.org/gnu/gmp/gmp-${GMP_VERSION}.tar.bz2
         URL_HASH ${GMP_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND sh ${PROJECT_SOURCE_DIR}/cmake/update_config_files.sh <SOURCE_DIR>
-        CONFIGURE_COMMAND CPPFLAGS=-fexceptions ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND ${gmp_env_command} ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
@@ -238,7 +240,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_add(mpfr${suffix}
         DEPENDS gmp${suffix}
-        URL http://ftp.gnu.org/gnu/mpfr/mpfr-${MPFR_VERSION}.tar.bz2
+        URL https://ftpmirror.gnu.org/gnu/mpfr/mpfr-${MPFR_VERSION}.tar.bz2
         URL_HASH ${MPFR_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND sh ${PROJECT_SOURCE_DIR}/cmake/update_config_files.sh <SOURCE_DIR>
@@ -253,7 +255,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_add(mpc${suffix}
         DEPENDS gmp${suffix} mpfr${suffix}
-        URL https://ftp.gnu.org/gnu/mpc/mpc-${MPC_VERSION}.tar.gz
+        URL https://ftpmirror.gnu.org/gnu/mpc/mpc-${MPC_VERSION}.tar.gz
         URL_HASH ${MPC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND sh ${PROJECT_SOURCE_DIR}/cmake/update_config_files.sh <SOURCE_DIR>
@@ -312,7 +314,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_Add(binutils${suffix}
-        URL https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VERSION}.tar.xz
+        URL https://ftpmirror.gnu.org/gnu/binutils/binutils-${BINUTILS_VERSION}.tar.xz
         URL_HASH ${BINUTILS_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND
@@ -339,7 +341,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_Add(gdb${suffix}
-        URL https://ftp.gnu.org/gnu/gdb/gdb-${GDB_VERSION}.tar.xz
+        URL https://ftpmirror.gnu.org/gnu/gdb/gdb-${GDB_VERSION}.tar.xz
         URL_HASH ${GDB_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gdb.patch
@@ -482,7 +484,7 @@ endif()
 # Build a basic gcc compiler, needed to compile newlib
 ExternalProject_add(gcc-base
     DEPENDS gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix}
-    URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
+    URL https://ftpmirror.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
     PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-10.patch
@@ -582,7 +584,7 @@ ExternalProject_Add(newlib
 if(CMAKE_TOOLCHAIN_FILE)
     ExternalProject_add(gcc-complete
         DEPENDS newlib gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix}
-        URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
+        URL https://ftpmirror.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
         URL_HASH ${GCC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-10.patch
@@ -640,7 +642,7 @@ ExternalProject_Add(pthread-embedded
 ExternalProject_add(gcc-final
     DEPENDS gmp_${target_suffix} mpfr_${target_suffix} mpc_${target_suffix} isl_${target_suffix} libelf_${target_suffix}
     DEPENDS newlib ${GCC_DEPENDS} pthread-embedded
-    URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
+    URL https://ftpmirror.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
     PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-10.patch

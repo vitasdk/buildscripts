@@ -8,31 +8,32 @@ if [ -z "$SOURCE_DIR" ]; then
     exit 1
 fi
 
-# Only update on ARM64 macOS - other platforms work fine with existing config files
+# Update on ARM64 platforms (macOS and Linux) - old config files don't recognize aarch64
 ARCH=$(uname -m)
 OS=$(uname -s)
 
-if [ "$OS" != "Darwin" ] || [ "$ARCH" != "arm64" ]; then
-    echo "Skipping config files update (not ARM64 Mac)"
+# Check if we're on ARM64 (macOS uses "arm64", Linux uses "aarch64")
+if [ "$ARCH" != "arm64" ] && [ "$ARCH" != "aarch64" ]; then
+    echo "Skipping config files update (not ARM64 platform: $ARCH)"
     exit 0
 fi
 
-echo "Updating config.sub and config.guess in $SOURCE_DIR for ARM64 Mac support"
+echo "Updating config.sub and config.guess in $SOURCE_DIR for ARM64 support ($OS $ARCH)"
 
 # Remove old files if they exist and are read-only
 [ -f "$SOURCE_DIR/config.sub" ] && chmod +w "$SOURCE_DIR/config.sub" 2>/dev/null
 [ -f "$SOURCE_DIR/config.guess" ] && chmod +w "$SOURCE_DIR/config.guess" 2>/dev/null
 
 # Try to download latest config.sub
-if ! curl -L -o "$SOURCE_DIR/config.sub" \
-    'https://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub;hb=HEAD'; then
-    echo "Warning: Failed to download config.sub, build might fail on ARM64 Mac"
+if ! curl -f -L -o "$SOURCE_DIR/config.sub" \
+    'https://git.savannah.gnu.org/cgit/config.git/plain/config.sub'; then
+    echo "Warning: Failed to download config.sub, build might fail on ARM64"
 fi
 
 # Try to download latest config.guess  
-if ! curl -L -o "$SOURCE_DIR/config.guess" \
-    'https://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.guess;hb=HEAD'; then
-    echo "Warning: Failed to download config.guess, build might fail on ARM64 Mac"
+if ! curl -f -L -o "$SOURCE_DIR/config.guess" \
+    'https://git.savannah.gnu.org/cgit/config.git/plain/config.guess'; then
+    echo "Warning: Failed to download config.guess, build might fail on ARM64"
 fi
 
 # Make them executable if they exist
