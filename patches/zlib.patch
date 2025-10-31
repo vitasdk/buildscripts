@@ -1,3 +1,7 @@
+Patch for standalone zlib build
+- Updates CMake minimum version requirement for modern CMake compatibility
+- Removes obsolete Metrowerks CodeWarrior fdopen workaround (same as patches/common/zlib-fdopen-macos.patch)
+
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -1,4 +1,4 @@

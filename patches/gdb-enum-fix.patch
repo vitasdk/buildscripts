@@ -1,3 +1,10 @@
+Fix Clang enum-constexpr-conversion warning in GDB enum-flags.h
+
+This patch suppresses the -Wenum-constexpr-conversion warning that occurs when
+building GDB with Clang on macOS. The warning is triggered by the enum_underlying_type
+template which uses sizeof() on enum types in a way that Clang considers problematic,
+even though the code is valid and works correctly.
+
 --- a/gdb/gdbsupport/enum-flags.h
 +++ b/gdb/gdbsupport/enum-flags.h
 @@ -79,6 +79,10 @@ template<> struct integer_for_size<4, 1> { typedef int32_t type; };

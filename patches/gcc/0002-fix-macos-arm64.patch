@@ -1,3 +1,15 @@
+GCC 10.3.0 fixes for macOS (especially ARM64/Apple Silicon)
+
+This patch addresses several issues preventing GCC 10.3.0 from building on macOS:
+
+1. Remove obsolete zlib fdopen workaround (see common/zlib-fdopen-macos.patch)
+2. Wrap safe-ctype.h macro redefinitions in #ifndef __cplusplus to prevent
+   conflicts with C++ standard library headers
+3. Add aarch64-darwin and arm64-darwin to config.host so host-darwin.o is
+   compiled for ARM64 macOS builds
+
+These fixes are necessary for both x86_64 and ARM64 macOS builds.
+
 --- a/zlib/zutil.h
 +++ b/zlib/zutil.h
 @@ -132,15 +132,6 @@

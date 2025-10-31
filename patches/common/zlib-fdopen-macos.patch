@@ -1,0 +1,29 @@
+Remove obsolete Metrowerks CodeWarrior fdopen workaround from zlib
+
+This patch removes legacy code for the Metrowerks CodeWarrior compiler from the 1990s.
+The code was attempting to work around missing or incompatible fdopen() implementations
+on pre-macOS systems. Modern macOS (since OS X) provides standard POSIX fdopen() support,
+making this workaround unnecessary and actually problematic as it can conflict with
+system headers.
+
+This fix is needed for binutils, GDB, and GCC which all bundle their own copy of zlib.
+
+--- a/zlib/zutil.h
++++ b/zlib/zutil.h
+@@ -132,15 +132,6 @@
+ 
+ #if defined(MACOS) || defined(TARGET_OS_MAC)
+ #  define OS_CODE  7
+-#  ifndef Z_SOLO
+-#    if defined(__MWERKS__) && __dest_os != __be_os && __dest_os != __win32_os
+-#      include <unix.h> /* for fdopen */
+-#    else
+-#      ifndef fdopen
+-#        define fdopen(fd,mode) NULL /* No fdopen() */
+-#      endif
+-#    endif
+-#  endif
+ #endif
+ 
+ #ifdef __acorn
+

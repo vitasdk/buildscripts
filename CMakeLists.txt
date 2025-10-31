@@ -216,10 +216,10 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
     # GMP assembly causes issues on macOS - need to disable it and use PIC
     if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
         set(gmp_asm_flag --disable-assembly)
-        set(gmp_env_command ${CMAKE_COMMAND} -E env "CFLAGS=-fPIC -fexceptions" "CXXFLAGS=-fPIC")
+        set(gmp_env_command ${CMAKE_COMMAND} -E env "CFLAGS=-fPIC -fexceptions" "CXXFLAGS=-fPIC -fexceptions")
     else()
         set(gmp_asm_flag "")
-        set(gmp_env_command ${CMAKE_COMMAND} -E env "CPPFLAGS=-fexceptions")
+        set(gmp_env_command ${CMAKE_COMMAND} -E env "CFLAGS=-fexceptions" "CXXFLAGS=-fexceptions")
     endif()
 
     ExternalProject_add(gmp${suffix}
@@ -321,7 +321,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
             patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0001-vita.patch
             && patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0002-fix-broken-reloc.patch
             && patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0003-fix-elf-vaddr.patch
-            && patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0004-fix-zlib-fdopen-macos.patch
+            && patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/common/zlib-fdopen-macos.patch
             && sh ${PROJECT_SOURCE_DIR}/cmake/update_config_files.sh <SOURCE_DIR>
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
@@ -345,7 +345,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL_HASH ${GDB_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gdb.patch
-            && patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gdb-zlib-fdopen-macos.patch
+            && patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/common/zlib-fdopen-macos.patch
             && patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gdb-enum-fix.patch
             && sh ${PROJECT_SOURCE_DIR}/cmake/update_config_files.sh <SOURCE_DIR>
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
