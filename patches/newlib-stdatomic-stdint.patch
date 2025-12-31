@@ -1,0 +1,12 @@
+diff --git a/newlib/libc/include/stdatomic.h b/newlib/libc/include/stdatomic.h
+index 1234567..abcdefg 100644
+--- a/newlib/libc/include/stdatomic.h
++++ b/newlib/libc/include/stdatomic.h
+@@ -30,6 +30,7 @@
+ #define	_STDATOMIC_H_
+ 
+ #include <sys/cdefs.h>
++#include <stdint.h>
+ #include <sys/_types.h>
+ 
+ #if __has_extension(c_atomic) || __has_extension(cxx_atomic)

@@ -9,7 +9,9 @@ if(NOT WIN32)
     execute_process(COMMAND find "${BINDIR}" -maxdepth 1 -perm ${find_perms} -and ! -type d
         OUTPUT_VARIABLE binaries
         OUTPUT_STRIP_TRAILING_WHITESPACE)
-    string(REGEX REPLACE "\n" ";" binaries ${binaries})
+    if(binaries)
+        string(REGEX REPLACE "\n" ";" binaries ${binaries})
+    endif()
 else()
     file(GLOB_RECURSE binaries "${BINDIR}/*exe")
 endif()

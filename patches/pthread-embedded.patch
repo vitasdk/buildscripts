@@ -1,0 +1,58 @@
+diff --git a/platform/vita/vita_osal.c b/platform/vita/vita_osal.c
+index 23b8bed..99f8137 100644
+--- a/platform/vita/vita_osal.c
++++ b/platform/vita/vita_osal.c
+@@ -28,6 +28,7 @@
+ 
+ 
+ #include <stdio.h>
++#include <stdint.h>
+ #include <stdlib.h>
+ #include <string.h>
+ #include <stdatomic.h>
+@@ -530,7 +531,7 @@ pte_osResult pte_osSemaphoreCancellablePend(pte_osSemaphoreHandle semHandle, uns
+ 
+ int pte_osAtomicExchange(int *ptarg, int val)
+ {
+-	return atomic_exchange(ptarg, val);
++	return __atomic_exchange_n(ptarg, val, __ATOMIC_SEQ_CST);
+ }
+ 
+ int pte_osAtomicCompareExchange(int *pdest, int exchange, int comp)
+@@ -544,7 +545,7 @@ int pte_osAtomicCompareExchange(int *pdest, int exchange, int comp)
+ 
+ int pte_osAtomicExchangeAdd(int volatile* pAddend, int value)
+ {
+-	return atomic_fetch_add(pAddend, value);
++	return __atomic_fetch_add(pAddend, value, __ATOMIC_SEQ_CST);
+ }
+ 
+ int pte_osAtomicDecrement(int *pdest)
+diff --git a/sys/_pthreadtypes.h b/sys/_pthreadtypes.h
+index 35aac0e..87b34a4 100644
+--- a/sys/_pthreadtypes.h
++++ b/sys/_pthreadtypes.h
+@@ -84,7 +84,11 @@ enum
+ 
+ typedef struct pthread_mutex_t_ * pthread_mutex_t;
+ typedef struct pthread_mutexattr_t_ * pthread_mutexattr_t;
++#ifdef __cplusplus
++#define _PTHREAD_MUTEX_INITIALIZER nullptr
++#else
+ #define _PTHREAD_MUTEX_INITIALIZER ((pthread_mutex_t) -1)
++#endif
+ #define PTHREAD_RECURSIVE_MUTEX_INITIALIZER ((pthread_mutex_t) -2)
+ #define PTHREAD_ERRORCHECK_MUTEX_INITIALIZER ((pthread_mutex_t) -3)
+ 
+@@ -98,7 +102,11 @@ typedef struct pthread_mutexattr_t_ * pthread_mutexattr_t;
+ 
+ typedef struct pthread_cond_t_ * pthread_cond_t;
+ typedef struct pthread_condattr_t_ * pthread_condattr_t;
++#ifdef __cplusplus
++#define _PTHREAD_COND_INITIALIZER nullptr
++#else
+ #define _PTHREAD_COND_INITIALIZER ((pthread_cond_t) -1)
++#endif
+ 
+ 
+ /* Keys */
