@@ -1,13 +1,13 @@
 From c8e88878beab01fadb2e59e0c23a37257c9bba82 Mon Sep 17 00:00:00 2001
 From: Sunguk Lee <d3m3vilurr@gmail.com>
 Date: Sat, 6 Jun 2020 23:06:47 +0900
-Subject: [PATCH] Apply vita patch
+Subject: [PATCH] Apply vita patch for GDB 15.2
 
 ---
  gdb/Makefile.in     |  1 +
  gdb/arm-vita-tdep.c | 54 +++++++++++++++++++++++++++++++++++++++++++++
  gdb/configure.tgt   |  4 ++++
- gdb/defs.h          |  1 +
+ gdb/osabi.h         |  1 +
  gdb/osabi.c         |  1 +
  5 files changed, 61 insertions(+)
  create mode 100644 gdb/arm-vita-tdep.c
@@ -99,11 +99,11 @@ index caa42be1c0..b4607a7604 100644
  arm*-*-*)
  	# Target: ARM embedded system
  	gdb_target_obs="arm-pikeos-tdep.o"
-diff --git a/gdb/defs.h b/gdb/defs.h
-index 567f214b81..d795cae8bd 100644
---- a/gdb/defs.h
-+++ b/gdb/defs.h
-@@ -496,6 +496,7 @@ enum gdb_osabi
+diff --git a/gdb/osabi.h b/gdb/osabi.h
+index 0000000000..1111111111 100644
+--- a/gdb/osabi.h
++++ b/gdb/osabi.h
+@@ -47,6 +47,7 @@ enum gdb_osabi
    GDB_OSABI_NEWLIB,
    GDB_OSABI_SDE,
    GDB_OSABI_PIKEOS,
