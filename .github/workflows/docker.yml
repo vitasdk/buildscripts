@@ -4,35 +4,65 @@ on:
   pull_request:
     branches:
       - master
+      - gcc-15
   push:
     branches:
       - master
+      - gcc-15
+    tags:
+      - "v*" # Construir también cuando se sube un tag v1.0, etc.
   schedule:
     - cron: "0 0 * * *"
   repository_dispatch:
     types: [run_build]
 
+env:
+  REGISTRY_IMAGE: vitasdk/buildscripts
+
 jobs:
   build:
     runs-on: ubuntu-latest
-  
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v2
-      
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
-      
-    - name: Login to DockerHub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      if: github.event_name != 'pull_request'
-    
-    - uses: docker/build-push-action@v3
-      with:
-        push: ${{ github.event_name != 'pull_request' }}
-        tags: vitasdk/buildscripts:latest
+      # Genera tags y labels automáticamente
+      # master -> vitasdk/buildscripts:master, vitasdk/buildscripts:latest
+      # PR #5 -> vitasdk/buildscripts:pr-5
+      # Tag v1.0 -> vitasdk/buildscripts:1.0, vitasdk/buildscripts:latest
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Construir para amd64 (estándar) y arm64 (Apple Silicon, RPi)
+          platforms: linux/amd64,linux/arm64
+          # Habilitar caché de GitHub Actions
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
