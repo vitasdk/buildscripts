@@ -345,7 +345,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         # Set prefix to "/" here to be able to install twice
         --prefix=/
         --with-sysroot=${toolchain_install_dir}
-        --with-system-zlib
+        --with-zlib=${toolchain_deps_dir}
         --without-zstd
         --without-python
         --with-gmp=${toolchain_deps_dir}
