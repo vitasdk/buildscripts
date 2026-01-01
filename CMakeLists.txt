@@ -127,6 +127,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL https://www.zlib.net/zlib-${ZLIB_VERSION}.tar.gz
         URL_HASH ${ZLIB_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${toolchain_deps_dir}
         ${toolchain_cmake_args}
         -DBUILD_SHARED_LIBS=OFF
@@ -190,6 +191,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL https://github.com/vitasdk/artifacts/releases/download/libelf-${LIBELF_VERSION}/libelf-${LIBELF_VERSION}.tar.gz
         URL_HASH ${LIBELF_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libelf.patch
         COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/config.guess ${PROJECT_SOURCE_DIR}/config.sub <SOURCE_DIR>/
         CONFIGURE_COMMAND autoreconf -i <SOURCE_DIR> COMMAND CC=${cc_compiler} RANLIB=${ranlib} ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
@@ -205,6 +207,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL http://pyyaml.org/download/libyaml/yaml-${LIBYAML_VERSION}.tar.gz
         URL_HASH ${LIBYAML_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         PATCH_COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/config.guess ${PROJECT_SOURCE_DIR}/config.sub <SOURCE_DIR>/config/
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
@@ -220,6 +223,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL http://ftp.gnu.org/gnu/gmp/gmp-${GMP_VERSION}.tar.bz2
         URL_HASH ${GMP_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         CONFIGURE_COMMAND CFLAGS=-std=gnu99 CPPFLAGS=-fexceptions ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
@@ -235,6 +239,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL http://ftp.gnu.org/gnu/mpfr/mpfr-${MPFR_VERSION}.tar.bz2
         URL_HASH ${MPFR_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
@@ -249,6 +254,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL https://ftp.gnu.org/gnu/mpc/mpc-${MPC_VERSION}.tar.gz
         URL_HASH ${MPC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
@@ -279,6 +285,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL https://github.com/libexpat/libexpat/releases/download/R_2_3_0/expat-${EXPAT_VERSION}.tar.bz2
         URL_HASH ${EXPAT_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
@@ -307,11 +314,13 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VERSION}.tar.xz
         URL_HASH ${BINUTILS_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         PATCH_COMMAND
             patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0001-vita.patch
             && patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0002-fix-broken-reloc.patch
             && patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0003-fix-elf-vaddr.patch
             && patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0004-fix-interworking-veneers.patch
+            && patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0004-fix-zlib-macOS.patch
             && ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/config.guess ${PROJECT_SOURCE_DIR}/config.sub <SOURCE_DIR>/
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
@@ -336,7 +345,9 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL https://ftp.gnu.org/gnu/gdb/gdb-${GDB_VERSION}.tar.xz
         URL_HASH ${GDB_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gdb.patch
+        COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gdb-zlib.patch
         COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/config.guess ${PROJECT_SOURCE_DIR}/config.sub <SOURCE_DIR>/
         CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
@@ -483,6 +494,7 @@ ExternalProject_add(gcc-base
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-15.patch
     CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
     --build=${build_native}
@@ -581,6 +593,7 @@ if(CMAKE_TOOLCHAIN_FILE)
         URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
         URL_HASH ${GCC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-15.patch
         CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools}
         ${wrapper_command} <SOURCE_DIR>/configure
@@ -637,6 +650,7 @@ ExternalProject_add(gcc-final
     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-15.patch
     CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
     ${wrapper_command} <SOURCE_DIR>/configure
