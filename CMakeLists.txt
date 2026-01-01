@@ -324,7 +324,6 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         --disable-separate-code
         --enable-interwork
         --enable-plugins
-        --with-system-zlib
         --without-zstd
         "--with-pkgversion=${pkgversion}"
         BUILD_COMMAND $(MAKE)
