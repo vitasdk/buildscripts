@@ -1,0 +1,17 @@
+--- a/newlib/libc/sys/vita/crt0.c
++++ b/newlib/libc/sys/vita/crt0.c
+@@ -9,6 +9,14 @@ int main(int argc, const char* argv[]);
+ void __libc_init_array (void);
+ void __libc_fini_array (void);
+ 
++/* Provide _init and _fini symbols for LLVM/Clang
++ * GCC provides these via crti.o/crtn.o, but LLVM doesn't.
++ * These weak symbols allow __libc_init_array/__libc_fini_array to work. */
++void _init(void) __attribute__((weak));
++void _fini(void) __attribute__((weak));
++void _init(void) {}
++void _fini(void) {}
++
+ void _init_vita_newlib(void)
+ {
+ 	_init_vita_heap();

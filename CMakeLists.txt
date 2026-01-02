@@ -11,10 +11,6 @@ project(vitasdk)
 set(LLVM_VERSION 21.1.8)
 set(LLVM_HASH SHA256=4633a23617fa31a3ea51242586ea7fb1da7140e426bd62fc164261fe036aa142)
 
-# Keep GCC version for reference (will be replaced by LLVM)
-set(GCC_VERSION 15.2.0)
-set(GCC_HASH SHA256=438fd996826b0c82485a29da03a72d71d6e3541a83ec702df4271f6fe025d24e)
-
 set(ZLIB_VERSION 1.3.1)
 set(ZLIB_HASH SHA256=9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23)
 
@@ -255,38 +251,6 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         --disable-shared
         )
 
-    # MPC - Only needed for GCC (commented out for LLVM build)
-    # ExternalProject_add(mpc${suffix}
-    #     DEPENDS gmp${suffix} mpfr${suffix}
-    #     URL https://ftp.gnu.org/gnu/mpc/mpc-${MPC_VERSION}.tar.gz
-    #     URL_HASH ${MPC_HASH}
-    #     DOWNLOAD_DIR ${DOWNLOAD_DIR}
-    #     CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
-    #     --build=${build_native}
-    #     --host=${toolchain_host}
-    #     --prefix=${toolchain_deps_dir}
-    #     --libdir=${toolchain_deps_dir}/lib
-    #     --with-gmp=${toolchain_deps_dir}
-    #     --with-mpfr=${toolchain_deps_dir}
-    #     --disable-shared
-    #     --disable-nls
-    #     )
-
-    # ISL - Only needed for GCC (commented out for LLVM build)
-    # ExternalProject_add(isl${suffix}
-    #     DEPENDS gmp${suffix}
-    #     GIT_REPOSITORY https://github.com/Meinersbur/isl
-    #     GIT_TAG isl-${ISL_VERSION}
-    #     DOWNLOAD_DIR ${DOWNLOAD_DIR}
-    #     CONFIGURE_COMMAND cd <SOURCE_DIR> && ./autogen.sh COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
-    #     --build=${build_native}
-    #     --host=${toolchain_host}
-    #     --prefix=${toolchain_deps_dir}
-    #     --libdir=${toolchain_deps_dir}/lib
-    #     --with-gmp-prefix=${toolchain_deps_dir}
-    #     --disable-shared
-    #     ${UPDATE_DISCONNECTED_SUPPORT}
-    #     )
 
     # Expat - Needed for GDB (XML parsing)
     ExternalProject_add(expat${suffix}
@@ -496,41 +460,6 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     list(APPEND common_gcc_configure_args "--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm")
 endif()
 
-# LLVM/Clang - Single build for cross-compilation
-# Unlike GCC, Clang doesn't need separate base/final builds
-# Build LLVM/Clang once and install directly to final location
-
-# Build a basic gcc compiler, needed to compile newlib (COMMENTED OUT - Using LLVM instead)
-# ExternalProject_add(gcc-base
-#     DEPENDS gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix}
-#     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
-#     URL_HASH ${GCC_HASH}
-#     DOWNLOAD_DIR ${DOWNLOAD_DIR}
-#     PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-15.patch
-#     CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
-#     --build=${build_native}
-#     # compile a native compiler so keep host == build
-#     --host=${build_native}
-#     --target=${target_arch}
-#     --prefix=${toolchain_build_install_dir}
-#     --libdir=${toolchain_build_install_dir}/lib
-#     --libexecdir=${toolchain_build_install_dir}/lib
-#     --with-sysroot=${toolchain_build_install_dir}/${target_arch}
-#     --with-gmp=${toolchain_build_depends_dir}
-#     --with-mpfr=${toolchain_build_depends_dir}
-#     --with-mpc=${toolchain_build_depends_dir}
-#     --with-isl=${toolchain_build_depends_dir}
-#     --with-libelf=${toolchain_build_depends_dir}
-#     ${common_gcc_configure_args}
-#     --disable-threads
-#     --without-headers
-#     --disable-libgomp
-#     "CFLAGS=${GCC_CFLAGS}"
-#     "CXXFLAGS=${GCC_CFLAGS}"
-#     BUILD_COMMAND $(MAKE) all-gcc
-#     INSTALL_COMMAND $(MAKE) install-gcc
-#     )
-
 ExternalProject_add(vita-headers
     DEPENDS binutils_${build_suffix} vita-toolchain_${build_suffix}
     GIT_REPOSITORY https://github.com/vitasdk/vita-headers
@@ -607,9 +536,9 @@ ExternalProject_add(llvm
     # Create traditional tool names using the wrapper
     COMMAND ${CMAKE_COMMAND} -E create_symlink arm-vita-eabi-gcc-wrapper.sh ${CMAKE_INSTALL_PREFIX}/bin/${target_arch}-gcc
     COMMAND ${CMAKE_COMMAND} -E create_symlink arm-vita-eabi-gcc-wrapper.sh ${CMAKE_INSTALL_PREFIX}/bin/${target_arch}-cc
-    # For C++, link directly to clang++ (no special libs needed)
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_INSTALL_PREFIX}/bin/clang++ ${CMAKE_INSTALL_PREFIX}/bin/${target_arch}-g++
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_INSTALL_PREFIX}/bin/clang++ ${CMAKE_INSTALL_PREFIX}/bin/${target_arch}-c++
+    # For C++, also use the wrapper to ensure proper library linking
+    COMMAND ${CMAKE_COMMAND} -E create_symlink arm-vita-eabi-gcc-wrapper.sh ${CMAKE_INSTALL_PREFIX}/bin/${target_arch}-g++
+    COMMAND ${CMAKE_COMMAND} -E create_symlink arm-vita-eabi-gcc-wrapper.sh ${CMAKE_INSTALL_PREFIX}/bin/${target_arch}-c++
     # Remove docs to reduce size
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/man
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/info
@@ -621,9 +550,10 @@ ExternalProject_Add(newlib
     GIT_TAG ${NEWLIB_TAG}
     ${GIT_SHALLOW_SUPPORT}
     PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/newlib-stdatomic-stdint.patch || true
+    COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/newlib-llvm-init-fini.patch || true
     # Pass the compiler_target_tools here so newlib picks up the fresh llvm-base compiler
     CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
-    ${wrapper_command} <SOURCE_DIR>/configure "CFLAGS_FOR_TARGET=-g -O2 -ffunction-sections -fdata-sections -D_LDBL_EQ_DBL"
+    ${wrapper_command} <SOURCE_DIR>/configure "CFLAGS_FOR_TARGET=-g -O2 -ffunction-sections -fdata-sections -D_LDBL_EQ_DBL -D_HAVE_LONG_DOUBLE"
     --build=${build_native}
     --host=${host_native}
     --target=${target_arch}
@@ -644,47 +574,6 @@ ExternalProject_Add(newlib
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/newlib-version.txt
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
-
-# Build a complete gcc compiler to be able to compile the full gcc for the host when crosscompiling.
-# Using gcc-base doesn't work since is missing some headers.
-# (COMMENTED OUT - Using LLVM instead)
-# if(CMAKE_TOOLCHAIN_FILE)
-#     ExternalProject_add(gcc-complete
-#         DEPENDS newlib gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix}
-#         URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
-#         URL_HASH ${GCC_HASH}
-#         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-#         PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-15.patch
-#         CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools}
-#         ${wrapper_command} <SOURCE_DIR>/configure
-#         --build=${build_native}
-#         # compile a native compiler so keep host == build
-#         --host=${build_native}
-#         --target=${target_arch}
-#         --prefix=${toolchain_build_install_dir}
-#         --libdir=${toolchain_build_install_dir}/lib
-#         --libexecdir=${toolchain_build_install_dir}/lib
-#         --with-sysroot=${toolchain_build_install_dir}/${target_arch}
-#         --with-gmp=${toolchain_build_depends_dir}
-#         --with-mpfr=${toolchain_build_depends_dir}
-#         --with-mpc=${toolchain_build_depends_dir}
-#         --with-isl=${toolchain_build_depends_dir}
-#         --with-libelf=${toolchain_build_depends_dir}
-#         ${common_gcc_configure_args}
-#         --enable-threads=posix
-#         --with-headers=yes
-#         --enable-libgomp
-#         "CFLAGS=${GCC_CFLAGS}"
-#         "CXXFLAGS=${GCC_CFLAGS}"
-#         BUILD_COMMAND ${toolchain_tools} ${wrapper_command} $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
-#         INSTALL_COMMAND $(MAKE) install
-#         )
-#     # Add this target as dependency of the final gcc target
-#     set(GCC_DEPENDS gcc-complete)
-# else()
-#     # Just use gcc-base as the dependency of the final gcc target
-#     set(GCC_DEPENDS gcc-base)
-# endif()
 
 # LLVM doesn't need separate base/final builds like GCC did
 # Use llvm directly for all dependencies
@@ -718,7 +607,8 @@ ExternalProject_add(llvm-runtimes
     SOURCE_SUBDIR runtimes
     CMAKE_ARGS
     -DCMAKE_BUILD_TYPE=Release
-    -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+    # Install C++ libraries directly in the sysroot so the linker can find them
+    -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}/${target_arch}
     -DCMAKE_SYSTEM_NAME=Generic
     -DCMAKE_CROSSCOMPILING=ON
     -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY
@@ -726,14 +616,14 @@ ExternalProject_add(llvm-runtimes
     -DCMAKE_CXX_COMPILER=${CMAKE_INSTALL_PREFIX}/bin/clang++
     -DCMAKE_AR=${binutils_prefix}-ar
     -DCMAKE_RANLIB=${binutils_prefix}-ranlib
-    -DCMAKE_C_COMPILER_TARGET=${target_arch}
-    -DCMAKE_CXX_COMPILER_TARGET=${target_arch}
-    -DCMAKE_ASM_COMPILER_TARGET=${target_arch}
+    -DCMAKE_C_COMPILER_TARGET=armv7-none-eabi
+    -DCMAKE_CXX_COMPILER_TARGET=armv7-none-eabi
+    -DCMAKE_ASM_COMPILER_TARGET=armv7-none-eabi
     -DCMAKE_SYSROOT=${CMAKE_INSTALL_PREFIX}/${target_arch}
     "-DCMAKE_C_FLAGS=--config ${CMAKE_INSTALL_PREFIX}/bin/arm-vita-eabi.cfg"
-    "-DCMAKE_CXX_FLAGS=--config ${CMAKE_INSTALL_PREFIX}/bin/arm-vita-eabi.cfg"
+    "-DCMAKE_CXX_FLAGS=--config ${CMAKE_INSTALL_PREFIX}/bin/arm-vita-eabi.cfg -D_LIBCPP_HAS_NO_STRTOLD -D_LIBUNWIND_IS_BAREMETAL -frtti -fexceptions"
     "-DCMAKE_ASM_FLAGS=--config ${CMAKE_INSTALL_PREFIX}/bin/arm-vita-eabi.cfg"
-    -DLLVM_ENABLE_RUNTIMES=compiler-rt$<SEMICOLON>libcxx$<SEMICOLON>libcxxabi
+    -DLLVM_ENABLE_RUNTIMES=compiler-rt$<SEMICOLON>libcxx$<SEMICOLON>libcxxabi$<SEMICOLON>libunwind
     # Compiler-RT configuration (libgcc equivalent)
     -DCOMPILER_RT_BUILD_BUILTINS=ON
     -DCOMPILER_RT_BUILD_SANITIZERS=OFF
@@ -743,6 +633,8 @@ ExternalProject_add(llvm-runtimes
     -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON
     -DCOMPILER_RT_BAREMETAL_BUILD=ON
     # libc++ configuration
+    -DLIBCXX_ENABLE_NEWLIB=ON
+    -DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON
     -DLIBCXX_HAS_PTHREAD_API=ON
     -DLIBCXX_ENABLE_SHARED=OFF
     -DLIBCXX_ENABLE_STATIC=ON
@@ -754,63 +646,32 @@ ExternalProject_add(llvm-runtimes
     -DLIBCXX_ENABLE_RANDOM_DEVICE=OFF
     -DLIBCXX_ENABLE_LOCALIZATION=OFF
     -DLIBCXX_PSTL_CPU_BACKEND=std_thread
+    -DLIBCXX_HAS_NO_STRTOLD=ON
+    -DLIBCXX_ENABLE_THREADS=ON
+    -DLIBCXX_ENABLE_MONOTONIC_CLOCK=ON
     # libc++abi configuration
-    -DLIBCXXABI_USE_LLVM_UNWINDER=OFF
+    -DLIBCXXABI_USE_LLVM_UNWINDER=ON
     -DLIBCXXABI_ENABLE_SHARED=OFF
     -DLIBCXXABI_ENABLE_STATIC=ON
     -DLIBCXXABI_USE_COMPILER_RT=ON
-    -DLIBCXXABI_USE_LLVM_UNWINDER=OFF
     -DLIBCXXABI_ENABLE_EXCEPTIONS=ON
     -DLIBCXXABI_ENABLE_ASSERTIONS=OFF
     -DLIBCXXABI_SILENT_TERMINATE=ON
+    # libunwind configuration
+    -DLIBUNWIND_ENABLE_SHARED=OFF
+    -DLIBUNWIND_ENABLE_STATIC=ON
+    -DLIBUNWIND_USE_COMPILER_RT=ON
+    -DLIBUNWIND_ENABLE_CROSS_UNWINDING=OFF
     # Disable tests
     -DCOMPILER_RT_INCLUDE_TESTS=OFF
     -DLIBCXX_INCLUDE_TESTS=OFF
     -DLIBCXXABI_INCLUDE_TESTS=OFF
+    -DLIBUNWIND_INCLUDE_TESTS=OFF
     BUILD_COMMAND $(MAKE)
     INSTALL_COMMAND $(MAKE) install
 )
 
 
-
-# GCC-final commented out - using LLVM instead
-# ExternalProject_add(gcc-final
-#     DEPENDS gmp_${target_suffix} mpfr_${target_suffix} mpc_${target_suffix} isl_${target_suffix} libelf_${target_suffix}
-#     DEPENDS newlib ${GCC_DEPENDS} pthread-embedded
-#     URL http://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
-#     URL_HASH ${GCC_HASH}
-#     DOWNLOAD_DIR ${DOWNLOAD_DIR}
-#     PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-15.patch
-#     CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
-#     ${wrapper_command} <SOURCE_DIR>/configure
-#     --build=${build_native}
-#     --host=${host_native}
-#     --target=${target_arch}
-#     --prefix=${CMAKE_INSTALL_PREFIX}
-#     --libdir=${CMAKE_INSTALL_PREFIX}/lib
-#     --libexecdir=${CMAKE_INSTALL_PREFIX}/lib
-#     --with-sysroot=${CMAKE_INSTALL_PREFIX}/${target_arch}
-#     --with-gmp=${toolchain_target_depends_dir}
-#     --with-mpfr=${toolchain_target_depends_dir}
-#     --with-mpc=${toolchain_target_depends_dir}
-#     --with-isl=${toolchain_target_depends_dir}
-#     --with-libelf=${toolchain_target_depends_dir}
-#     ${common_gcc_configure_args}
-#     --with-headers=yes
-#     --enable-threads=posix
-#     --enable-libgomp
-#     "CFLAGS=${GCC_CFLAGS}"
-#     "CXXFLAGS=${GCC_CFLAGS}"
-#     BUILD_COMMAND ${toolchain_tools} ${compiler_target_tools} ${wrapper_command}
-#     $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
-#     INSTALL_COMMAND $(MAKE) install
-#     # Remove gcc docs to reduce size
-#     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/man
-#     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/info
-#     # Remove .la files
-#     COMMAND ${CMAKE_COMMAND} -DGLOB_PATTERN=${CMAKE_INSTALL_PREFIX}/*.la
-#     -P ${CMAKE_SOURCE_DIR}/cmake/remove_files.cmake
-#     )
 
 ExternalProject_Add(samples
     GIT_REPOSITORY https://github.com/vitasdk/samples
@@ -855,16 +716,15 @@ ExternalProject_Add(vita-makepkg
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
-# Windows pthread DLL not needed for LLVM
-# if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-#     getgcclib(libwinpthread-1.dll WINPTHREAD_DLL)
-#     if(WINPTHREAD_DLL)
-#         add_custom_command(TARGET llvm-final POST_BUILD
-#             COMMAND ${CMAKE_COMMAND} -E copy ${WINPTHREAD_DLL} ${CMAKE_INSTALL_PREFIX}/bin/
-#             COMMENT "Copying libwinpthread-1.dll"
-#             )
-#     endif(WINPTHREAD_DLL)
-# endif()
+# Symlink armv7-none-eabi to arm-vita-unknown-eabi for LLVM runtimes
+add_custom_command(TARGET llvm-runtimes POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/lib/clang/21/lib/arm-vita-unknown-eabi
+    COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_INSTALL_PREFIX}/lib/generic/libclang_rt.builtins-armv7.a ${CMAKE_INSTALL_PREFIX}/lib/clang/21/lib/arm-vita-unknown-eabi/libclang_rt.builtins.a
+    # Create dummy crtbegin.o/crtend.o if missing, to satisfy clang driver
+    COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_INSTALL_PREFIX}/lib/clang/21/lib/arm-vita-unknown-eabi/clang_rt.crtbegin.o
+    COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_INSTALL_PREFIX}/lib/clang/21/lib/arm-vita-unknown-eabi/clang_rt.crtend.o
+    COMMENT "Symlinking LLVM runtimes"
+)
 
 # Strip toolchain binaries to reduce filesize
 add_custom_command(TARGET llvm-runtimes POST_BUILD
