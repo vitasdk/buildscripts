@@ -194,7 +194,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         PATCH_COMMAND patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/libelf.patch
         COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/config.guess ${PROJECT_SOURCE_DIR}/config.sub <SOURCE_DIR>/
-        CONFIGURE_COMMAND autoreconf -i <SOURCE_DIR> COMMAND CC=${cc_compiler} RANLIB=${ranlib} ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND CC=${cc_compiler} RANLIB=${ranlib} ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
