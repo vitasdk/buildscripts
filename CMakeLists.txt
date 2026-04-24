@@ -124,7 +124,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
     set(suffix "_${toolchain_suffix}")
 
     ExternalProject_Add(zlib${suffix}
-        URL https://www.zlib.net/zlib-${ZLIB_VERSION}.tar.gz
+        URL https://www.zlib.net/zlib-${ZLIB_VERSION}.tar.gz https://www.zlib.net/fossils/zlib-${ZLIB_VERSION}.tar.gz
         URL_HASH ${ZLIB_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
