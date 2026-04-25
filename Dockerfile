@@ -1,7 +1,7 @@
 # First stage of Dockerfile
 FROM alpine:latest AS build
 
-RUN apk add --no-cache build-base cmake git bash autoconf automake libtool texinfo patch pkgconfig python3 ccache \
+RUN apk add --no-cache build-base cmake git bash autoconf automake libtool texinfo patch pkgconfig python3 ccache bison flex \
     && ln -sf python3 /usr/bin/python
 
 COPY . /src
