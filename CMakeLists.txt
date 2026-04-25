@@ -344,8 +344,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         --enable-plugins
         --without-zstd
         "--with-pkgversion=${pkgversion}"
-        BUILD_COMMAND $(MAKE)
-        INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir}
+        BUILD_COMMAND $(MAKE) INFO_DEPS= DVIS= pdfs= htmls=
+        INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir} INFO_DEPS= DVIS= pdfs= htmls=
         )
 
     ExternalProject_Add(gdb${suffix}
@@ -369,8 +369,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         --without-python
         --with-gmp=${toolchain_deps_dir}
         --with-mpfr=${toolchain_deps_dir}
-        BUILD_COMMAND $(MAKE)
-        INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir}
+        BUILD_COMMAND $(MAKE) INFO_DEPS= DVIS= pdfs= htmls=
+        INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir} INFO_DEPS= DVIS= pdfs= htmls=
         )
 
     # Install binutils, gdb and vita-toolchain on CMAKE_INSTALL_PREFIX when not crosscompiling
