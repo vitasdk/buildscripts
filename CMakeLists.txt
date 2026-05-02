@@ -50,7 +50,7 @@ set(GDB_HASH SHA256=83350ccd35b5b5a0cba6b334c41294ea968158c573940904f00b92f76345
 
 # Branches to fetch the different project targets. Can be overriden from command line.
 set(LIBZIP_TAG master CACHE STRING "libzip branch name, commit id or tag")
-set(NEWLIB_TAG vita CACHE STRING "newlib branch name, commit id or tag")
+set(NEWLIB_TAG fios2 CACHE STRING "newlib branch name, commit id or tag")
 set(SAMPLES_TAG master CACHE STRING "samples branch name, commit id or tag")
 set(HEADERS_TAG master CACHE STRING "vita-headers branch name, commit id or tag")
 set(TOOLCHAIN_TAG master CACHE STRING "vita-toolchain branch name, commit id or tag")
