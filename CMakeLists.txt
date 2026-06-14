@@ -64,10 +64,6 @@ set(DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/downloads CACHE PATH "Default download path
 set(OFFLINE YES CACHE BOOL "Check repo updates")
 set(UPDATE_DISCONNECTED_SUPPORT UPDATE_DISCONNECTED ${OFFLINE})
 
-if("${CMAKE_VERSION}" VERSION_GREATER 3.6.0)
-    set(GIT_SHALLOW_SUPPORT GIT_SHALLOW 1)
-endif()
-
 # Installation directory. Can be overriden from command line.
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/vitasdk CACHE PATH "Default install path" FORCE)
@@ -185,7 +181,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         DEPENDS zlib${suffix}
         GIT_REPOSITORY https://github.com/vitasdk/libzip
         GIT_TAG ${LIBZIP_TAG}
-        ${GIT_SHALLOW_SUPPORT}
+        GIT_SHALLOW 1
         PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/libzip.patch || true
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${toolchain_deps_dir}
         ${toolchain_cmake_args} ${libzip_configure}
@@ -306,7 +302,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         DEPENDS libelf${suffix} zlib${suffix} libzip${suffix} libyaml${suffix}
         GIT_REPOSITORY https://github.com/vitasdk/vita-toolchain
         GIT_TAG ${TOOLCHAIN_TAG}
-        ${GIT_SHALLOW_SUPPORT}
+        GIT_SHALLOW 1
         # Set prefix to "/" here to be able to install twice
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=/ ${toolchain_cmake_args}
         -DTOOLCHAIN_DEPS_DIR=${toolchain_deps_dir}
@@ -532,7 +528,7 @@ ExternalProject_add(vita-headers
     DEPENDS binutils_${build_suffix} vita-toolchain_${build_suffix}
     GIT_REPOSITORY https://github.com/vitasdk/vita-headers
     GIT_TAG ${HEADERS_TAG}
-    ${GIT_SHALLOW_SUPPORT}
+    GIT_SHALLOW 1
     # CONFIGURE_COMMAND ""
     # BUILD_COMMAND VITA_LIBS_GEN=${vita_libs_gen_command}
     #     ARCH=${binutils_prefix}
@@ -568,7 +564,7 @@ ExternalProject_Add(newlib
     DEPENDS binutils_${target_suffix} gcc-base vita-headers
     GIT_REPOSITORY https://github.com/vitasdk/newlib
     GIT_TAG ${NEWLIB_TAG}
-    ${GIT_SHALLOW_SUPPORT}
+    GIT_SHALLOW 1
     # Pass the compiler_target_tools here so newlib picks up the fresh gcc-base compiler
     CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
     ${wrapper_command} <SOURCE_DIR>/configure "CFLAGS_FOR_TARGET=-g -O2 -ffunction-sections -fdata-sections"
@@ -638,7 +634,7 @@ ExternalProject_Add(pthread-embedded
     DEPENDS binutils_${target_suffix} gcc-base newlib vita-headers
     GIT_REPOSITORY https://github.com/vitasdk/pthread-embedded
     GIT_TAG ${PTHREAD_TAG}
-    ${GIT_SHALLOW_SUPPORT}
+    GIT_SHALLOW 1
     # TODO: this project should have a proper makefile to support out-of-source builds
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
@@ -694,7 +690,7 @@ ExternalProject_add(gcc-final
 ExternalProject_Add(samples
     GIT_REPOSITORY https://github.com/vitasdk/samples
     GIT_TAG ${SAMPLES_TAG}
-    ${GIT_SHALLOW_SUPPORT}
+    GIT_SHALLOW 1
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
@@ -709,7 +705,7 @@ ExternalProject_Add(samples
 ExternalProject_Add(vdpm
     GIT_REPOSITORY https://github.com/vitasdk/vdpm.git
     GIT_TAG ${VDPM_TAG}
-    ${GIT_SHALLOW_SUPPORT}
+    GIT_SHALLOW 1
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
@@ -723,7 +719,7 @@ ExternalProject_Add(vdpm
 ExternalProject_Add(vita-makepkg
     GIT_REPOSITORY https://github.com/vitasdk/vita-makepkg.git
     GIT_TAG ${VITA_MAKEPKG_TAG}
-    ${GIT_SHALLOW_SUPPORT}
+    GIT_SHALLOW 1
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
