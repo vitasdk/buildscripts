@@ -14,49 +14,7 @@ if(CCACHE_PROGRAM)
     set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
 endif()
 
-# Use the following gcc version
-set(GCC_VERSION 15.2.0)
-set(GCC_HASH SHA256=438fd996826b0c82485a29da03a72d71d6e3541a83ec702df4271f6fe025d24e)
-
-set(ZLIB_VERSION 1.3.1)
-set(ZLIB_HASH SHA256=9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23)
-
-set(LIBELF_VERSION 0.8.13)
-set(LIBELF_HASH SHA256=591a9b4ec81c1f2042a97aa60564e0cb79d041c52faa7416acb38bc95bd2c76d)
-
-set(LIBYAML_VERSION 0.2.2)
-set(LIBYAML_HASH SHA256=4a9100ab61047fd9bd395bcef3ce5403365cafd55c1e0d0299cde14958e47be9)
-
-set(GMP_VERSION 6.3.0)
-set(GMP_HASH SHA256=ac28211a7cfb609bae2e2c8d6058d66c8fe96434f740cf6fe2e47b000d1c20cb)
-
-set(MPFR_VERSION 4.2.2)
-set(MPFR_HASH SHA256=9ad62c7dc910303cd384ff8f1f4767a655124980bb6d8650fe62c815a231bb7b)
-
-set(MPC_VERSION 1.3.1)
-set(MPC_HASH SHA256=ab642492f5cf882b74aa0cb730cd410a81edcdbec895183ce930e706c1c759b8)
-
-set(ISL_VERSION 0.24)
-set(ISL_HASH SHA256=043105cc544f416b48736fff8caf077fb0663a717d06b1113f16e391ac99ebad)
-
-set(EXPAT_VERSION 2.3.0)
-set(EXPAT_HASH SHA256=f122a20eada303f904d5e0513326c5b821248f2d4d2afbf5c6f1339e511c0586)
-
-set(BINUTILS_VERSION 2.43)
-set(BINUTILS_HASH SHA256=b53606f443ac8f01d1d5fc9c39497f2af322d99e14cea5c0b4b124d630379365)
-
-set(GDB_VERSION 15.2)
-set(GDB_HASH SHA256=83350ccd35b5b5a0cba6b334c41294ea968158c573940904f00b92f76345314d)
-
-# Branches to fetch the different project targets. Can be overriden from command line.
-set(LIBZIP_TAG master CACHE STRING "libzip branch name, commit id or tag")
-set(NEWLIB_TAG vita CACHE STRING "newlib branch name, commit id or tag")
-set(SAMPLES_TAG master CACHE STRING "samples branch name, commit id or tag")
-set(HEADERS_TAG master CACHE STRING "vita-headers branch name, commit id or tag")
-set(TOOLCHAIN_TAG master CACHE STRING "vita-toolchain branch name, commit id or tag")
-set(PTHREAD_TAG master CACHE STRING "pthread-embedded branch name, commit id or tag")
-set(VDPM_TAG master CACHE STRING "vdpm branch name, commit id or tag")
-set(VITA_MAKEPKG_TAG master CACHE STRING "vita-makepkg branch name, commit id or tag")
+include(cmake/Components.cmake)
 
 # Location to save the downloaded tarballs. Can be overriden from command line.
 set(DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/downloads CACHE PATH "Default download path for tarballs")
@@ -106,6 +64,8 @@ set(wrapper_command ${PROJECT_SOURCE_DIR}/command_wrapper.sh)
 # Function to build the dependencies required for the vitasdk toolchain/headers
 function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffix)
     set(extra_macro_args ${ARGN})
+    set(toolchain_cmake_args)
+    set(libzip_configure)
 
     # Check if the toolchain file has been passed as optional argument
     list(LENGTH extra_macro_args num_extra_args)
@@ -131,7 +91,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
     set(suffix "_${toolchain_suffix}")
 
     ExternalProject_Add(zlib${suffix}
-        URL https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.gz
+        URL ${ZLIB_URL}
         URL_HASH ${ZLIB_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
@@ -183,7 +143,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_Add(libzip${suffix}
         DEPENDS zlib${suffix}
-        GIT_REPOSITORY https://github.com/vitasdk/libzip
+        GIT_REPOSITORY ${LIBZIP_REPOSITORY}
         GIT_TAG ${LIBZIP_TAG}
         ${GIT_SHALLOW_SUPPORT}
         PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/libzip.patch || true
@@ -196,7 +156,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_add(libelf${suffix}
         DEPENDS zlib${suffix}
-        URL https://github.com/vitasdk/artifacts/releases/download/libelf-${LIBELF_VERSION}/libelf-${LIBELF_VERSION}.tar.gz
+        URL ${LIBELF_URL}
         URL_HASH ${LIBELF_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
@@ -213,7 +173,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_add(libyaml${suffix}
-        URL https://pyyaml.org/download/libyaml/yaml-${LIBYAML_VERSION}.tar.gz
+        URL ${LIBYAML_URL}
         URL_HASH ${LIBYAML_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
@@ -229,7 +189,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_add(gmp${suffix}
-        URL https://ftp.gnu.org/gnu/gmp/gmp-${GMP_VERSION}.tar.bz2
+        URL ${GMP_URL}
         URL_HASH ${GMP_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
@@ -245,7 +205,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_add(mpfr${suffix}
         DEPENDS gmp${suffix}
-        URL https://ftp.gnu.org/gnu/mpfr/mpfr-${MPFR_VERSION}.tar.bz2
+        URL ${MPFR_URL}
         URL_HASH ${MPFR_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
@@ -260,7 +220,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_add(mpc${suffix}
         DEPENDS gmp${suffix} mpfr${suffix}
-        URL https://ftp.gnu.org/gnu/mpc/mpc-${MPC_VERSION}.tar.gz
+        URL ${MPC_URL}
         URL_HASH ${MPC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
@@ -277,8 +237,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_add(isl${suffix}
         DEPENDS gmp${suffix}
-        GIT_REPOSITORY https://github.com/Meinersbur/isl
-        GIT_TAG isl-${ISL_VERSION}
+        GIT_REPOSITORY ${ISL_REPOSITORY}
+        GIT_TAG ${ISL_TAG}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND cd <SOURCE_DIR> && ./autogen.sh COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
@@ -291,7 +251,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         )
 
     ExternalProject_add(expat${suffix}
-        URL https://github.com/libexpat/libexpat/releases/download/R_2_3_0/expat-${EXPAT_VERSION}.tar.bz2
+        URL ${EXPAT_URL}
         URL_HASH ${EXPAT_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
@@ -305,7 +265,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_Add(vita-toolchain${suffix}
         DEPENDS libelf${suffix} zlib${suffix} libzip${suffix} libyaml${suffix}
-        GIT_REPOSITORY https://github.com/vitasdk/vita-toolchain
+        GIT_REPOSITORY ${TOOLCHAIN_REPOSITORY}
         GIT_TAG ${TOOLCHAIN_TAG}
         ${GIT_SHALLOW_SUPPORT}
         # Set prefix to "/" here to be able to install twice
@@ -320,7 +280,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_Add(binutils${suffix}
         DEPENDS zlib${suffix}
-        URL https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VERSION}.tar.xz
+        URL ${BINUTILS_URL}
         URL_HASH ${BINUTILS_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
@@ -351,7 +311,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
 
     ExternalProject_Add(gdb${suffix}
         DEPENDS zlib${suffix} gmp${suffix} mpfr${suffix} expat${suffix}
-        URL https://ftp.gnu.org/gnu/gdb/gdb-${GDB_VERSION}.tar.xz
+        URL ${GDB_URL}
         URL_HASH ${GDB_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
@@ -464,6 +424,7 @@ list(APPEND pthread_tools
     GLOBAL_CFLAGS=-Wno-error=int-conversion
     )
 
+set(GCC_CFLAGS)
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" AND ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     # GCC on OSX (Clang in diguise) needs more bracket nesting depth to compile gcc
     set(GCC_CFLAGS "${GCC_CFLAGS} -fbracket-depth=512")
@@ -501,7 +462,7 @@ endif()
 # Build a basic gcc compiler, needed to compile newlib
 ExternalProject_add(gcc-base
     DEPENDS gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix}
-    URL https://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
+    URL ${GCC_URL}
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
@@ -532,7 +493,7 @@ ExternalProject_add(gcc-base
 
 ExternalProject_add(vita-headers
     DEPENDS binutils_${build_suffix} vita-toolchain_${build_suffix}
-    GIT_REPOSITORY https://github.com/vitasdk/vita-headers
+    GIT_REPOSITORY ${HEADERS_REPOSITORY}
     GIT_TAG ${HEADERS_TAG}
     ${GIT_SHALLOW_SUPPORT}
     # CONFIGURE_COMMAND ""
@@ -568,7 +529,7 @@ ExternalProject_add(vita-headers
 
 ExternalProject_Add(newlib
     DEPENDS binutils_${target_suffix} gcc-base vita-headers
-    GIT_REPOSITORY https://github.com/vitasdk/newlib
+    GIT_REPOSITORY ${NEWLIB_REPOSITORY}
     GIT_TAG ${NEWLIB_TAG}
     ${GIT_SHALLOW_SUPPORT}
     # Pass the compiler_target_tools here so newlib picks up the fresh gcc-base compiler
@@ -600,7 +561,7 @@ ExternalProject_Add(newlib
 if(CMAKE_TOOLCHAIN_FILE)
     ExternalProject_add(gcc-complete
         DEPENDS newlib gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix}
-        URL https://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
+        URL ${GCC_URL}
         URL_HASH ${GCC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
@@ -638,7 +599,7 @@ endif()
 
 ExternalProject_Add(pthread-embedded
     DEPENDS binutils_${target_suffix} gcc-base newlib vita-headers
-    GIT_REPOSITORY https://github.com/vitasdk/pthread-embedded
+    GIT_REPOSITORY ${PTHREAD_REPOSITORY}
     GIT_TAG ${PTHREAD_TAG}
     ${GIT_SHALLOW_SUPPORT}
     # TODO: this project should have a proper makefile to support out-of-source builds
@@ -657,7 +618,7 @@ ExternalProject_Add(pthread-embedded
 ExternalProject_add(gcc-final
     DEPENDS gmp_${target_suffix} mpfr_${target_suffix} mpc_${target_suffix} isl_${target_suffix} libelf_${target_suffix}
     DEPENDS newlib ${GCC_DEPENDS} pthread-embedded
-    URL https://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
+    URL ${GCC_URL}
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
@@ -694,7 +655,7 @@ ExternalProject_add(gcc-final
     )
 
 ExternalProject_Add(samples
-    GIT_REPOSITORY https://github.com/vitasdk/samples
+    GIT_REPOSITORY ${SAMPLES_REPOSITORY}
     GIT_TAG ${SAMPLES_TAG}
     ${GIT_SHALLOW_SUPPORT}
     BUILD_IN_SOURCE 1
@@ -709,7 +670,7 @@ ExternalProject_Add(samples
     )
 
 ExternalProject_Add(vdpm
-    GIT_REPOSITORY https://github.com/vitasdk/vdpm.git
+    GIT_REPOSITORY ${VDPM_REPOSITORY}
     GIT_TAG ${VDPM_TAG}
     ${GIT_SHALLOW_SUPPORT}
     BUILD_IN_SOURCE 1
@@ -723,7 +684,7 @@ ExternalProject_Add(vdpm
     )
 
 ExternalProject_Add(vita-makepkg
-    GIT_REPOSITORY https://github.com/vitasdk/vita-makepkg.git
+    GIT_REPOSITORY ${VITA_MAKEPKG_REPOSITORY}
     GIT_TAG ${VITA_MAKEPKG_TAG}
     ${GIT_SHALLOW_SUPPORT}
     BUILD_IN_SOURCE 1
