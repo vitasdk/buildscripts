@@ -22,9 +22,9 @@ set(DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/downloads CACHE PATH "Default download path
 set(OFFLINE YES CACHE BOOL "Disable updates for Git-backed ExternalProject sources")
 set(UPDATE_DISCONNECTED_SUPPORT UPDATE_DISCONNECTED ${OFFLINE})
 
-if("${CMAKE_VERSION}" VERSION_GREATER 3.6.0)
-    set(GIT_SHALLOW_SUPPORT GIT_SHALLOW 1)
-endif()
+# Fetch only the selected branch or tag tip for every Git-backed source.
+# ExternalProject translates this to a depth-1 clone.
+set(GIT_SHALLOW_SUPPORT GIT_SHALLOW TRUE)
 
 # Installation directory. Can be overriden from command line.
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -265,6 +265,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         DEPENDS gmp${suffix}
         GIT_REPOSITORY ${ISL_REPOSITORY}
         GIT_TAG ${ISL_TAG}
+        ${GIT_SHALLOW_SUPPORT}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         CONFIGURE_COMMAND cd <SOURCE_DIR> && ./autogen.sh COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}

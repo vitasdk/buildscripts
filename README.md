@@ -54,6 +54,9 @@ If you don't want this behaviour then pass -DOFFLINE=NO to the cmake command lin
 This is only available if your CMake installation is 3.2.0 or greater, else it will always
 check for updates the next time you run make.
 
+All Git-backed component sources are cloned with history depth 1. URL-based
+source archives are already single immutable downloads and have no Git history.
+
 To change the default installation path a path to CMAKE_INSTALL_PREFIX, for example:
 
 ``` sh
