@@ -15,6 +15,7 @@ if(CCACHE_PROGRAM)
 endif()
 
 include(cmake/Components.cmake)
+include(cmake/StaticPolicy.cmake)
 
 # Location to save the downloaded tarballs. Can be overriden from command line.
 set(DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/downloads CACHE PATH "Default download path for tarballs")
@@ -45,6 +46,12 @@ include(Utils)
 include(GetTriplet)
 include(ExternalProject)
 
+vitasdk_get_host_static_flags("${CMAKE_SYSTEM_NAME}"
+    host_static_c_flags host_static_cxx_flags host_static_link_flags)
+vitasdk_append_flags(CMAKE_C_FLAGS ${host_static_c_flags})
+vitasdk_append_flags(CMAKE_CXX_FLAGS ${host_static_cxx_flags})
+vitasdk_append_flags(CMAKE_EXE_LINKER_FLAGS ${host_static_link_flags})
+
 # Identify host and build systems
 get_host_triplet(host_native)
 get_build_triplet(build_native)
@@ -65,7 +72,6 @@ set(wrapper_command ${PROJECT_SOURCE_DIR}/command_wrapper.sh)
 function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffix)
     set(extra_macro_args ${ARGN})
     set(toolchain_cmake_args)
-    set(libzip_configure)
     set(libzip_patch_series
         "${PROJECT_SOURCE_DIR}/patches/libzip.patch|1")
     set(libelf_patch_series
@@ -105,6 +111,11 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         set(ranlib "ranlib")
     endif()
 
+    list(APPEND toolchain_cmake_args
+        "-DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}"
+        "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}"
+        "-DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}")
+
     set(suffix "_${toolchain_suffix}")
 
     ExternalProject_Add(zlib${suffix}
@@ -128,8 +139,6 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
             COMMENT "Copying libzlibstatic to libz"
             )
 
-        # Tell libzip to use zlib static library (only on windows)
-        set(libzip_configure -DCMAKE_C_FLAGS=-DZIP_STATIC)
     else()
         ExternalProject_Add_Step(zlib${suffix}
             delete_shared
@@ -152,11 +161,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         list(APPEND toolchain_cmake_args -DZIP_STATIC=ON)
     endif()
 
-    if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows" AND (host_native STREQUAL build_native OR toolchain_file))
-        list(APPEND toolchain_cmake_args -DBUILD_SHARED_LIBS=ON)
-    else()
-        list(APPEND toolchain_cmake_args -DBUILD_SHARED_LIBS=OFF)
-    endif()
+    list(APPEND toolchain_cmake_args -DBUILD_SHARED_LIBS=OFF)
 
     ExternalProject_Add(libzip${suffix}
         DEPENDS zlib${suffix}
@@ -168,7 +173,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
             "-DPATCH_SERIES=${libzip_patch_series_arg}"
             -P ${PROJECT_SOURCE_DIR}/cmake/ApplyPatches.cmake
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${toolchain_deps_dir}
-        ${toolchain_cmake_args} ${libzip_configure}
+        ${toolchain_cmake_args}
         -DZLIB_INCLUDE_DIR=${toolchain_deps_dir}/include
         -DZLIB_LIBRARY=${toolchain_deps_dir}/lib/libz.a
         ${UPDATE_DISCONNECTED_SUPPORT}
@@ -195,6 +200,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         --prefix=${toolchain_deps_dir}
         --libdir=${toolchain_deps_dir}/lib
         --disable-shared
+        --enable-static
         --disable-nls
         )
 
@@ -226,6 +232,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         --libdir=${toolchain_deps_dir}/lib
         --enable-cxx
         --disable-shared
+        --enable-static
         BUILD_COMMAND ${compiler_flags} ${wrapper_command} $(MAKE)
         )
 
@@ -242,6 +249,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         --libdir=${toolchain_deps_dir}/lib
         --with-gmp=${toolchain_deps_dir}
         --disable-shared
+        --enable-static
         )
 
     ExternalProject_add(mpc${suffix}
@@ -258,6 +266,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         --with-gmp=${toolchain_deps_dir}
         --with-mpfr=${toolchain_deps_dir}
         --disable-shared
+        --enable-static
         --disable-nls
         )
 
@@ -274,6 +283,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         --libdir=${toolchain_deps_dir}/lib
         --with-gmp-prefix=${toolchain_deps_dir}
         --disable-shared
+        --enable-static
         ${UPDATE_DISCONNECTED_SUPPORT}
         )
 
@@ -288,6 +298,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         --prefix=${toolchain_deps_dir}
         --libdir=${toolchain_deps_dir}/lib
         --disable-shared
+        --enable-static
         )
 
     ExternalProject_Add(vita-toolchain${suffix}
@@ -298,6 +309,10 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         # Set prefix to "/" here to be able to install twice
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=/ ${toolchain_cmake_args}
         -DTOOLCHAIN_DEPS_DIR=${toolchain_deps_dir}
+        -Dlibelf_LIBRARY=${toolchain_deps_dir}/lib/libelf.a
+        -Dzlib_LIBRARY=${toolchain_deps_dir}/lib/libz.a
+        -Dlibzip_LIBRARY=${toolchain_deps_dir}/lib/libzip.a
+        -Dlibyaml_LIBRARY=${toolchain_deps_dir}/lib/libyaml.a
         BUILD_COMMAND $(MAKE)
         INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir}
         # Save the commit id for tracking purposes
@@ -319,7 +334,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
             ${PROJECT_SOURCE_DIR}/config.guess
             ${PROJECT_SOURCE_DIR}/config.sub
             <SOURCE_DIR>/
-        CONFIGURE_COMMAND CFLAGS=-std=gnu11 ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND CFLAGS=-std=gnu11 ${compiler_flags}
+        ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --target=${target_arch}
@@ -351,19 +367,29 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
             ${PROJECT_SOURCE_DIR}/config.guess
             ${PROJECT_SOURCE_DIR}/config.sub
             <SOURCE_DIR>/
-        CONFIGURE_COMMAND CFLAGS=-std=gnu11 ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        CONFIGURE_COMMAND CFLAGS=-std=gnu11 ac_cv_search_tgetent=no
+        ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --target=${target_arch}
         # Set prefix to "/" here to be able to install twice
         --prefix=/
         --with-sysroot=${toolchain_install_dir}
-        --with-zlib=${toolchain_deps_dir}
+        --without-system-zlib
+        --without-system-readline
+        --disable-tui
         --without-zstd
         --without-python
+        --without-guile
+        --without-lzma
+        --without-babeltrace
+        --without-xxhash
+        --without-debuginfod
         --with-gmp=${toolchain_deps_dir}
         --with-mpfr=${toolchain_deps_dir}
+        --with-expat
         --with-libexpat-prefix=${toolchain_deps_dir}
+        --with-libexpat-type=static
         BUILD_COMMAND $(MAKE) INFO_DEPS= DVIS= pdfs= htmls=
         INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir} INFO_DEPS= DVIS= pdfs= htmls=
         )
@@ -489,7 +515,8 @@ set(common_gcc_configure_args
     )
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    list(APPEND common_gcc_configure_args "--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm")
+    list(APPEND common_gcc_configure_args
+        "--with-host-libstdcxx=-static-libgcc -static-libstdc++ -lm")
 endif()
 
 # Build a basic gcc compiler, needed to compile newlib
@@ -733,16 +760,6 @@ ExternalProject_Add(vita-makepkg
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-    getgcclib(libwinpthread-1.dll WINPTHREAD_DLL)
-    if(WINPTHREAD_DLL)
-        add_custom_command(TARGET gcc-final POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy ${WINPTHREAD_DLL} ${CMAKE_INSTALL_PREFIX}/bin/
-            COMMENT "Copying libwinpthread-1.dll"
-            )
-    endif(WINPTHREAD_DLL)
-endif()
-
 set(version_info_file ${CMAKE_INSTALL_PREFIX}/version_info.txt)
 
 # Merge the commit ids of the collected projects into a single file
@@ -792,6 +809,11 @@ add_custom_target(finalize-sdk
         -DSDK_DIR=${CMAKE_INSTALL_PREFIX}
         -DTARGET_TRIPLE=${target_arch}
         -P ${CMAKE_SOURCE_DIR}/cmake/ValidateStaticSdk.cmake
+    COMMAND ${CMAKE_COMMAND} -E env
+        VITASDK=${CMAKE_INSTALL_PREFIX}
+        VITASDK_HOST_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
+        VITASDK_OBJDUMP=${host_native}-objdump
+        ${CMAKE_SOURCE_DIR}/scripts/audit-host-deps.sh
     DEPENDS
         vita-toolchain_${target_suffix}
         binutils_${target_suffix}
@@ -819,8 +841,16 @@ add_custom_target(check-toolchain-contract
 add_custom_target(audit-host-dependencies
     COMMAND ${CMAKE_COMMAND} -E env
         VITASDK=${CMAKE_INSTALL_PREFIX}
+        VITASDK_HOST_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
+        VITASDK_OBJDUMP=${host_native}-objdump
         ${CMAKE_SOURCE_DIR}/scripts/audit-host-deps.sh
     DEPENDS finalize-sdk
+    VERBATIM
+    )
+
+add_custom_target(check-static-policy
+    COMMAND ${CMAKE_COMMAND}
+        -P ${CMAKE_SOURCE_DIR}/tests/cmake/static-policy.cmake
     VERBATIM
     )
 

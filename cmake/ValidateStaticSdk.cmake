@@ -2,26 +2,58 @@ if(NOT DEFINED SDK_DIR OR NOT DEFINED TARGET_TRIPLE)
     message(FATAL_ERROR "SDK_DIR and TARGET_TRIPLE are required")
 endif()
 
-set(target_libdir "${SDK_DIR}/${TARGET_TRIPLE}/lib")
-if(NOT IS_DIRECTORY "${target_libdir}")
-    message(FATAL_ERROR "Missing target library directory: ${target_libdir}")
-endif()
+set(target_library_roots
+    "${SDK_DIR}/${TARGET_TRIPLE}/lib"
+    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}")
 
-file(GLOB_RECURSE target_shared
-    "${target_libdir}/*.so"
-    "${target_libdir}/*.so.*"
-    "${target_libdir}/*.dylib"
-    "${target_libdir}/*.dll")
+foreach(root IN LISTS target_library_roots)
+    if(NOT IS_DIRECTORY "${root}")
+        message(FATAL_ERROR "Missing target library directory: ${root}")
+    endif()
+endforeach()
+
+set(target_shared)
+foreach(root IN LISTS target_library_roots)
+    file(GLOB_RECURSE root_shared
+        "${root}/*.so"
+        "${root}/*.so.*"
+        "${root}/*.dylib"
+        "${root}/*.dll"
+        "${root}/*.dll.a")
+    list(APPEND target_shared ${root_shared})
+endforeach()
 
 if(target_shared)
     string(JOIN "\n  " shared_list ${target_shared})
     message(FATAL_ERROR
-        "Target sysroot contains shared libraries:\n  ${shared_list}")
+        "Target sysroot contains shared libraries or import archives:\n  ${shared_list}")
 endif()
 
-file(GLOB_RECURSE target_archives "${target_libdir}/*.a")
-if(NOT target_archives)
-    message(FATAL_ERROR "No target static archives found in ${target_libdir}")
+set(required_archives
+    libc.a
+    libm.a
+    libpthread.a
+    libgcc.a
+    libstdc++.a
+    libsupc++.a
+    libgomp.a)
+
+foreach(archive IN LISTS required_archives)
+    set(matches)
+    foreach(root IN LISTS target_library_roots)
+        file(GLOB_RECURSE root_matches "${root}/${archive}")
+        list(APPEND matches ${root_matches})
+    endforeach()
+    if(NOT matches)
+        message(FATAL_ERROR "Missing required target static archive: ${archive}")
+    endif()
+endforeach()
+
+file(GLOB_RECURSE vita_stub_archives
+    "${SDK_DIR}/${TARGET_TRIPLE}/lib/libSce*_stub.a")
+if(NOT vita_stub_archives)
+    message(FATAL_ERROR "No Vita SDK stub archives were installed")
 endif()
 
-message(STATUS "Static target sysroot validation passed")
+message(STATUS
+    "Static target SDK validation passed (${required_archives}; Vita stubs present)")

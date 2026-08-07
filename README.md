@@ -57,6 +57,21 @@ check for updates the next time you run make.
 All Git-backed component sources are cloned with history depth 1. URL-based
 source archives are already single immutable downloads and have no Git history.
 
+### Static SDK contract
+
+The default build keeps the Vita sysroot fully static and links every private
+host dependency as a static archive. Host executables may still use the system
+runtime supplied by the platform:
+
+- Linux: the loader, libc and the small set of libraries shipped with the base
+  C runtime (`libm`, `libpthread`, `libdl`, `librt`, `libutil`, `libresolv`).
+- macOS: libraries and frameworks under `/usr/lib` and `/System/Library`.
+- Windows: Windows system DLLs only.
+
+This is intentionally not a fully static host executable contract. In
+particular, macOS does not provide a supported static system runtime. The
+policy is a build invariant rather than an optional configuration mode.
+
 To change the default installation path a path to CMAKE_INSTALL_PREFIX, for example:
 
 ``` sh
@@ -74,5 +89,6 @@ are available after a complete build:
 
 ``` sh
 make check-toolchain-contract
+make check-static-policy
 make audit-host-dependencies
 ```

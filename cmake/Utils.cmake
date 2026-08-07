@@ -17,18 +17,18 @@ function(load_flags flags)
 
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
         list(APPEND _flags
-            _CFLAGS=${CMAKE_C_FLAGS_RELEASE}
-            _CXXFLAGS=${CMAKE_CXX_FLAGS_RELEASE}
-            _CPPFLAGS=${CMAKE_CPP_FLAGS_RELEASE}
-            _LDFLAGS=${CMAKE_LD_FLAGS_RELEASE}
+            "_CFLAGS=${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_RELEASE}"
+            "_CXXFLAGS=${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_RELEASE}"
+            "_CPPFLAGS=${CMAKE_CPP_FLAGS} ${CMAKE_CPP_FLAGS_RELEASE}"
+            "_LDFLAGS=${CMAKE_LD_FLAGS} ${CMAKE_LD_FLAGS_RELEASE}"
             )
         string(REPLACE "-O3" "-O2" _flags "${_flags}")
     elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
         list(APPEND _flags
-            _CFLAGS=${CMAKE_C_FLAGS_DEBUG}
-            _CXXFLAGS=${CMAKE_CXX_FLAGS_DEBUG}
-            _CPPFLAGS=${CMAKE_CPP_FLAGS_DEBUG}
-            _LDFLAGS=${CMAKE_LD_FLAGS_DEBUG}
+            "_CFLAGS=${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_DEBUG}"
+            "_CXXFLAGS=${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG}"
+            "_CPPFLAGS=${CMAKE_CPP_FLAGS} ${CMAKE_CPP_FLAGS_DEBUG}"
+            "_LDFLAGS=${CMAKE_LD_FLAGS} ${CMAKE_LD_FLAGS_DEBUG}"
             )
     else()
         list(APPEND _flags
