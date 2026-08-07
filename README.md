@@ -42,6 +42,16 @@ cmake /path/to/cmakelists -DNEWLIB_TAG=0254c2dc0c2686f69580030af3cacc795c94d616
 
 This will configure the vitasdk to use that newlib commit instead of the `vita` branch.
 
+The matching `NEWLIB_REPOSITORY`, `TOOLCHAIN_REPOSITORY`, `PTHREAD_REPOSITORY`,
+`HEADERS_REPOSITORY`, `SAMPLES_REPOSITORY`, `VDPM_REPOSITORY` and
+`VITA_MAKEPKG_REPOSITORY` values select where that revision comes from. A local
+clone works, which is how a change spanning the superbuild and a component is
+built before either side is published:
+
+``` sh
+cmake /path/to/cmakelists -DVDPM_REPOSITORY=/path/to/vdpm -DVDPM_TAG=next
+```
+
 If you need to change the download directory used for the tarballs then do the following,
 for example:
 

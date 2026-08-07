@@ -74,13 +74,23 @@ set(LIBZIP_VERSION 1.11.4)
 set(LIBZIP_HASH SHA256=8a247f57d1e3e6f6d11413b12a6f28a9d388de110adc0ec608d893180ed7097b)
 set(LIBZIP_URL https://libzip.org/download/libzip-${LIBZIP_VERSION}.tar.xz)
 
-set(NEWLIB_REPOSITORY https://github.com/vitasdk/newlib)
-set(SAMPLES_REPOSITORY https://github.com/vitasdk/samples)
-set(HEADERS_REPOSITORY https://github.com/vitasdk/vita-headers)
-set(TOOLCHAIN_REPOSITORY https://github.com/vitasdk/vita-toolchain)
-set(PTHREAD_REPOSITORY https://github.com/vitasdk/pthread-embedded)
-set(VDPM_REPOSITORY https://github.com/vitasdk/vdpm.git)
-set(VITA_MAKEPKG_REPOSITORY https://github.com/vitasdk/vita-makepkg.git)
+# Each VitaSDK component selects both its source and its revision from the
+# command line. A local clone can be named here so that a change spanning two
+# repositories can be built before either side is published.
+set(NEWLIB_REPOSITORY https://github.com/vitasdk/newlib
+    CACHE STRING "newlib repository URL or local path")
+set(SAMPLES_REPOSITORY https://github.com/vitasdk/samples
+    CACHE STRING "samples repository URL or local path")
+set(HEADERS_REPOSITORY https://github.com/vitasdk/vita-headers
+    CACHE STRING "vita-headers repository URL or local path")
+set(TOOLCHAIN_REPOSITORY https://github.com/vitasdk/vita-toolchain
+    CACHE STRING "vita-toolchain repository URL or local path")
+set(PTHREAD_REPOSITORY https://github.com/vitasdk/pthread-embedded
+    CACHE STRING "pthread-embedded repository URL or local path")
+set(VDPM_REPOSITORY https://github.com/vitasdk/vdpm.git
+    CACHE STRING "vdpm repository URL or local path")
+set(VITA_MAKEPKG_REPOSITORY https://github.com/vitasdk/vita-makepkg.git
+    CACHE STRING "vita-makepkg repository URL or local path")
 
 set(NEWLIB_TAG vita CACHE STRING "newlib branch, commit id or tag")
 set(SAMPLES_TAG master CACHE STRING "samples branch, commit id or tag")
