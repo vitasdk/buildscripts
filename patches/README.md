@@ -22,3 +22,8 @@ and behavioral changes should remain separate commits.
 
 The GDB series includes an upstream enum-flags backport required by Clang
 versions where `-Wenum-constexpr-conversion` is a non-downgradeable error.
+
+The pacman rootless-installation patch is currently a Phase 0 prototype based
+on upstream pacman 7.1.0 commit
+`5683f8477a0afcc6b331766175a83445b2dcfe89`. It is intentionally not part of
+the superbuild until the static dependency and native host gates are closed.
