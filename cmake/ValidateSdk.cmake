@@ -1,0 +1,27 @@
+if(NOT DEFINED SDK_DIR OR NOT DEFINED TARGET_TRIPLE)
+    message(FATAL_ERROR "SDK_DIR and TARGET_TRIPLE are required")
+endif()
+
+set(required_tools gcc g++ ld as ar ranlib strip objcopy objdump readelf nm gdb)
+foreach(tool IN LISTS required_tools)
+    set(path "${SDK_DIR}/bin/${TARGET_TRIPLE}-${tool}")
+    if(WIN32)
+        set(path "${path}.exe")
+    endif()
+    if(NOT EXISTS "${path}")
+        message(FATAL_ERROR "Missing SDK tool: ${path}")
+    endif()
+endforeach()
+
+set(sysroot "${SDK_DIR}/${TARGET_TRIPLE}")
+foreach(directory include lib)
+    if(NOT IS_DIRECTORY "${sysroot}/${directory}")
+        message(FATAL_ERROR "Missing sysroot directory: ${sysroot}/${directory}")
+    endif()
+endforeach()
+
+if(DEFINED VERSION_FILE AND NOT EXISTS "${VERSION_FILE}")
+    message(FATAL_ERROR "Missing provenance file: ${VERSION_FILE}")
+endif()
+
+message(STATUS "Validated SDK at ${SDK_DIR}")

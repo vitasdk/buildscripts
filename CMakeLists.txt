@@ -373,9 +373,6 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
             install_sdk
             DEPENDEES build
             COMMAND $(MAKE) -C <BINARY_DIR> install DESTDIR=${CMAKE_INSTALL_PREFIX}
-            # Remove binutils docs to reduce size
-            COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/man
-            COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/info
             COMMENT "Installing binutils to ${CMAKE_INSTALL_PREFIX}"
             )
 
@@ -690,12 +687,6 @@ ExternalProject_add(gcc-final
     BUILD_COMMAND ${toolchain_tools} ${compiler_target_tools} ${wrapper_command}
     $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
     INSTALL_COMMAND $(MAKE) install
-    # Remove gcc docs to reduce size
-    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/man
-    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share/info
-    # Remove .la files
-    COMMAND ${CMAKE_COMMAND} -DGLOB_PATTERN=${CMAKE_INSTALL_PREFIX}/*.la
-    -P ${CMAKE_SOURCE_DIR}/cmake/remove_files.cmake
     )
 
 ExternalProject_Add(samples
@@ -751,36 +742,6 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     endif(WINPTHREAD_DLL)
 endif()
 
-# Strip toolchain binaries to reduce filesize
-add_custom_command(TARGET gcc-final POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -DHOST_SYSTEM_NAME=${CMAKE_HOST_SYSTEM_NAME}
-    -DBINDIR=${CMAKE_INSTALL_PREFIX}/bin
-    -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake
-
-    COMMAND ${CMAKE_COMMAND} -DHOST_SYSTEM_NAME=${CMAKE_HOST_SYSTEM_NAME}
-    -DBINDIR=${CMAKE_INSTALL_PREFIX}/${target_arch}/bin
-    -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake
-
-    COMMAND ${CMAKE_COMMAND} -DHOST_SYSTEM_NAME=${CMAKE_HOST_SYSTEM_NAME}
-    -DBINDIR=${CMAKE_INSTALL_PREFIX}/lib/gcc/${target_arch}/${GCC_VERSION}
-    -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake
-
-    COMMENT "Stripping host binaries"
-    )
-
-# Remove unnecessary sections from toolchain libraries
-add_custom_command(TARGET gcc-final POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -DOBJCOPY_COMMAND=${binutils_prefix}-objcopy
-    -DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/${target_arch}/lib/*.[ao]
-    -P ${CMAKE_SOURCE_DIR}/cmake/strip_target_objects.cmake
-
-    COMMAND ${CMAKE_COMMAND} -DOBJCOPY_COMMAND=${binutils_prefix}-objcopy
-    -DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/lib/gcc/${target_arch}/${GCC_VERSION}/*[!d][!d][!l].[ao]
-    -P ${CMAKE_SOURCE_DIR}/cmake/strip_target_objects.cmake
-
-    COMMENT "Stripping target objects"
-    )
-
 set(version_info_file ${CMAKE_INSTALL_PREFIX}/version_info.txt)
 
 # Merge the commit ids of the collected projects into a single file
@@ -791,11 +752,81 @@ add_custom_command(OUTPUT ${version_info_file}
     COMMENT "Creating version_info.txt"
     )
 
+# Finalize only after every component has installed into the SDK. This is the
+# single barrier for cleanup, stripping, provenance and structural checks.
+add_custom_target(finalize-sdk
+    COMMAND ${CMAKE_COMMAND}
+        -DHOST_SYSTEM_NAME=${CMAKE_HOST_SYSTEM_NAME}
+        -DBINDIR=${CMAKE_INSTALL_PREFIX}/bin
+        -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake
+    COMMAND ${CMAKE_COMMAND}
+        -DHOST_SYSTEM_NAME=${CMAKE_HOST_SYSTEM_NAME}
+        -DBINDIR=${CMAKE_INSTALL_PREFIX}/${target_arch}/bin
+        -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake
+    COMMAND ${CMAKE_COMMAND}
+        -DHOST_SYSTEM_NAME=${CMAKE_HOST_SYSTEM_NAME}
+        -DBINDIR=${CMAKE_INSTALL_PREFIX}/lib/gcc/${target_arch}/${GCC_VERSION}
+        -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake
+    COMMAND ${CMAKE_COMMAND}
+        -DOBJCOPY_COMMAND=${binutils_prefix}-objcopy
+        "-DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/${target_arch}/lib/*.[ao]"
+        -P ${CMAKE_SOURCE_DIR}/cmake/strip_target_objects.cmake
+    COMMAND ${CMAKE_COMMAND}
+        -DOBJCOPY_COMMAND=${binutils_prefix}-objcopy
+        "-DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/lib/gcc/${target_arch}/${GCC_VERSION}/*[!d][!d][!l].[ao]"
+        -P ${CMAKE_SOURCE_DIR}/cmake/strip_target_objects.cmake
+    COMMAND ${CMAKE_COMMAND} -E remove_directory
+        ${CMAKE_INSTALL_PREFIX}/share/man
+    COMMAND ${CMAKE_COMMAND} -E remove_directory
+        ${CMAKE_INSTALL_PREFIX}/share/info
+    COMMAND ${CMAKE_COMMAND}
+        "-DGLOB_PATTERN=${CMAKE_INSTALL_PREFIX}/*.la"
+        -P ${CMAKE_SOURCE_DIR}/cmake/remove_files.cmake
+    COMMAND ${CMAKE_COMMAND}
+        -DSDK_DIR=${CMAKE_INSTALL_PREFIX}
+        -DTARGET_TRIPLE=${target_arch}
+        -DVERSION_FILE=${version_info_file}
+        -P ${CMAKE_SOURCE_DIR}/cmake/ValidateSdk.cmake
+    COMMAND ${CMAKE_COMMAND}
+        -DSDK_DIR=${CMAKE_INSTALL_PREFIX}
+        -DTARGET_TRIPLE=${target_arch}
+        -P ${CMAKE_SOURCE_DIR}/cmake/ValidateStaticSdk.cmake
+    DEPENDS
+        vita-toolchain_${target_suffix}
+        binutils_${target_suffix}
+        gdb_${target_suffix}
+        vita-headers
+        newlib
+        pthread-embedded
+        samples
+        vdpm
+        vita-makepkg
+        gcc-final
+        ${version_info_file}
+    COMMENT "Finalizing and validating VitaSDK"
+    VERBATIM
+    )
+
+add_custom_target(check-toolchain-contract
+    COMMAND ${CMAKE_COMMAND} -E env
+        VITASDK=${CMAKE_INSTALL_PREFIX}
+        ${CMAKE_SOURCE_DIR}/tests/toolchain-contract/run.sh
+    DEPENDS finalize-sdk
+    VERBATIM
+    )
+
+add_custom_target(audit-host-dependencies
+    COMMAND ${CMAKE_COMMAND} -E env
+        VITASDK=${CMAKE_INSTALL_PREFIX}
+        ${CMAKE_SOURCE_DIR}/scripts/audit-host-deps.sh
+    DEPENDS finalize-sdk
+    VERBATIM
+    )
+
 add_custom_command(OUTPUT "vitasdk-${host_native}-${build_date}.tar.bz2"
     COMMAND ${CMAKE_COMMAND} -E tar "cfvj" "vitasdk-${host_native}-${build_date}.tar.bz2" "${CMAKE_INSTALL_PREFIX}"
-    DEPENDS vita-toolchain_${target_suffix} binutils_${target_suffix} gdb_${target_suffix} vita-headers newlib pthread-embedded samples vdpm vita-makepkg
-    DEPENDS gcc-final ${version_info_file}
-    COMMENT "Creating vitasdk-${host_os}-${build_date}.tar.bz2"
+    DEPENDS finalize-sdk
+    COMMENT "Creating vitasdk-${host_native}-${build_date}.tar.bz2"
     )
 
 # Create a sdk tarball
