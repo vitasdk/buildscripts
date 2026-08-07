@@ -71,9 +71,9 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
     set(libelf_patch_series
         "${PROJECT_SOURCE_DIR}/patches/libelf-configure-in.patch|1")
     set(binutils_patch_series
-        "${PROJECT_SOURCE_DIR}/patches/binutils/0001-vita.patch|3"
+        "${PROJECT_SOURCE_DIR}/patches/binutils/0001-vita.patch|1"
         "${PROJECT_SOURCE_DIR}/patches/binutils/0002-fix-broken-reloc.patch|1"
-        "${PROJECT_SOURCE_DIR}/patches/binutils/0003-fix-elf-vaddr.patch|3"
+        "${PROJECT_SOURCE_DIR}/patches/binutils/0003-fix-elf-vaddr.patch|1"
         "${PROJECT_SOURCE_DIR}/patches/binutils/0004-fix-interworking-veneers.patch|3"
         "${PROJECT_SOURCE_DIR}/patches/binutils/0004-fix-zlib-macOS.patch|1")
     set(gdb_patch_series

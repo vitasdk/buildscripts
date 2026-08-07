@@ -1,12 +1,14 @@
-diff -Nru a/src/binutils/ld/scripttempl/elf.sc b/src/binutils/ld/scripttempl/elf.sc
---- a/src/binutils/ld/scripttempl/elf.sc	2018-07-11 17:43:55.000000000 +0200
-+++ b/src/binutils/ld/scripttempl/elf.sc	2018-12-29 19:53:29.747662203 +0100
-@@ -580,6 +580,8 @@
-   ${CREATE_SHLIB+${RELOCATING+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}
-   ${CREATE_PIE+${RELOCATING+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}
+diff --git a/ld/scripttempl/elf.sc b/ld/scripttempl/elf.sc
+index 5471611..311ca7a 100644
+--- a/ld/scripttempl/elf.sc
++++ b/ld/scripttempl/elf.sc
+@@ -665,6 +665,9 @@ cat <<EOF
+   ${CREATE_SHLIB+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}
+   ${CREATE_PIE+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}
  
-+  /* Hacky hackity hack. Need this because otherwise data segment is not aligned enough. */
++  /* Vita load segments require 64 KiB alignment.  */
 +  . = ALIGN(0x10000);
++
    /* Exception handling  */
-   .eh_frame     ${RELOCATING-0} : ONLY_IF_RW { KEEP (*(.eh_frame)) ${RELOCATING+*(.eh_frame.*)} }
-   .gnu_extab    ${RELOCATING-0} : ONLY_IF_RW { *(.gnu_extab) }
+   .eh_frame     ${RELOCATING-0} : ONLY_IF_RW { KEEP (*(.eh_frame))${RELOCATING+ *(.eh_frame.*)} }
+   .sframe       ${RELOCATING-0} : ONLY_IF_RW { *(.sframe)${RELOCATING+ *(.sframe.*)} }
