@@ -53,6 +53,6 @@ libraries. With both patches, `-Dbuildstatic=true` no longer creates a
 `libalpm.dylib` target and its final link lines embed `libalpm_objlib.a`. The
 hash-pinned static dependency build completes on macOS arm64, passes the host
 audit, and the resulting client passes the rootless package contract. Native
-Linux arm64 also completes with only libc and the system loader as runtime
-dependencies. Linux x86_64 and Windows remain explicit gates before selecting
-the client.
+Linux arm64 and x86_64 also complete with only libc and the system loader as
+runtime dependencies. Windows remains the explicit host-build gate before
+selecting the client.

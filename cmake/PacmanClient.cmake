@@ -15,6 +15,15 @@ function(vitasdk_add_pacman_client deps_dir install_dir zlib_target)
     find_program(MESON_EXECUTABLE meson REQUIRED)
     find_program(PACMAN_MAKE_EXECUTABLE NAMES gmake make REQUIRED)
 
+    cmake_host_system_information(
+        RESULT pacman_make_jobs
+        QUERY NUMBER_OF_LOGICAL_CORES)
+    if(pacman_make_jobs LESS 1)
+        set(pacman_make_jobs 1)
+    elseif(pacman_make_jobs GREATER 4)
+        set(pacman_make_jobs 4)
+    endif()
+
     set(pacman_patch_series
         "${PROJECT_SOURCE_DIR}/patches/pacman/0001-allow-writable-non-root-installation-roots.patch|1"
         "${PROJECT_SOURCE_DIR}/patches/pacman/0002-embed-libalpm-in-static-clients.patch|1")
@@ -62,8 +71,12 @@ function(vitasdk_add_pacman_client deps_dir install_dir zlib_target)
             no-docs
             no-module
             no-legacy
-        BUILD_COMMAND ${PACMAN_MAKE_EXECUTABLE}
-        INSTALL_COMMAND ${PACMAN_MAKE_EXECUTABLE} install_sw
+        # Do not inherit GNU make's jobserver from the outer CMake build. Its
+        # file descriptors are not guaranteed to survive container emulation.
+        BUILD_COMMAND ${CMAKE_COMMAND} -E env --unset=MAKEFLAGS --
+            ${PACMAN_MAKE_EXECUTABLE} -j${pacman_make_jobs}
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E env --unset=MAKEFLAGS --
+            ${PACMAN_MAKE_EXECUTABLE} install_sw
         )
 
     ExternalProject_Add(libarchive-pacman
