@@ -1,6 +1,20 @@
 # Loads all the CMAKE_X_FLAGS to a single list to it can be passed
 # to the command_Wrapper script.
 function(load_flags flags)
+    # CMake has no built-in CPPFLAGS variable. Preserve the historical
+    # overrides when supplied and otherwise use an empty value. Likewise,
+    # accept the old CMAKE_LD_FLAGS names but fall back to CMake's canonical
+    # executable linker flags.
+    foreach(configuration "" _DEBUG _RELEASE)
+        if(NOT DEFINED CMAKE_CPP_FLAGS${configuration})
+            set(CMAKE_CPP_FLAGS${configuration})
+        endif()
+        if(NOT DEFINED CMAKE_LD_FLAGS${configuration})
+            set(CMAKE_LD_FLAGS${configuration}
+                "${CMAKE_EXE_LINKER_FLAGS${configuration}}")
+        endif()
+    endforeach()
+
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
         list(APPEND _flags
             _CFLAGS=${CMAKE_C_FLAGS_RELEASE}
