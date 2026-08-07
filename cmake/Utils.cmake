@@ -15,6 +15,11 @@ function(load_flags flags)
         endif()
     endforeach()
 
+    # Route assignments through `cmake -E env`: generators quote arguments
+    # containing spaces, and a quoted `NAME=value` is not an environment
+    # assignment when executed directly by a POSIX shell.
+    set(_flags ${CMAKE_COMMAND} -E env)
+
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
         list(APPEND _flags
             "_CFLAGS=${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_RELEASE}"

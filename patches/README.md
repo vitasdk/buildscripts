@@ -19,3 +19,6 @@ Before changing a source version:
 
 Keep one logical change per patch. Version updates, mechanical patch refreshes
 and behavioral changes should remain separate commits.
+
+The GDB series includes an upstream enum-flags backport required by Clang
+versions where `-Wenum-constexpr-conversion` is a non-downgradeable error.

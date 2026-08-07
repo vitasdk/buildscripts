@@ -84,7 +84,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         "${PROJECT_SOURCE_DIR}/patches/binutils/0004-fix-zlib-macOS.patch|1")
     set(gdb_patch_series
         "${PROJECT_SOURCE_DIR}/patches/gdb.patch|1"
-        "${PROJECT_SOURCE_DIR}/patches/gdb-zlib.patch|1")
+        "${PROJECT_SOURCE_DIR}/patches/gdb-zlib.patch|1"
+        "${PROJECT_SOURCE_DIR}/patches/gdb/0001-clang-enum-flags.patch|1")
     list(JOIN libzip_patch_series "^" libzip_patch_series_arg)
     list(JOIN libelf_patch_series "^" libelf_patch_series_arg)
     list(JOIN binutils_patch_series "^" binutils_patch_series_arg)
@@ -200,7 +201,6 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         --prefix=${toolchain_deps_dir}
         --libdir=${toolchain_deps_dir}/lib
         --disable-shared
-        --enable-static
         --disable-nls
         )
 
@@ -276,7 +276,11 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         GIT_TAG ${ISL_TAG}
         ${GIT_SHALLOW_SUPPORT}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        CONFIGURE_COMMAND cd <SOURCE_DIR> && ./autogen.sh COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        GIT_SUBMODULES ""
+        PATCH_COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR>
+            submodule update --init --recursive --depth 1
+        COMMAND ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> ./autogen.sh
+        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
         --prefix=${toolchain_deps_dir}
@@ -306,6 +310,11 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         GIT_REPOSITORY ${TOOLCHAIN_REPOSITORY}
         GIT_TAG ${TOOLCHAIN_TAG}
         ${GIT_SHALLOW_SUPPORT}
+        # ExternalProject's GIT_SHALLOW only applies to the top-level clone.
+        # Initialize this required submodule explicitly at depth 1 as well.
+        GIT_SUBMODULES ""
+        PATCH_COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR>
+            submodule update --init --recursive --depth 1
         # Set prefix to "/" here to be able to install twice
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=/ ${toolchain_cmake_args}
         -DTOOLCHAIN_DEPS_DIR=${toolchain_deps_dir}
@@ -398,21 +407,21 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
     if(NOT toolchain_file AND "${host_native}" STREQUAL "${build_native}")
         ExternalProject_Add_Step(binutils${suffix}
             install_sdk
-            DEPENDEES build
+            DEPENDEES install
             COMMAND $(MAKE) -C <BINARY_DIR> install DESTDIR=${CMAKE_INSTALL_PREFIX}
             COMMENT "Installing binutils to ${CMAKE_INSTALL_PREFIX}"
             )
 
         ExternalProject_Add_Step(gdb${suffix}
             install_sdk
-            DEPENDEES build
+            DEPENDEES install
             COMMAND $(MAKE) -C <BINARY_DIR> install DESTDIR=${CMAKE_INSTALL_PREFIX}
             COMMENT "Installing gdb to ${CMAKE_INSTALL_PREFIX}"
             )
 
         ExternalProject_Add_Step(vita-toolchain${suffix}
             install_sdk
-            DEPENDEES build
+            DEPENDEES install
             COMMAND $(MAKE) -C <BINARY_DIR> install DESTDIR=${CMAKE_INSTALL_PREFIX}
             COMMENT "Installing vita-toolchain to ${CMAKE_INSTALL_PREFIX}"
             )
@@ -851,6 +860,8 @@ add_custom_target(audit-host-dependencies
 add_custom_target(check-static-policy
     COMMAND ${CMAKE_COMMAND}
         -P ${CMAKE_SOURCE_DIR}/tests/cmake/static-policy.cmake
+    COMMAND ${CMAKE_COMMAND}
+        -P ${CMAKE_SOURCE_DIR}/tests/cmake/static-sdk-validation.cmake
     VERBATIM
     )
 

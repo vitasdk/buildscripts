@@ -23,6 +23,21 @@ foreach(root IN LISTS target_library_roots)
     list(APPEND target_shared ${root_shared})
 endforeach()
 
+# GCC installs host-side LTO and debugger plugins below its target-version
+# directory.  Their .so suffix describes the plugin ABI, not the target ABI;
+# they are checked by audit-host-deps.sh along with the other host binaries.
+file(GLOB_RECURSE host_gcc_plugins
+    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/liblto_plugin*.so"
+    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/liblto_plugin*.dylib"
+    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/liblto_plugin*.dll"
+    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/plugin/libcc1plugin*.so"
+    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/plugin/libcc1plugin*.dylib"
+    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/plugin/libcc1plugin*.dll"
+    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/plugin/libcp1plugin*.so"
+    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/plugin/libcp1plugin*.dylib"
+    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/plugin/libcp1plugin*.dll")
+list(REMOVE_ITEM target_shared ${host_gcc_plugins})
+
 if(target_shared)
     string(JOIN "\n  " shared_list ${target_shared})
     message(FATAL_ERROR

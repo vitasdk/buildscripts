@@ -1,0 +1,177 @@
+Backport upstream commit 4a0b2cb7210c65c8c9f4a56345749bb7294fbfbf.
+
+--- a/gdb/unittests/enum-flags-selftests.c
++++ b/gdb/unittests/enum-flags-selftests.c
+@@ -235,32 +235,5 @@ CHECK_VALID (true,  EF,   true ? EF () : RE ())
+ CHECK_VALID (true,  EF,   true ? RE () : EF ())
+ 
+-/* These are valid, but it's not a big deal since you won't be able to
+-   assign the resulting integer to an enum or an enum_flags without a
+-   cast.
+-
+-   The latter two tests are disabled on older GCCs because they
+-   incorrectly fail with gcc 4.8 and 4.9 at least.  Running the test
+-   outside a SFINAE context shows:
+-
+-    invalid user-defined conversion from ‘EF’ to ‘RE2’
+-
+-   They've been confirmed to compile/pass with gcc 5.3, gcc 7.1 and
+-   clang 3.7.  */
+-
+-CHECK_VALID (true,  int,  true ? EF () : EF2 ())
+-CHECK_VALID (true,  int,  true ? EF2 () : EF ())
+-CHECK_VALID (true,  int,  true ? EF () : RE2 ())
+-CHECK_VALID (true,  int,  true ? RE2 () : EF ())
+-
+-/* Same, but with an unsigned enum.  */
+-
+-typedef unsigned int uns;
+-
+-CHECK_VALID (true,  uns,  true ? EF () : UEF ())
+-CHECK_VALID (true,  uns,  true ? UEF () : EF ())
+-CHECK_VALID (true,  uns,  true ? EF () : URE ())
+-CHECK_VALID (true,  uns,  true ? URE () : EF ())
+-
+ /* Unfortunately this can't work due to the way C++ computes the
+    return type of the ternary conditional operator.  int isn't
+    implicitly convertible to the raw enum type, so the type of the
+--- a/gdbsupport/enum-flags.h
++++ b/gdbsupport/enum-flags.h
+@@ -73,30 +73,6 @@
+    namespace.  The compiler finds the corresponding
+    is_enum_flags_enum_type function via ADL.  */
+ 
+-/* Note that std::underlying_type<enum_type> is not what we want here,
+-   since that returns unsigned int even when the enum decays to signed
+-   int.  */
+-template<int size, bool sign> class integer_for_size { typedef void type; };
+-template<> struct integer_for_size<1, 0> { typedef uint8_t type; };
+-template<> struct integer_for_size<2, 0> { typedef uint16_t type; };
+-template<> struct integer_for_size<4, 0> { typedef uint32_t type; };
+-template<> struct integer_for_size<8, 0> { typedef uint64_t type; };
+-template<> struct integer_for_size<1, 1> { typedef int8_t type; };
+-template<> struct integer_for_size<2, 1> { typedef int16_t type; };
+-template<> struct integer_for_size<4, 1> { typedef int32_t type; };
+-template<> struct integer_for_size<8, 1> { typedef int64_t type; };
+-
+-template<typename T>
+-struct enum_underlying_type
+-{
+-  DIAGNOSTIC_PUSH
+-  DIAGNOSTIC_IGNORE_ENUM_CONSTEXPR_CONVERSION
+-  typedef typename
+-    integer_for_size<sizeof (T), static_cast<bool>(T (-1) < T (0))>::type
+-    type;
+-  DIAGNOSTIC_POP
+-};
+-
+ namespace enum_flags_detail
+ {
+ 
+@@ -117,9 +93,29 @@ struct zero_type;
+ /* gdb::Requires trait helpers.  */
+ template <typename enum_type>
+ using EnumIsUnsigned
+-  = std::is_unsigned<typename enum_underlying_type<enum_type>::type>;
++  = std::is_unsigned<typename std::underlying_type<enum_type>::type>;
++
++template <typename enum_type, typename = void>
++struct EnumHasFixedUnderlyingType : std::false_type
++{
++  static_assert (std::is_enum<enum_type>::value, "enum type required");
++};
++
++template <typename enum_type>
++struct EnumHasFixedUnderlyingType<enum_type,
++                                  std::void_t<decltype (enum_type {0})>>
++  : std::true_type
++{
++  static_assert (std::is_enum<enum_type>::value, "enum type required");
++};
++
++template <typename enum_type>
++using EnumIsSafeForBitwiseComplement
++  = std::conjunction<EnumIsUnsigned<enum_type>,
++                     EnumHasFixedUnderlyingType<enum_type>>;
++
+ template <typename enum_type>
+-using EnumIsSigned
+-  = std::is_signed<typename enum_underlying_type<enum_type>::type>;
++using EnumIsUnsafeForBitwiseComplement
++  = std::negation<EnumIsSafeForBitwiseComplement<enum_type>>;
+ 
+ }
+@@ -129,7 +125,7 @@ class enum_flags
+ {
+ public:
+   typedef E enum_type;
+-  typedef typename enum_underlying_type<enum_type>::type underlying_type;
++  typedef typename std::underlying_type<enum_type>::type underlying_type;
+ 
+   /* For to_string.  Maps one enumerator of E to a string.  */
+   struct string_mapping
+@@ -392,33 +388,35 @@ ENUM_FLAGS_GEN_COMP (operator!=, !=)
+ template <typename enum_type,
+ 	  typename = is_enum_flags_enum_type_t<enum_type>,
+ 	  typename
+-	    = gdb::Requires<enum_flags_detail::EnumIsUnsigned<enum_type>>>
++	    = gdb::Requires<enum_flags_detail::EnumIsSafeForBitwiseComplement<enum_type>>>
+ constexpr enum_type
+ operator~ (enum_type e)
+ {
+   using underlying = typename enum_flags<enum_type>::underlying_type;
+-  return (enum_type) ~underlying (e);
++  return (enum_type) (underlying) ~ULONGEST (e);
+ }
+ 
+ template <typename enum_type,
+ 	  typename = is_enum_flags_enum_type_t<enum_type>,
+-	  typename = gdb::Requires<enum_flags_detail::EnumIsSigned<enum_type>>>
++	  typename
++	    = gdb::Requires<enum_flags_detail::EnumIsUnsafeForBitwiseComplement<enum_type>>>
+ constexpr void operator~ (enum_type e) = delete;
+ 
+ template <typename enum_type,
+ 	  typename = is_enum_flags_enum_type_t<enum_type>,
+ 	  typename
+-	    = gdb::Requires<enum_flags_detail::EnumIsUnsigned<enum_type>>>
++	    = gdb::Requires<enum_flags_detail::EnumIsSafeForBitwiseComplement<enum_type>>>
+ constexpr enum_flags<enum_type>
+ operator~ (enum_flags<enum_type> e)
+ {
+   using underlying = typename enum_flags<enum_type>::underlying_type;
+-  return (enum_type) ~underlying (e);
++  return (enum_type) (underlying) ~ULONGEST (e);
+ }
+ 
+ template <typename enum_type,
+ 	  typename = is_enum_flags_enum_type_t<enum_type>,
+-	  typename = gdb::Requires<enum_flags_detail::EnumIsSigned<enum_type>>>
++	  typename
++	    = gdb::Requires<enum_flags_detail::EnumIsUnsafeForBitwiseComplement<enum_type>>>
+ constexpr void operator~ (enum_flags<enum_type> e) = delete;
+ 
+ /* Delete operator<< and operator>>.  */
+--- a/include/diagnostics.h
++++ b/include/diagnostics.h
+@@ -76,11 +76,6 @@
+ # define DIAGNOSTIC_ERROR_SWITCH \
+   DIAGNOSTIC_ERROR ("-Wswitch")
+ 
+-# if __has_warning ("-Wenum-constexpr-conversion")
+-#  define DIAGNOSTIC_IGNORE_ENUM_CONSTEXPR_CONVERSION \
+-   DIAGNOSTIC_IGNORE ("-Wenum-constexpr-conversion")
+-# endif
+-
+ #elif defined (__GNUC__) /* GCC */
+ 
+ # define DIAGNOSTIC_IGNORE_DEPRECATED_DECLARATIONS \
+@@ -159,8 +154,4 @@
+ # define DIAGNOSTIC_ERROR_SWITCH
+ #endif
+ 
+-#ifndef DIAGNOSTIC_IGNORE_ENUM_CONSTEXPR_CONVERSION
+-# define DIAGNOSTIC_IGNORE_ENUM_CONSTEXPR_CONVERSION
+-#endif
+-
+ #endif /* DIAGNOSTICS_H */

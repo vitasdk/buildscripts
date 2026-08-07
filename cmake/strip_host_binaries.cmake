@@ -20,5 +20,30 @@ if(NOT "${CMAKE_STRIP}")
 endif()
 
 foreach(executable ${binaries})
-    execute_process(COMMAND ${CMAKE_STRIP} ${executable})
+    set(strip_options)
+    if("${HOST_SYSTEM_NAME}" STREQUAL "Darwin")
+        execute_process(COMMAND file -b "${executable}"
+            OUTPUT_VARIABLE file_type
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
+        if(NOT file_type MATCHES "Mach-O")
+            continue()
+        endif()
+        # Preserve externally referenced symbols in Mach-O bundles such as
+        # GCC's LTO plugin while discarding local symbols.
+        list(APPEND strip_options -x)
+    elseif(NOT WIN32)
+        execute_process(COMMAND file -b "${executable}"
+            OUTPUT_VARIABLE file_type
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
+        if(NOT file_type MATCHES "ELF")
+            continue()
+        endif()
+    endif()
+
+    execute_process(
+        COMMAND ${CMAKE_STRIP} ${strip_options} "${executable}"
+        RESULT_VARIABLE strip_result)
+    if(NOT strip_result EQUAL 0)
+        message(FATAL_ERROR "Unable to strip host binary: ${executable}")
+    endif()
 endforeach()

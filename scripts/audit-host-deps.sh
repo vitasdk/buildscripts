@@ -39,6 +39,12 @@ audit_linux() {
 
 audit_darwin() {
     find "$VITASDK" -type f -print | while IFS= read -r binary; do
+        file_type=$(file -b "$binary" 2>/dev/null || true)
+        case "$file_type" in
+            *Mach-O*) ;;
+            *) continue ;;
+        esac
+
         dependencies=$(otool -L "$binary" 2>/dev/null | sed '1d' || true)
         [ -n "$dependencies" ] || continue
 
