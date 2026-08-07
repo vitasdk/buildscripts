@@ -66,6 +66,23 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
     set(extra_macro_args ${ARGN})
     set(toolchain_cmake_args)
     set(libzip_configure)
+    set(libzip_patch_series
+        "${PROJECT_SOURCE_DIR}/patches/libzip.patch|1")
+    set(libelf_patch_series
+        "${PROJECT_SOURCE_DIR}/patches/libelf-configure-in.patch|1")
+    set(binutils_patch_series
+        "${PROJECT_SOURCE_DIR}/patches/binutils/0001-vita.patch|3"
+        "${PROJECT_SOURCE_DIR}/patches/binutils/0002-fix-broken-reloc.patch|1"
+        "${PROJECT_SOURCE_DIR}/patches/binutils/0003-fix-elf-vaddr.patch|3"
+        "${PROJECT_SOURCE_DIR}/patches/binutils/0004-fix-interworking-veneers.patch|3"
+        "${PROJECT_SOURCE_DIR}/patches/binutils/0004-fix-zlib-macOS.patch|1")
+    set(gdb_patch_series
+        "${PROJECT_SOURCE_DIR}/patches/gdb.patch|1"
+        "${PROJECT_SOURCE_DIR}/patches/gdb-zlib.patch|1")
+    list(JOIN libzip_patch_series "^" libzip_patch_series_arg)
+    list(JOIN libelf_patch_series "^" libelf_patch_series_arg)
+    list(JOIN binutils_patch_series "^" binutils_patch_series_arg)
+    list(JOIN gdb_patch_series "^" gdb_patch_series_arg)
 
     # Check if the toolchain file has been passed as optional argument
     list(LENGTH extra_macro_args num_extra_args)
@@ -146,7 +163,10 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         GIT_REPOSITORY ${LIBZIP_REPOSITORY}
         GIT_TAG ${LIBZIP_TAG}
         ${GIT_SHALLOW_SUPPORT}
-        PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/libzip.patch || true
+        PATCH_COMMAND ${CMAKE_COMMAND}
+            -DSOURCE_DIR=<SOURCE_DIR>
+            "-DPATCH_SERIES=${libzip_patch_series_arg}"
+            -P ${PROJECT_SOURCE_DIR}/cmake/ApplyPatches.cmake
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${toolchain_deps_dir}
         ${toolchain_cmake_args} ${libzip_configure}
         -DZLIB_INCLUDE_DIR=${toolchain_deps_dir}/include
@@ -160,9 +180,15 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL_HASH ${LIBELF_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-        PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/libelf-configure-in.patch
-            && autoreconf -i <SOURCE_DIR>
-            && ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/config.guess ${PROJECT_SOURCE_DIR}/config.sub <SOURCE_DIR>/
+        PATCH_COMMAND ${CMAKE_COMMAND}
+            -DSOURCE_DIR=<SOURCE_DIR>
+            "-DPATCH_SERIES=${libelf_patch_series_arg}"
+            -P ${PROJECT_SOURCE_DIR}/cmake/ApplyPatches.cmake
+        COMMAND autoreconf -i <SOURCE_DIR>
+        COMMAND ${CMAKE_COMMAND} -E copy
+            ${PROJECT_SOURCE_DIR}/config.guess
+            ${PROJECT_SOURCE_DIR}/config.sub
+            <SOURCE_DIR>/
         CONFIGURE_COMMAND CC=${cc_compiler} RANLIB=${ranlib} ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
@@ -284,13 +310,14 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL_HASH ${BINUTILS_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-        PATCH_COMMAND
-            patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0001-vita.patch
-            && patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0002-fix-broken-reloc.patch
-            && patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0003-fix-elf-vaddr.patch
-            && patch -d <SOURCE_DIR> -p3 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0004-fix-interworking-veneers.patch
-            && patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/binutils/0004-fix-zlib-macOS.patch
-            && ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/config.guess ${PROJECT_SOURCE_DIR}/config.sub <SOURCE_DIR>/
+        PATCH_COMMAND ${CMAKE_COMMAND}
+            -DSOURCE_DIR=<SOURCE_DIR>
+            "-DPATCH_SERIES=${binutils_patch_series_arg}"
+            -P ${PROJECT_SOURCE_DIR}/cmake/ApplyPatches.cmake
+        COMMAND ${CMAKE_COMMAND} -E copy
+            ${PROJECT_SOURCE_DIR}/config.guess
+            ${PROJECT_SOURCE_DIR}/config.sub
+            <SOURCE_DIR>/
         CONFIGURE_COMMAND CFLAGS=-std=gnu11 ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
@@ -315,9 +342,14 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         URL_HASH ${GDB_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-        PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gdb.patch
-        COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gdb-zlib.patch
-        COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/config.guess ${PROJECT_SOURCE_DIR}/config.sub <SOURCE_DIR>/
+        PATCH_COMMAND ${CMAKE_COMMAND}
+            -DSOURCE_DIR=<SOURCE_DIR>
+            "-DPATCH_SERIES=${gdb_patch_series_arg}"
+            -P ${PROJECT_SOURCE_DIR}/cmake/ApplyPatches.cmake
+        COMMAND ${CMAKE_COMMAND} -E copy
+            ${PROJECT_SOURCE_DIR}/config.guess
+            ${PROJECT_SOURCE_DIR}/config.sub
+            <SOURCE_DIR>/
         CONFIGURE_COMMAND CFLAGS=-std=gnu11 ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
@@ -425,6 +457,9 @@ list(APPEND pthread_tools
     )
 
 set(GCC_CFLAGS)
+set(gcc_patch_series
+    "${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-15.patch|1")
+list(JOIN gcc_patch_series "^" gcc_patch_series_arg)
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" AND ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     # GCC on OSX (Clang in diguise) needs more bracket nesting depth to compile gcc
     set(GCC_CFLAGS "${GCC_CFLAGS} -fbracket-depth=512")
@@ -466,7 +501,10 @@ ExternalProject_add(gcc-base
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-    PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-15.patch
+    PATCH_COMMAND ${CMAKE_COMMAND}
+        -DSOURCE_DIR=<SOURCE_DIR>
+        "-DPATCH_SERIES=${gcc_patch_series_arg}"
+        -P ${PROJECT_SOURCE_DIR}/cmake/ApplyPatches.cmake
     CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
     --build=${build_native}
     # compile a native compiler so keep host == build
@@ -565,7 +603,10 @@ if(CMAKE_TOOLCHAIN_FILE)
         URL_HASH ${GCC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-        PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-15.patch
+        PATCH_COMMAND ${CMAKE_COMMAND}
+            -DSOURCE_DIR=<SOURCE_DIR>
+            "-DPATCH_SERIES=${gcc_patch_series_arg}"
+            -P ${PROJECT_SOURCE_DIR}/cmake/ApplyPatches.cmake
         CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools}
         ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
@@ -622,7 +663,10 @@ ExternalProject_add(gcc-final
     URL_HASH ${GCC_HASH}
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-    PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-15.patch
+    PATCH_COMMAND ${CMAKE_COMMAND}
+        -DSOURCE_DIR=<SOURCE_DIR>
+        "-DPATCH_SERIES=${gcc_patch_series_arg}"
+        -P ${PROJECT_SOURCE_DIR}/cmake/ApplyPatches.cmake
     CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
     ${wrapper_command} <SOURCE_DIR>/configure
     --build=${build_native}
