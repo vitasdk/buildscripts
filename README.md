@@ -33,8 +33,8 @@ You can pass then on the cmake phrase like this `cmake .. -DFOO=ON`.
 
 If you want to fetch an specific revision of a part of the toolchain
 then you can pass the branch/tag/id from the command line. The available
-values are `LIBZIP_TAG`, `NEWLIB_TAG`, `TOOLCHAIN_TAG`, `PTHREAD_TAG`,
-`HEADERS_TAG`, `SAMPLES_TAG`, `VDPM_TAG` and `VITA_MAKEPKG_TAG`. For example:
+values are `NEWLIB_TAG`, `TOOLCHAIN_TAG`, `PTHREAD_TAG`, `HEADERS_TAG`,
+`SAMPLES_TAG`, `VDPM_TAG` and `VITA_MAKEPKG_TAG`. For example:
 
 ``` sh
 cmake /path/to/cmakelists -DNEWLIB_TAG=0254c2dc0c2686f69580030af3cacc795c94d616

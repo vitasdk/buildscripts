@@ -89,8 +89,6 @@ set(wrapper_command ${PROJECT_SOURCE_DIR}/command_wrapper.sh)
 function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffix)
     set(extra_macro_args ${ARGN})
     set(toolchain_cmake_args)
-    set(libzip_patch_series
-        "${PROJECT_SOURCE_DIR}/patches/libzip.patch|1")
     set(libelf_patch_series
         "${PROJECT_SOURCE_DIR}/patches/libelf-configure-in.patch|1")
     set(binutils_patch_series
@@ -103,7 +101,6 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         "${PROJECT_SOURCE_DIR}/patches/gdb.patch|1"
         "${PROJECT_SOURCE_DIR}/patches/gdb-zlib.patch|1"
         "${PROJECT_SOURCE_DIR}/patches/gdb/0001-clang-enum-flags.patch|1")
-    list(JOIN libzip_patch_series "^" libzip_patch_series_arg)
     list(JOIN libelf_patch_series "^" libelf_patch_series_arg)
     list(JOIN binutils_patch_series "^" binutils_patch_series_arg)
     list(JOIN gdb_patch_series "^" gdb_patch_series_arg)
@@ -171,31 +168,46 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
             )
     endif()
 
-    # Different configurations for the unix/windows builds of the toolchain
-    if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-        list(APPEND toolchain_cmake_args -DZIP_STATIC=ON)
-    else()
-        list(APPEND toolchain_cmake_args -DUSE_BUNDLED_ENDIAN_H=ON)
-        list(APPEND toolchain_cmake_args -DZIP_STATIC=ON)
-    endif()
-
     list(APPEND toolchain_cmake_args -DBUILD_SHARED_LIBS=OFF)
 
+    # vita-toolchain consumes libzip only as a static archive, so every optional
+    # crypto, compression, tool, test, fuzzer, example and documentation feature
+    # is disabled explicitly instead of relying on the upstream defaults, which
+    # enable all of them. libzip uses GNUInstallDirs, so the library directory is
+    # pinned to "lib" to keep the archive path predictable on hosts that would
+    # otherwise select lib64.
     ExternalProject_Add(libzip${suffix}
         DEPENDS zlib${suffix}
-        GIT_REPOSITORY ${LIBZIP_REPOSITORY}
-        GIT_TAG ${LIBZIP_TAG}
-        ${GIT_SHALLOW_SUPPORT}
-        PATCH_COMMAND ${CMAKE_COMMAND}
-            -DSOURCE_DIR=<SOURCE_DIR>
-            "-DPATCH_SERIES=${libzip_patch_series_arg}"
-            -P ${PROJECT_SOURCE_DIR}/cmake/ApplyPatches.cmake
+        URL ${LIBZIP_URL}
+        URL_HASH ${LIBZIP_HASH}
+        DOWNLOAD_DIR ${DOWNLOAD_DIR}
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${toolchain_deps_dir}
         ${toolchain_cmake_args}
+        -DCMAKE_INSTALL_LIBDIR=lib
         -DZLIB_INCLUDE_DIR=${toolchain_deps_dir}/include
         -DZLIB_LIBRARY=${toolchain_deps_dir}/lib/libz.a
-        ${UPDATE_DISCONNECTED_SUPPORT}
+        -DENABLE_COMMONCRYPTO=OFF
+        -DENABLE_GNUTLS=OFF
+        -DENABLE_MBEDTLS=OFF
+        -DENABLE_OPENSSL=OFF
+        -DENABLE_WINDOWS_CRYPTO=OFF
+        -DENABLE_BZIP2=OFF
+        -DENABLE_LZMA=OFF
+        -DENABLE_ZSTD=OFF
+        -DBUILD_TOOLS=OFF
+        -DBUILD_REGRESS=OFF
+        -DBUILD_OSSFUZZ=OFF
+        -DBUILD_EXAMPLES=OFF
+        -DBUILD_DOC=OFF
         )
+
+    # USE_BUNDLED_ENDIAN_H is a vita-toolchain option rather than a libzip one,
+    # so it is appended after libzip is declared and never reaches a project that
+    # does not define it.
+    if(NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+        list(APPEND toolchain_cmake_args -DUSE_BUNDLED_ENDIAN_H=ON)
+    endif()
 
     ExternalProject_add(libelf${suffix}
         DEPENDS zlib${suffix}
