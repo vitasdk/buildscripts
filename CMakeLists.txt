@@ -796,6 +796,27 @@ ExternalProject_Add(vdpm
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
+# Channel refresh verifies a signature, parses the manifest and hashes the
+# repository databases with this helper rather than with host tools. It links
+# the same static OpenSSL as the package client, so it is built on the same
+# opt-in path and reuses the clone that the vdpm target already made.
+if(BUILD_PACMAN_CLIENT)
+    ExternalProject_Get_Property(vdpm SOURCE_DIR)
+    ExternalProject_Add(vdpm-channel
+        DEPENDS vdpm openssl-pacman
+        DOWNLOAD_COMMAND ""
+        SOURCE_DIR ${SOURCE_DIR}/src
+        CMAKE_ARGS
+            -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_INSTALL_PREFIX=${PACMAN_CLIENT_INSTALL_DIR}
+            "-DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}"
+            "-DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}"
+            -DOPENSSL_ROOT_DIR=${toolchain_build_depends_dir}
+            -DOPENSSL_USE_STATIC_LIBS=TRUE
+        )
+    add_dependencies(pacman-client-spike vdpm-channel)
+endif()
+
 ExternalProject_Add(vita-makepkg
     GIT_REPOSITORY ${VITA_MAKEPKG_REPOSITORY}
     GIT_TAG ${VITA_MAKEPKG_TAG}
