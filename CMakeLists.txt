@@ -41,6 +41,23 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 set(target_arch arm-vita-eabi)
 # Build date
 string(TIMESTAMP build_date "%Y-%m-%d_%H-%M-%S")
+string(TIMESTAMP default_package_version "0.%Y%m%d.%H%M%S" UTC)
+string(TIMESTAMP default_source_date_epoch "%s" UTC)
+
+set(VITASDK_PACKAGE_VERSION "${default_package_version}" CACHE STRING
+    "Version used for the vitasdk-core package")
+set(VITASDK_SOURCE_DATE_EPOCH "${default_source_date_epoch}" CACHE STRING
+    "Reproducible timestamp used for SDK package metadata")
+set(VITASDK_SOURCE_REVISION "" CACHE STRING
+    "Exact buildscripts Git revision recorded in SDK package metadata")
+
+if(NOT VITASDK_SOURCE_REVISION)
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} -C ${PROJECT_SOURCE_DIR} rev-parse HEAD
+        OUTPUT_VARIABLE VITASDK_SOURCE_REVISION
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        COMMAND_ERROR_IS_FATAL ANY)
+endif()
 
 include(Utils)
 include(GetTriplet)
@@ -791,6 +808,22 @@ add_custom_command(OUTPUT ${version_info_file}
     COMMENT "Creating version_info.txt"
     )
 
+set(finalize_sdk_dependencies
+    vita-toolchain_${target_suffix}
+    binutils_${target_suffix}
+    gdb_${target_suffix}
+    vita-headers
+    newlib
+    pthread-embedded
+    samples
+    vdpm
+    vita-makepkg
+    gcc-final
+    ${version_info_file})
+if(BUILD_PACMAN_CLIENT)
+    list(APPEND finalize_sdk_dependencies pacman-client)
+endif()
+
 # Finalize only after every component has installed into the SDK. This is the
 # single barrier for cleanup, stripping, provenance and structural checks.
 add_custom_target(finalize-sdk
@@ -835,18 +868,7 @@ add_custom_target(finalize-sdk
         VITASDK_HOST_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
         VITASDK_OBJDUMP=${host_native}-objdump
         ${CMAKE_SOURCE_DIR}/scripts/audit-host-deps.sh
-    DEPENDS
-        vita-toolchain_${target_suffix}
-        binutils_${target_suffix}
-        gdb_${target_suffix}
-        vita-headers
-        newlib
-        pthread-embedded
-        samples
-        vdpm
-        vita-makepkg
-        gcc-final
-        ${version_info_file}
+    DEPENDS ${finalize_sdk_dependencies}
     COMMENT "Finalizing and validating VitaSDK"
     VERBATIM
     )
@@ -885,3 +907,26 @@ add_custom_command(OUTPUT "vitasdk-${host_native}-${build_date}.tar.bz2"
 
 # Create a sdk tarball
 add_custom_target(tarball DEPENDS "vitasdk-${host_native}-${build_date}.tar.bz2")
+
+if(BUILD_PACMAN_CLIENT)
+    set(VITASDK_PACKAGE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/packages" CACHE PATH
+        "Output directory for the vitasdk-core package")
+    set(core_package
+        "${VITASDK_PACKAGE_OUTPUT_DIR}/vitasdk-core-${VITASDK_PACKAGE_VERSION}-1-${host_native}.pkg.tar.xz")
+
+    add_custom_command(OUTPUT ${core_package}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${VITASDK_PACKAGE_OUTPUT_DIR}
+        COMMAND ${CMAKE_COMMAND} -E env
+            SOURCE_DATE_EPOCH=${VITASDK_SOURCE_DATE_EPOCH}
+            ${CMAKE_SOURCE_DIR}/scripts/create-core-package.sh
+            ${CMAKE_INSTALL_PREFIX}
+            ${VITASDK_PACKAGE_OUTPUT_DIR}
+            ${host_native}
+            ${VITASDK_PACKAGE_VERSION}
+            ${VITASDK_SOURCE_REVISION}
+        DEPENDS finalize-sdk
+        COMMENT "Creating ${core_package}"
+        VERBATIM)
+
+    add_custom_target(core-package DEPENDS ${core_package})
+endif()
