@@ -457,6 +457,18 @@ set(toolchain_build_depends_dir ${CMAKE_BINARY_DIR}/deps_${build_suffix})
 # Build the native vita-toolchain, gcc dependencies and binutils
 toolchain_deps("${toolchain_build_depends_dir}" "${toolchain_build_install_dir}" "${build_suffix}")
 
+option(BUILD_PACMAN_CLIENT "Build the experimental static package client" OFF)
+set(PACMAN_CLIENT_INSTALL_DIR "${CMAKE_BINARY_DIR}/pacman-client"
+    CACHE PATH "Staging directory for the experimental package client")
+
+if(BUILD_PACMAN_CLIENT)
+    include(cmake/PacmanClient.cmake)
+    vitasdk_add_pacman_client(
+        "${toolchain_build_depends_dir}"
+        "${PACMAN_CLIENT_INSTALL_DIR}"
+        "zlib_${build_suffix}")
+endif()
+
 # Command used on vita-header build step
 set(vita_libs_gen_command "${toolchain_build_install_dir}/bin/vita-libs-gen")
 # Path where the temporary native binutils/gcc are being installed

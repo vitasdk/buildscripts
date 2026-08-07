@@ -26,6 +26,21 @@ meson setup build pacman \
 meson compile -C build
 ```
 
+The reproducible static-client spike is opt-in and builds its private source
+dependencies from the hashes in `cmake/Components.cmake`:
+
+```sh
+cmake -S . -B build-pacman -DBUILD_PACMAN_CLIENT=ON
+cmake --build build-pacman --target pacman-client-spike --parallel
+```
+
+It currently supports native Linux and macOS builds. It builds private static
+zlib, XZ, libarchive, OpenSSL and curl inputs, but installs only `pacman` and
+`pacman-conf` below `build-pacman/pacman-client/bin`. Libarchive retains gzip
+and XZ support needed by the repository and package formats. Curl retains only
+HTTP/HTTPS, using Apple SecTrust on macOS. The target finishes by running the
+same host dependency audit as the SDK.
+
 Run the native contract as a non-root user, passing a patched pacman binary
 and a `zlib-*-vita.pkg.tar.xz` produced by `vita-makepkg`:
 
@@ -33,9 +48,11 @@ and a `zlib-*-vita.pkg.tar.xz` produced by `vita-makepkg`:
 tests/pacman/rootless-smoke.sh /path/to/pacman /path/to/zlib.pkg.tar.xz
 ```
 
-The dynamic diagnostic build passes on macOS arm64. It is not a distributable
-VitaSDK client: it links private Homebrew libraries. With both patches,
-`-Dbuildstatic=true` no longer creates a `libalpm.dylib` target and its final
-link lines embed `libalpm_objlib.a`. The macOS attempt still fails until static
-transitive libarchive dependencies are supplied. Those dependencies are the
-next explicit gate.
+The dynamic diagnostic build passes on macOS arm64 but links private Homebrew
+libraries. With both patches, `-Dbuildstatic=true` no longer creates a
+`libalpm.dylib` target and its final link lines embed `libalpm_objlib.a`. The
+hash-pinned static dependency build completes on macOS arm64, passes the host
+audit, and the resulting client passes the rootless package contract. Native
+Linux arm64 also completes with only libc and the system loader as runtime
+dependencies. Linux x86_64 and Windows remain explicit gates before selecting
+the client.
