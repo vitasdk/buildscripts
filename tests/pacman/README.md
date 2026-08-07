@@ -8,11 +8,13 @@ git clone --depth 1 --branch v7.1.0 \
   https://gitlab.archlinux.org/pacman/pacman.git
 ```
 
-Apply `patches/pacman/0001-allow-writable-non-root-installation-roots.patch`
-with strip level 1 and zero fuzz. The patch preserves pacman's normal root
-requirement for `/` and non-writable roots. For a writable alternate root it
-lets the filesystem assign the unprivileged caller's UID/GID while retaining
-the packaged permission bits.
+Apply the patches in `patches/pacman/` in numeric order with strip level 1 and
+zero fuzz. The first patch preserves pacman's normal root requirement for `/`
+and non-writable roots. For a writable alternate root it lets the filesystem
+assign the unprivileged caller's UID/GID while retaining the packaged
+permission bits. The second patch makes `-Dbuildstatic=true` embed the private
+libalpm archive in the command-line clients instead of producing a shared
+libalpm.
 
 The initial macOS arm64 diagnostic build used Meson 1.5.2 with:
 
@@ -32,8 +34,8 @@ tests/pacman/rootless-smoke.sh /path/to/pacman /path/to/zlib.pkg.tar.xz
 ```
 
 The dynamic diagnostic build passes on macOS arm64. It is not a distributable
-VitaSDK client: it links private Homebrew libraries. Upstream's
-`-Dbuildstatic=true` selects static dependency variants but still builds and
-links `libalpm` as a shared library; the macOS attempt also fails until static
-transitive libarchive dependencies are supplied. Those are explicit gates for
-the next spike.
+VitaSDK client: it links private Homebrew libraries. With both patches,
+`-Dbuildstatic=true` no longer creates a `libalpm.dylib` target and its final
+link lines embed `libalpm_objlib.a`. The macOS attempt still fails until static
+transitive libarchive dependencies are supplied. Those dependencies are the
+next explicit gate.
