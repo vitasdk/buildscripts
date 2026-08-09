@@ -537,7 +537,10 @@ list(APPEND pthread_tools
 
 set(GCC_CFLAGS)
 set(gcc_patch_series
-    "${PROJECT_SOURCE_DIR}/patches/gcc/0001-gcc-15.patch|1")
+    "${PROJECT_SOURCE_DIR}/patches/gcc/0001-vita-target.patch|1"
+    "${PROJECT_SOURCE_DIR}/patches/gcc/0002-vita-driver.patch|1"
+    "${PROJECT_SOURCE_DIR}/patches/gcc/0003-libgomp-vita.patch|1"
+    "${PROJECT_SOURCE_DIR}/patches/gcc/0004-host-compat.patch|1")
 list(JOIN gcc_patch_series "^" gcc_patch_series_arg)
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" AND ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     # GCC on OSX (Clang in diguise) needs more bracket nesting depth to compile gcc

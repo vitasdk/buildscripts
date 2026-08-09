@@ -1,0 +1,44 @@
+diff --git a/gcc/genconditions.cc b/gcc/genconditions.cc
+index 3a5b85d11..3ca61913f 100644
+--- a/gcc/genconditions.cc
++++ b/gcc/genconditions.cc
+@@ -58,7 +58,7 @@ write_header (void)
+ /* It is necessary, but not entirely safe, to include the headers below\n\
+    in a generator program.  As a defensive measure, don't do so when the\n\
+    table isn't going to have anything in it.  */\n\
+-#if GCC_VERSION >= 3001\n\
++#if GCC_VERSION >= 3001 && __clang_major__ < 9\n\
+ \n\
+ /* Do not allow checking to confuse the issue.  */\n\
+ #undef CHECKING_P\n\
+@@ -170,7 +170,7 @@ struct c_test\n\
+    vary at run time.  It works in 3.0.1 and later; 3.0 only when not\n\
+    optimizing.  */\n\
+ \n\
+-#if GCC_VERSION >= 3001\n\
++#if GCC_VERSION >= 3001 && __clang_major__ < 9\n\
+ static const struct c_test insn_conditions[] = {\n");
+ 
+   traverse_c_tests (write_one_condition, 0);
+@@ -191,7 +191,7 @@ write_writer (void)
+ 	"  unsigned int i;\n"
+         "  const char *p;\n"
+         "  puts (\"(define_conditions [\");\n"
+-	"#if GCC_VERSION >= 3001\n"
++	"#if GCC_VERSION >= 3001 && __clang_major__ < 9\n"
+ 	"  for (i = 0; i < ARRAY_SIZE (insn_conditions) - 1; i++)\n"
+ 	"    {\n"
+ 	"      printf (\"  (%d \\\"\", insn_conditions[i].value);\n"
+diff --git a/zlib/zutil.h b/zlib/zutil.h
+index 48dd7febf..79c169f30 100644
+--- a/zlib/zutil.h
++++ b/zlib/zutil.h
+@@ -134,7 +134,7 @@
+ #    if defined(__MWERKS__) && __dest_os != __be_os && __dest_os != __win32_os
+ #      include <unix.h> /* for fdopen */
+ #    else
+-#      ifndef fdopen
++#      if !defined(fdopen) && !defined(__APPLE__)
+ #        define fdopen(fd,mode) NULL /* No fdopen() */
+ #      endif
+ #    endif

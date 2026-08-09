@@ -1,0 +1,29 @@
+diff --git a/gcc/config/arm/arm.opt b/gcc/config/arm/arm.opt
+index cd3d8e1be..523b92aa1 100644
+--- a/gcc/config/arm/arm.opt
++++ b/gcc/config/arm/arm.opt
+@@ -30,6 +30,9 @@ TargetVariable
+ TargetVariable
+ unsigned aarch_enable_bti = 0
+ 
++pthread
++Driver
++
+ Enum
+ Name(tls_type) Type(enum arm_tls_type)
+ TLS dialect to use:
+diff --git a/gcc/gcc.cc b/gcc/gcc.cc
+index 9f790db0d..27a38bb02 100644
+--- a/gcc/gcc.cc
++++ b/gcc/gcc.cc
+@@ -673,8 +673,9 @@ proper position among the other output files.  */
+ #endif
+ 
+ /* config.h can define LIB_SPEC to override the default libraries.  */
++#undef LIB_SPEC
+ #ifndef LIB_SPEC
+-#define LIB_SPEC "%{!shared:%{g*:-lg} %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}}"
++#define LIB_SPEC "%{!shared:%{g*:-lg} %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}} %{pthread:--whole-archive -lpthread --no-whole-archive} -lSceRtc_stub -lSceSysmem_stub -lSceKernelThreadMgr_stub -lSceKernelModulemgr_stub -lSceIofilemgr_stub -lSceProcessmgr_stub -lSceLibKernel_stub -lSceNet_stub -lSceNetCtl_stub -lSceSysmodule_stub"
+ #endif
+ 
+ /* When using -fsplit-stack we need to wrap pthread_create, in order
