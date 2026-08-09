@@ -72,7 +72,9 @@ if (( require_package_client )); then
 		}
 	done
 	if [[ $architecture == *-w64-mingw32 ]]; then
-		for runtime_file in bin/vdpm.exe usr/bin/pacman.exe usr/bin/msys-2.0.dll; do
+		for runtime_file in bin/vdpm.exe usr/bin/pacman.exe \
+				usr/bin/vdpm-channel.exe usr/bin/msys-2.0.dll \
+				share/vdpm/refresh-repositories.ps1; do
 			grep -Fqx "$runtime_file" <<< "$archive_entries" || {
 				printf 'Windows core package does not contain %s\n' "$runtime_file" >&2
 				exit 1

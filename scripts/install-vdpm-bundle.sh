@@ -48,7 +48,13 @@ required=(
 	share/vdpm/licenses/pacman-GPL-2.0.txt
 )
 if [[ $host == *-w64-mingw32 ]]; then
-	required+=(bin/vdpm.exe usr/bin/pacman.exe usr/bin/msys-2.0.dll)
+	required+=(
+		bin/vdpm.exe
+		usr/bin/pacman.exe
+		usr/bin/vdpm-channel.exe
+		usr/bin/msys-2.0.dll
+		share/vdpm/refresh-repositories.ps1
+	)
 else
 	required+=(
 		bin/vdpm

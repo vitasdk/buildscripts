@@ -80,8 +80,8 @@ requires a release bundle because its Pacman runtime is produced under MSYS2.
 
 The result is
 `bootstraps/vitasdk-bootstrap-<host-triplet>.tar.bz2` plus its `.sha256`.
-It contains the compiler, `vdpm`, Pacman, the signed-channel helper on Unix,
-the MSYS runtime on Windows, configuration and provenance required by the
+It contains the compiler, `vdpm`, Pacman, the signed-channel helper on every
+host, the MSYS runtime on Windows, configuration and provenance required by the
 standalone bootstrap scripts shipped by vdpm. The archive is reproducible for
 the same finalized SDK tree and source-date epoch.
 

@@ -21,7 +21,8 @@ required=(version_info.txt etc/pacman.conf share/vdpm/THIRD_PARTY_NOTICES.md
 case $host in
 	*-w64-mingw32)
 		required+=(bin/vdpm.exe bin/arm-vita-eabi-gcc.exe \
-			usr/bin/pacman.exe usr/bin/msys-2.0.dll)
+			usr/bin/pacman.exe usr/bin/vdpm-channel.exe usr/bin/msys-2.0.dll \
+			share/vdpm/refresh-repositories.ps1)
 		;;
 	*)
 		required+=(bin/vdpm bin/arm-vita-eabi-gcc bin/pacman bin/vdpm-channel \

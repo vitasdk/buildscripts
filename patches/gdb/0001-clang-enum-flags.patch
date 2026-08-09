@@ -1,8 +1,9 @@
-Backport upstream commit 4a0b2cb7210c65c8c9f4a56345749bb7294fbfbf.
+Backport upstream commit 4a0b2cb7210c65c8c9f4a56345749bb7294fbfbf for GDB 15.2.
 
 --- a/gdb/unittests/enum-flags-selftests.c
 +++ b/gdb/unittests/enum-flags-selftests.c
-@@ -235,32 +235,5 @@ CHECK_VALID (true,  EF,   true ? EF () : RE ())
+@@ -233,33 +233,6 @@
+ CHECK_VALID (true,  EF,   true ? EF () : RE ())
  CHECK_VALID (true,  EF,   true ? RE () : EF ())
  
 -/* These are valid, but it's not a big deal since you won't be able to
@@ -37,7 +38,7 @@ Backport upstream commit 4a0b2cb7210c65c8c9f4a56345749bb7294fbfbf.
     implicitly convertible to the raw enum type, so the type of the
 --- a/gdbsupport/enum-flags.h
 +++ b/gdbsupport/enum-flags.h
-@@ -73,30 +73,6 @@
+@@ -75,30 +75,6 @@
     namespace.  The compiler finds the corresponding
     is_enum_flags_enum_type function via ADL.  */
  
@@ -68,7 +69,7 @@ Backport upstream commit 4a0b2cb7210c65c8c9f4a56345749bb7294fbfbf.
  namespace enum_flags_detail
  {
  
-@@ -117,9 +93,29 @@ struct zero_type;
+@@ -119,10 +95,30 @@
  /* gdb::Requires trait helpers.  */
  template <typename enum_type>
  using EnumIsUnsigned
@@ -89,19 +90,20 @@ Backport upstream commit 4a0b2cb7210c65c8c9f4a56345749bb7294fbfbf.
 +  static_assert (std::is_enum<enum_type>::value, "enum type required");
 +};
 +
-+template <typename enum_type>
+ template <typename enum_type>
+-using EnumIsSigned
+-  = std::is_signed<typename enum_underlying_type<enum_type>::type>;
 +using EnumIsSafeForBitwiseComplement
 +  = std::conjunction<EnumIsUnsigned<enum_type>,
 +                     EnumHasFixedUnderlyingType<enum_type>>;
 +
- template <typename enum_type>
--using EnumIsSigned
--  = std::is_signed<typename enum_underlying_type<enum_type>::type>;
++template <typename enum_type>
 +using EnumIsUnsafeForBitwiseComplement
 +  = std::negation<EnumIsSafeForBitwiseComplement<enum_type>>;
  
  }
-@@ -129,7 +125,7 @@ class enum_flags
+ 
+@@ -131,7 +127,7 @@
  {
  public:
    typedef E enum_type;
@@ -110,7 +112,7 @@ Backport upstream commit 4a0b2cb7210c65c8c9f4a56345749bb7294fbfbf.
  
    /* For to_string.  Maps one enumerator of E to a string.  */
    struct string_mapping
-@@ -392,33 +388,35 @@ ENUM_FLAGS_GEN_COMP (operator!=, !=)
+@@ -394,33 +390,35 @@
  template <typename enum_type,
  	  typename = is_enum_flags_enum_type_t<enum_type>,
  	  typename
