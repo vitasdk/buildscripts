@@ -782,16 +782,26 @@ ExternalProject_Add(samples
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
+set(vdpm_cmake_args
+    -DCMAKE_BUILD_TYPE=Release
+    -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+    -DBUILD_VDPM_FRONTEND=ON
+    -DBUILD_VDPM_CHANNEL=OFF
+    "-DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}"
+    "-DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}")
+if(CMAKE_TOOLCHAIN_FILE)
+    list(APPEND vdpm_cmake_args
+        -DCMAKE_TOOLCHAIN_FILE=${toolchain_filepath})
+endif()
+
 ExternalProject_Add(vdpm
     GIT_REPOSITORY ${VDPM_REPOSITORY}
     GIT_TAG ${VDPM_TAG}
     ${GIT_SHALLOW_SUPPORT}
-    BUILD_IN_SOURCE 1
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
-    INSTALL_COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/bin/
+    SOURCE_SUBDIR src
+    CMAKE_ARGS ${vdpm_cmake_args}
+    INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target install
     COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include ${CMAKE_INSTALL_PREFIX}/bin/include
-    COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/vdpm ${CMAKE_INSTALL_PREFIX}/bin/
     COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/vitasdk-update ${CMAKE_INSTALL_PREFIX}/bin/
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
@@ -811,6 +821,8 @@ if(BUILD_PACMAN_CLIENT)
             -DCMAKE_INSTALL_PREFIX=${PACMAN_CLIENT_INSTALL_DIR}
             "-DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}"
             "-DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}"
+            -DBUILD_VDPM_FRONTEND=OFF
+            -DBUILD_VDPM_CHANNEL=ON
             -DOPENSSL_ROOT_DIR=${toolchain_build_depends_dir}
             -DOPENSSL_USE_STATIC_LIBS=TRUE
         )
