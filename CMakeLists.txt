@@ -409,7 +409,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
             ${PROJECT_SOURCE_DIR}/config.guess
             ${PROJECT_SOURCE_DIR}/config.sub
             <SOURCE_DIR>/
-        CONFIGURE_COMMAND CFLAGS=-std=gnu11 ac_cv_search_tgetent=no
+        CONFIGURE_COMMAND CFLAGS=-std=gnu11
         ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}
@@ -432,6 +432,10 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         --with-expat
         --with-libexpat-prefix=${toolchain_deps_dir}
         --with-libexpat-type=static
+        # GDB provides stub-termcap when tgetent is unavailable. Propagate both
+        # cache answers to the GDB and bundled Readline sub-configures so they
+        # cannot auto-link the runner's libtinfo/ncurses.
+        "host_configargs=ac_cv_search_tgetent=no bash_cv_termcap_lib=libc"
         BUILD_COMMAND $(MAKE) INFO_DEPS= DVIS= pdfs= htmls=
         INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir} INFO_DEPS= DVIS= pdfs= htmls=
         )
