@@ -18,16 +18,11 @@ foreach(archive
 endforeach()
 file(WRITE "${target_lib}/libSceKernel_stub.a" "")
 
-# These are host plugins despite living below GCC's target-version directory.
+# The LTO plugin is a host plugin despite living below GCC's target-version
+# directory. Versioned spellings emitted by different hosts are all valid.
 file(WRITE "${gcc_lib}/liblto_plugin.so" "")
 file(WRITE "${gcc_lib}/liblto_plugin.so.0" "")
 file(WRITE "${gcc_lib}/liblto_plugin.so.0.0.0" "")
-file(WRITE "${gcc_lib}/plugin/libcc1plugin.0.so" "")
-file(WRITE "${gcc_lib}/plugin/libcp1plugin.0.so" "")
-file(WRITE "${gcc_lib}/plugin/libcc1plugin.so.0" "")
-file(WRITE "${gcc_lib}/plugin/libcc1plugin.so.0.0.0" "")
-file(WRITE "${gcc_lib}/plugin/libcp1plugin.so.0" "")
-file(WRITE "${gcc_lib}/plugin/libcp1plugin.so.0.0.0" "")
 
 execute_process(
     COMMAND "${CMAKE_COMMAND}"
@@ -40,8 +35,23 @@ execute_process(
 if(NOT valid_result EQUAL 0)
     file(REMOVE_RECURSE "${fixture}")
     message(FATAL_ERROR
-        "Static SDK fixture with host plugins was rejected:\n${valid_output}${valid_error}")
+        "Static SDK fixture with the host LTO plugin was rejected:\n${valid_output}${valid_error}")
 endif()
+
+file(WRITE "${gcc_lib}/plugin/libcc1plugin.so.0.0.0" "")
+execute_process(
+    COMMAND "${CMAKE_COMMAND}"
+        -DSDK_DIR=${fixture}
+        -DTARGET_TRIPLE=${target_triple}
+        -P ${CMAKE_CURRENT_LIST_DIR}/../../cmake/ValidateStaticSdk.cmake
+    RESULT_VARIABLE libcc1_result
+    OUTPUT_QUIET
+    ERROR_QUIET)
+if(libcc1_result EQUAL 0)
+    file(REMOVE_RECURSE "${fixture}")
+    message(FATAL_ERROR "Static SDK validation accepted a disabled libcc1 plugin")
+endif()
+file(REMOVE "${gcc_lib}/plugin/libcc1plugin.so.0.0.0")
 
 file(WRITE "${target_lib}/libunexpected.so" "")
 execute_process(

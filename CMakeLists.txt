@@ -546,6 +546,10 @@ set(common_gcc_configure_args
     --with-python-dir=share/gcc-${target_arch}
     --enable-languages=c,c++
     --disable-decimal-float
+    # libcc1 only implements GDB's optional "compile" command and installs
+    # host shared objects that would make the SDK depend on the build host's
+    # C++ runtime. It is not part of the Vita compiler contract.
+    --disable-libcc1
     --disable-libffi
     --disable-libmudflap
     --disable-libquadmath

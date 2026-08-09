@@ -23,22 +23,15 @@ foreach(root IN LISTS target_library_roots)
     list(APPEND target_shared ${root_shared})
 endforeach()
 
-# GCC installs host-side LTO and debugger plugins below its target-version
-# directory.  Their .so suffix describes the plugin ABI, not the target ABI;
-# they are checked by audit-host-deps.sh along with the other host binaries.
+# GCC installs its host-side LTO plugin below its target-version directory.
+# Its .so suffix describes the plugin ABI, not the target ABI; it is checked
+# by audit-host-deps.sh along with the other host binaries. The optional
+# libcc1 debugger plugins are deliberately disabled and remain forbidden here.
 file(GLOB_RECURSE host_gcc_plugins
     "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/liblto_plugin*.so"
     "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/liblto_plugin*.so.*"
     "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/liblto_plugin*.dylib"
-    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/liblto_plugin*.dll"
-    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/plugin/libcc1plugin*.so"
-    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/plugin/libcc1plugin*.so.*"
-    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/plugin/libcc1plugin*.dylib"
-    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/plugin/libcc1plugin*.dll"
-    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/plugin/libcp1plugin*.so"
-    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/plugin/libcp1plugin*.so.*"
-    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/plugin/libcp1plugin*.dylib"
-    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/plugin/libcp1plugin*.dll")
+    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/liblto_plugin*.dll")
 list(REMOVE_ITEM target_shared ${host_gcc_plugins})
 
 if(target_shared)
