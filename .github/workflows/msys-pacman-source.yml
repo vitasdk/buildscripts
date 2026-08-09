@@ -12,6 +12,7 @@ on:
   push:
     branches:
       - next
+      - ci/msys-pacman-edges
     paths:
       - .gitattributes
       - cmake/Components.cmake
