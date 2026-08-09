@@ -52,6 +52,42 @@ built before either side is published:
 cmake /path/to/cmakelists -DVDPM_REPOSITORY=/path/to/vdpm -DVDPM_TAG=next
 ```
 
+### Package client and bootstrap archive
+
+`vdpm` owns the package-client product. Buildscripts only incorporates that
+component into the SDK. Enable the complete SDK-local client with:
+
+``` sh
+cmake /path/to/cmakelists -DBUILD_PACMAN_CLIENT=ON
+cmake --build . --target bootstrap-archive
+```
+
+On Linux and macOS this builds the pinned Pacman client from the selected
+`VDPM_REPOSITORY`/`VDPM_TAG`. A Windows cross build must consume an already
+released vdpm host bundle and its immutable SHA-256 instead of rebuilding the
+MSYS runtime indirectly:
+
+``` sh
+cmake /path/to/cmakelists \
+  -DCMAKE_TOOLCHAIN_FILE=toolchain-x86_64-w64-mingw32.cmake \
+  -DBUILD_PACMAN_CLIENT=ON \
+  -DVDPM_WINDOWS_BUNDLE=/path/to/vdpm-<version>-x86_64-w64-mingw32.tar.bz2 \
+  -DVDPM_WINDOWS_BUNDLE_SHA256=<64-lowercase-hex-digits>
+cmake --build . --target bootstrap-archive
+```
+
+The result is
+`bootstraps/vitasdk-bootstrap-<host-triplet>.tar.bz2` plus its `.sha256`.
+It contains the compiler, `vdpm`, Pacman, the signed-channel helper on Unix,
+the MSYS runtime on Windows, configuration and provenance required by the
+standalone bootstrap scripts shipped by vdpm. The archive is reproducible for
+the same finalized SDK tree and source-date epoch.
+
+An existing legacy SDK whose state is still `packages.list` based is not an
+in-place migration target. Install this bootstrap into a clean destination;
+after that, the legacy shell frontend and the native `vdpm` frontend share the
+same Pacman-owned package state.
+
 If you need to change the download directory used for the tarballs then do the following,
 for example:
 
@@ -76,7 +112,9 @@ runtime supplied by the platform:
 - Linux: the loader, libc and the small set of libraries shipped with the base
   C runtime (`libm`, `libpthread`, `libdl`, `librt`, `libutil`, `libresolv`).
 - macOS: libraries and frameworks under `/usr/lib` and `/System/Library`.
-- Windows: Windows system DLLs only.
+- Windows: Windows system DLLs, plus the single `msys-2.0.dll` runtime shipped
+  beside the MSYS Pacman executable under `usr/bin`. Native SDK tools remain
+  independent of MSYS.
 
 This is intentionally not a fully static host executable contract. In
 particular, macOS does not provide a supported static system runtime. The

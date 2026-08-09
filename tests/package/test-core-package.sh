@@ -13,7 +13,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir -p "$sdk_root/bin" "$sdk_root/arm-vita-eabi/lib"
+mkdir -p "$sdk_root/bin" "$sdk_root/arm-vita-eabi/lib" \
+	"$sdk_root/share/vdpm/licenses"
 cat > "$sdk_root/bin/arm-vita-eabi-gcc" <<'EOF'
 #!/usr/bin/env sh
 exit 0
@@ -22,9 +23,21 @@ cat > "$sdk_root/bin/pacman" <<'EOF'
 #!/usr/bin/env sh
 exit 0
 EOF
-chmod +x "$sdk_root/bin/arm-vita-eabi-gcc" "$sdk_root/bin/pacman"
+cat > "$sdk_root/bin/vdpm" <<'EOF'
+#!/usr/bin/env sh
+exit 0
+EOF
+cat > "$sdk_root/bin/vdpm-channel" <<'EOF'
+#!/usr/bin/env sh
+exit 0
+EOF
+chmod +x "$sdk_root/bin/arm-vita-eabi-gcc" "$sdk_root/bin/pacman" \
+	"$sdk_root/bin/vdpm" "$sdk_root/bin/vdpm-channel"
 printf 'archive\n' > "$sdk_root/arm-vita-eabi/lib/libfixture.a"
 printf 'source=fixture\n' > "$sdk_root/version_info.txt"
+printf 'notices\n' > "$sdk_root/share/vdpm/THIRD_PARTY_NOTICES.md"
+printf 'vdpm license\n' > "$sdk_root/share/vdpm/licenses/vdpm-LGPL-2.1.txt"
+printf 'pacman license\n' > "$sdk_root/share/vdpm/licenses/pacman-GPL-2.0.txt"
 
 for output in one two; do
 	SOURCE_DATE_EPOCH=1700000000 \
@@ -55,6 +68,9 @@ EOF
 			--noscriptlet --upgrade --noconfirm /package.pkg.tar.xz
 		test -x /sdk/bin/arm-vita-eabi-gcc
 		test -x /sdk/bin/pacman
+		test -x /sdk/bin/vdpm
+		test -x /sdk/bin/vdpm-channel
+		test -f /sdk/share/vdpm/THIRD_PARTY_NOTICES.md
 		grep -qx "source=fixture" /sdk/version_info.txt
 	'
 

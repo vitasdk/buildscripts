@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+repository_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)
+temporary_directory=$(mktemp -d "${TMPDIR:-/tmp}/buildscripts-vdpm-bundle.XXXXXXXX")
+cleanup() { rm -rf -- "$temporary_directory"; }
+trap cleanup EXIT
+
+host=x86_64-w64-mingw32
+root="$temporary_directory/input/vdpm-test-$host"
+mkdir -p "$root/bin" "$root/usr/bin" "$root/share/vdpm"
+printf 'frontend\n' > "$root/bin/vdpm.exe"
+printf 'pacman\n' > "$root/usr/bin/pacman.exe"
+printf 'runtime\n' > "$root/usr/bin/msys-2.0.dll"
+printf 'schema_version=1\nhost=%s\n' "$host" > \
+	"$root/share/vdpm/release-info.txt"
+bundle="$temporary_directory/vdpm.tar.bz2"
+tar -cjf "$bundle" -C "$temporary_directory/input" "$(basename "$root")"
+if command -v sha256sum >/dev/null; then
+	digest=$(sha256sum "$bundle")
+else
+	digest=$(shasum -a 256 "$bundle")
+fi
+digest=${digest%% *}
+
+sdk="$temporary_directory/sdk"
+"$repository_root/scripts/install-vdpm-bundle.sh" \
+	"$bundle" "$digest" "$sdk" "$host"
+test -f "$sdk/bin/vdpm.exe"
+test -f "$sdk/usr/bin/pacman.exe"
+test -f "$sdk/usr/bin/msys-2.0.dll"
+
+if [[ ${digest:0:1} == 0 ]]; then
+	bad_digest=1${digest:1}
+else
+	bad_digest=0${digest:1}
+fi
+if "$repository_root/scripts/install-vdpm-bundle.sh" \
+	"$bundle" "$bad_digest" "$temporary_directory/bad-hash" "$host"; then
+	printf 'vdpm bundle with a bad hash was accepted\n' >&2
+	exit 1
+fi
+if "$repository_root/scripts/install-vdpm-bundle.sh" \
+	"$bundle" "$digest" "$temporary_directory/bad-host" aarch64-w64-mingw32; then
+	printf 'vdpm bundle for a different host was accepted\n' >&2
+	exit 1
+fi
+
+toolchain="$temporary_directory/windows-toolchain.cmake"
+cat > "$toolchain" <<EOF
+set(CMAKE_SYSTEM_NAME Windows)
+set(CMAKE_SYSTEM_PROCESSOR x86_64)
+set(CMAKE_C_COMPILER /usr/bin/cc)
+set(CMAKE_CXX_COMPILER /usr/bin/c++)
+set(CMAKE_C_COMPILER_FORCED TRUE)
+set(CMAKE_CXX_COMPILER_FORCED TRUE)
+set(CMAKE_RC_COMPILER /usr/bin/true)
+EOF
+configure="$temporary_directory/configure"
+cmake -S "$repository_root" -B "$configure" \
+	-DCMAKE_TOOLCHAIN_FILE="$toolchain" \
+	-DBUILD_PACMAN_CLIENT=ON \
+	-DVDPM_WINDOWS_BUNDLE="$bundle" \
+	-DVDPM_WINDOWS_BUNDLE_SHA256="$digest" >/dev/null
+cmake --build "$configure" --target vdpm >/dev/null
+test -f "$configure/vitasdk/bin/vdpm.exe"
+test -f "$configure/vitasdk/usr/bin/pacman.exe"
+test -f "$configure/vitasdk/usr/bin/msys-2.0.dll"
+
+printf 'vdpm Windows bundle incorporation contract passed\n'

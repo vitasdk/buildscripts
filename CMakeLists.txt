@@ -487,8 +487,14 @@ set(toolchain_build_depends_dir ${CMAKE_BINARY_DIR}/deps_${build_suffix})
 toolchain_deps("${toolchain_build_depends_dir}" "${toolchain_build_install_dir}" "${build_suffix}")
 
 option(BUILD_PACMAN_CLIENT "Build the package client provided by vdpm" OFF)
-set(PACMAN_CLIENT_INSTALL_DIR "${CMAKE_BINARY_DIR}/pacman-client"
-    CACHE PATH "Staging directory for the vdpm package client")
+set(PACMAN_CLIENT_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}"
+    CACHE PATH "Install directory for the vdpm package client")
+set(VDPM_WINDOWS_BUNDLE "" CACHE FILEPATH
+    "Verified vdpm Windows component bundle used by cross builds")
+set(VDPM_WINDOWS_BUNDLE_SHA256 "" CACHE STRING
+    "SHA-256 of VDPM_WINDOWS_BUNDLE")
+set(VDPM_MESON_EXECUTABLE "" CACHE FILEPATH
+    "Optional Meson executable forwarded to the vdpm component")
 
 # Command used on vita-header build step
 set(vita_libs_gen_command "${toolchain_build_install_dir}/bin/vita-libs-gen")
@@ -774,42 +780,82 @@ ExternalProject_Add(samples
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
+set(vdpm_build_package_client ${BUILD_PACMAN_CLIENT})
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    set(vdpm_build_package_client OFF)
+endif()
+set(vdpm_use_release_bundle OFF)
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows" AND BUILD_PACMAN_CLIENT)
+    if(NOT VDPM_WINDOWS_BUNDLE OR NOT VDPM_WINDOWS_BUNDLE_SHA256)
+        message(FATAL_ERROR
+            "Windows package-client builds require VDPM_WINDOWS_BUNDLE and VDPM_WINDOWS_BUNDLE_SHA256")
+    endif()
+    set(vdpm_use_release_bundle ON)
+endif()
 set(vdpm_cmake_args
     -DCMAKE_BUILD_TYPE=Release
     -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
     -DBUILD_VDPM_FRONTEND=ON
-    -DBUILD_VDPM_CHANNEL=${BUILD_PACMAN_CLIENT}
-    -DBUILD_VDPM_PACKAGE_CLIENT=${BUILD_PACMAN_CLIENT}
+    -DBUILD_VDPM_CHANNEL=${vdpm_build_package_client}
+    -DBUILD_VDPM_PACKAGE_CLIENT=${vdpm_build_package_client}
     -DVDPM_PACKAGE_CLIENT_INSTALL_PREFIX=${PACMAN_CLIENT_INSTALL_DIR}
     -DVDPM_DOWNLOAD_DIR=${DOWNLOAD_DIR}
     -DVDPM_OFFLINE=${OFFLINE}
     "-DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}"
     "-DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}")
+if(VDPM_MESON_EXECUTABLE)
+    list(APPEND vdpm_cmake_args
+        -DMESON_EXECUTABLE=${VDPM_MESON_EXECUTABLE})
+endif()
 if(CMAKE_TOOLCHAIN_FILE)
     list(APPEND vdpm_cmake_args
         -DCMAKE_TOOLCHAIN_FILE=${toolchain_filepath})
 endif()
 
-ExternalProject_Add(vdpm
-    GIT_REPOSITORY ${VDPM_REPOSITORY}
-    GIT_TAG ${VDPM_TAG}
-    ${GIT_SHALLOW_SUPPORT}
-    CMAKE_ARGS ${vdpm_cmake_args}
-    INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target install
-    COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include ${CMAKE_INSTALL_PREFIX}/bin/include
-    COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/vitasdk-update ${CMAKE_INSTALL_PREFIX}/bin/
-    ${UPDATE_DISCONNECTED_SUPPORT}
-    )
+if(vdpm_use_release_bundle)
+    # The Windows package client is the exact vdpm release product. Do not
+    # partially rebuild it in buildscripts: verify and incorporate the bundle.
+    add_custom_target(vdpm
+        COMMAND ${PROJECT_SOURCE_DIR}/scripts/install-vdpm-bundle.sh
+            ${VDPM_WINDOWS_BUNDLE}
+            ${VDPM_WINDOWS_BUNDLE_SHA256}
+            ${CMAKE_INSTALL_PREFIX}
+            ${host_native}
+        VERBATIM)
+else()
+    ExternalProject_Add(vdpm
+        GIT_REPOSITORY ${VDPM_REPOSITORY}
+        GIT_TAG ${VDPM_TAG}
+        ${GIT_SHALLOW_SUPPORT}
+        CMAKE_ARGS ${vdpm_cmake_args}
+        INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target install
+        COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include ${CMAKE_INSTALL_PREFIX}/bin/include
+        COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/vitasdk-update ${CMAKE_INSTALL_PREFIX}/bin/
+        ${UPDATE_DISCONNECTED_SUPPORT}
+        )
+endif()
 
 # vdpm owns Pacman, its private dependencies and the channel helper. Keep this
 # compatibility target while buildscripts callers migrate to the component
 # boundary; the outer superbuild only waits for vdpm and audits the result.
 if(BUILD_PACMAN_CLIENT)
+    set(package_client_dependencies vdpm)
+    set(package_client_audit_root ${PACMAN_CLIENT_INSTALL_DIR})
+    if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+        set(package_client_audit_root ${CMAKE_INSTALL_PREFIX})
+    endif()
     add_custom_target(pacman-client-spike
         COMMAND ${CMAKE_COMMAND} -E env
-            VITASDK=${PACMAN_CLIENT_INSTALL_DIR}
+            VITASDK=${package_client_audit_root}
             VITASDK_HOST_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
             ${PROJECT_SOURCE_DIR}/scripts/audit-host-deps.sh
+        DEPENDS ${package_client_dependencies}
+        VERBATIM)
+    add_custom_target(package-client-configuration
+        COMMAND ${CMAKE_COMMAND}
+            -DOUTPUT=${CMAKE_INSTALL_PREFIX}/etc/pacman.conf
+            -DHOST_ARCHITECTURE=${host_native}
+            -P ${PROJECT_SOURCE_DIR}/cmake/WritePacmanConfig.cmake
         DEPENDS vdpm
         VERBATIM)
 endif()
@@ -850,6 +896,9 @@ set(finalize_sdk_dependencies
     vita-makepkg
     gcc-final
     ${version_info_file})
+if(BUILD_PACMAN_CLIENT)
+    list(APPEND finalize_sdk_dependencies package-client-configuration)
+endif()
 # Finalize only after every component has installed into the SDK. This is the
 # single barrier for cleanup, stripping, provenance and structural checks.
 add_custom_target(finalize-sdk
@@ -935,6 +984,27 @@ add_custom_command(OUTPUT "vitasdk-${host_native}-${build_date}.tar.bz2"
 add_custom_target(tarball DEPENDS "vitasdk-${host_native}-${build_date}.tar.bz2")
 
 if(BUILD_PACMAN_CLIENT)
+    set(VITASDK_BOOTSTRAP_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bootstraps" CACHE PATH
+        "Output directory for verified VitaSDK bootstrap archives")
+    set(bootstrap_archive
+        "${VITASDK_BOOTSTRAP_OUTPUT_DIR}/vitasdk-bootstrap-${host_native}.tar.bz2")
+    add_custom_command(OUTPUT ${bootstrap_archive}
+        BYPRODUCTS ${bootstrap_archive}.sha256
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${VITASDK_BOOTSTRAP_OUTPUT_DIR}
+        COMMAND ${CMAKE_COMMAND} -E rm -f
+            ${bootstrap_archive} ${bootstrap_archive}.sha256
+        COMMAND ${PROJECT_SOURCE_DIR}/scripts/create-bootstrap-archive.sh
+            ${CMAKE_INSTALL_PREFIX}
+            ${VITASDK_BOOTSTRAP_OUTPUT_DIR}
+            ${host_native}
+            ${VITASDK_SOURCE_DATE_EPOCH}
+        DEPENDS finalize-sdk
+            ${PROJECT_SOURCE_DIR}/scripts/create-bootstrap-archive.sh
+        VERBATIM)
+    add_custom_target(bootstrap-archive DEPENDS ${bootstrap_archive})
+endif()
+
+if(BUILD_PACMAN_CLIENT)
     set(VITASDK_PACKAGE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/packages" CACHE PATH
         "Output directory for the vitasdk-core package")
     set(core_package
@@ -942,6 +1012,7 @@ if(BUILD_PACMAN_CLIENT)
 
     add_custom_command(OUTPUT ${core_package}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${VITASDK_PACKAGE_OUTPUT_DIR}
+        COMMAND ${CMAKE_COMMAND} -E rm -f ${core_package}
         COMMAND ${CMAKE_COMMAND} -E env
             SOURCE_DATE_EPOCH=${VITASDK_SOURCE_DATE_EPOCH}
             ${CMAKE_SOURCE_DIR}/scripts/create-core-package.sh
@@ -951,6 +1022,8 @@ if(BUILD_PACMAN_CLIENT)
             ${VITASDK_PACKAGE_VERSION}
             ${VITASDK_SOURCE_REVISION}
         DEPENDS finalize-sdk
+            ${CMAKE_SOURCE_DIR}/scripts/create-core-package.sh
+            ${CMAKE_SOURCE_DIR}/scripts/validate-core-package.sh
         COMMENT "Creating ${core_package}"
         VERBATIM)
 

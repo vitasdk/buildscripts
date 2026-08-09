@@ -63,10 +63,29 @@ grep -qx 'etc/pacman.conf' <<< "$archive_entries" || {
 }
 
 if (( require_package_client )); then
-	grep -Eq '^bin/pacman(\.exe)?$' <<< "$archive_entries" || {
-		printf 'core package does not contain the package client\n' >&2
-		exit 1
-	}
+	for compliance_file in share/vdpm/THIRD_PARTY_NOTICES.md \
+		share/vdpm/licenses/vdpm-LGPL-2.1.txt \
+		share/vdpm/licenses/pacman-GPL-2.0.txt; do
+		grep -Fqx "$compliance_file" <<< "$archive_entries" || {
+			printf 'core package does not contain %s\n' "$compliance_file" >&2
+			exit 1
+		}
+	done
+	if [[ $architecture == *-w64-mingw32 ]]; then
+		for runtime_file in bin/vdpm.exe usr/bin/pacman.exe usr/bin/msys-2.0.dll; do
+			grep -Fqx "$runtime_file" <<< "$archive_entries" || {
+				printf 'Windows core package does not contain %s\n' "$runtime_file" >&2
+				exit 1
+			}
+		done
+	else
+		for runtime_file in bin/vdpm bin/pacman bin/vdpm-channel; do
+			grep -Fqx "$runtime_file" <<< "$archive_entries" || {
+				printf 'core package does not contain %s\n' "$runtime_file" >&2
+				exit 1
+			}
+		done
+	fi
 fi
 
 pacman_configuration=$(bsdtar -xOf "$package" etc/pacman.conf)

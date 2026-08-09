@@ -92,7 +92,8 @@ audit_windows() {
                 RPCRT4.DLL|SHLWAPI.DLL|VERSION.DLL|WINMM.DLL|PSAPI.DLL|\
                 BCRYPT.DLL|NTDLL.DLL|UCRTBASE.DLL|SECHOST.DLL|MSVCRT.DLL|\
                 COMDLG32.DLL|COMCTL32.DLL|GDI32.DLL|IMM32.DLL|SETUPAPI.DLL|\
-                IPHLPAPI.DLL|CRYPT32.DLL|DBGHELP.DLL)
+                IPHLPAPI.DLL|CRYPT32.DLL|DBGHELP.DLL|NETAPI32.DLL|\
+                MSYS-2.0.DLL)
                     ;;
                 *)
                     fail_dependency "$binary" "$dependency"
