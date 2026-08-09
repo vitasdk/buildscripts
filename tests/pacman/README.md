@@ -18,6 +18,11 @@ the UID/GID while retaining the packaged permission bits. The second patch
 makes `-Dbuildstatic=true` embed the private libalpm archive in the command-line
 clients instead of producing a shared libalpm.
 
+The fourth patch keeps `setlocale()` active when gettext is disabled. Without
+it, the reduced `-Di18n=false` client stays in the ASCII C application locale
+and libarchive cannot read UTF-8 package paths, even though the MSYS runtime
+uses UTF-8 internally for Windows filenames.
+
 The initial macOS arm64 diagnostic build used Meson 1.5.2 with:
 
 ```sh
@@ -89,9 +94,9 @@ tests/pacman/msys-pacman-build.sh /path/to/output
 and passes the resulting `pacman.exe` and adjacent `msys-2.0.dll` to the same
 PowerShell transaction test. The build clones tag 7.1.0, verifies commit
 `5683f8477a0afcc6b331766175a83445b2dcfe89`, restores upstream symlinks, applies
-the first two patches, embeds libalpm and its third-party libraries statically,
-and rejects any PE import set other than `msys-2.0.dll`, `CRYPT32.dll` and
-`KERNEL32.dll`.
+the MSYS-relevant patches, embeds libalpm and its third-party libraries
+statically, and rejects any PE import set other than `msys-2.0.dll`,
+`CRYPT32.dll` and `KERNEL32.dll`.
 
 That patched 7.1.0 pair passes install, query and remove on native Windows, so
 the source build and two-file runtime shape are no longer open design work.
