@@ -29,6 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: msys2/setup-msys2@v2
+        id: msys2
         with:
           msystem: MSYS
           update: true
@@ -56,7 +57,7 @@ jobs:
         run: |
           ./tests/pacman/msys-runtime-smoke.ps1 `
             -WorkDirectory (Join-Path $env:RUNNER_TEMP "vitasdk-ñ-日本語 path") `
-            -FixtureTar (Get-Command bsdtar.exe -ErrorAction Stop).Source `
+            -FixtureTar (Join-Path '${{ steps.msys2.outputs.msys2-location }}' 'usr/bin/bsdtar.exe') `
             -PacmanExecutable (Join-Path $env:RUNNER_TEMP "vitasdk-pacman/pacman.exe") `
             -RuntimeDll (Join-Path $env:RUNNER_TEMP "vitasdk-pacman/msys-2.0.dll") `
             -Extended
