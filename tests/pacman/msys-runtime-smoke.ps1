@@ -77,7 +77,7 @@ if ($runtimeFiles.Count -ne 2) {
 
 [IO.File]::WriteAllText($configPath, @"
 [options]
-Architecture = auto
+Architecture = x86_64
 SigLevel = Never
 CheckSpace
 "@)
@@ -90,7 +90,7 @@ pkgdesc = VitaSDK MSYS runtime smoke package
 builddate = 0
 packager = VitaSDK CI
 size = 6
-arch = any
+arch = x86_64
 license = MIT
 "@)
 [IO.File]::WriteAllText(
