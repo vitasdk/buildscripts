@@ -22,6 +22,11 @@ trap cleanup EXIT
 git -c core.autocrlf=false clone --depth 1 --branch v7.1.0 \
 	https://gitlab.archlinux.org/pacman/pacman.git "$source_directory"
 
+# Git for Windows initially materializes Pacman's source symlinks as files
+# containing the link target. Re-check them out through the MSYS runtime.
+git -C "$source_directory" config core.symlinks true
+git -C "$source_directory" reset --hard HEAD
+
 expected_revision=5683f8477a0afcc6b331766175a83445b2dcfe89
 actual_revision=$(git -C "$source_directory" rev-parse HEAD)
 [[ $actual_revision == "$expected_revision" ]] || {
