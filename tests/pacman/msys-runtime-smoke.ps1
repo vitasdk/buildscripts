@@ -1,5 +1,6 @@
 param(
     [string]$WorkDirectory = (Join-Path $env:TEMP "vitasdk-msys-pacman-smoke"),
+    [string]$FixtureDirectory = (Join-Path $env:TEMP "vitasdk-msys-pacman-fixtures-${PID}"),
     [string]$PacmanExecutable = "",
     [string]$RuntimeDll = "",
     [switch]$Extended
@@ -110,25 +111,29 @@ function New-CaseCollisionPackage([string]$Root, [string]$Output) {
 if (Test-Path $WorkDirectory) {
     Remove-Item -Recurse -Force $WorkDirectory
 }
+if (Test-Path $FixtureDirectory) {
+    Remove-Item -Recurse -Force $FixtureDirectory
+}
 
-$downloads = Join-Path $WorkDirectory "downloads"
-$extract = Join-Path $WorkDirectory "extract"
+$downloads = Join-Path $FixtureDirectory "downloads"
+$extract = Join-Path $FixtureDirectory "extract"
 $sdkRoot = Join-Path $WorkDirectory "sdk"
 $pacmanBin = Join-Path $sdkRoot "usr/bin"
 $dbPath = Join-Path $sdkRoot "var/lib/pacman"
 $cachePath = Join-Path $sdkRoot "var/cache/pacman/pkg"
 $logPath = Join-Path $sdkRoot "var/log/pacman.log"
 $configPath = Join-Path $sdkRoot "etc/pacman.conf"
-$packageRoot = Join-Path $WorkDirectory "package-v1"
-$packagePath = Join-Path $WorkDirectory "vitasdk-msys-probe-1.0-1-any.pkg.tar.xz"
-$packageV2Root = Join-Path $WorkDirectory "package-v2"
-$packageV2Path = Join-Path $WorkDirectory "vitasdk-msys-probe-2.0-1-any.pkg.tar.xz"
-$collisionRoot = Join-Path $WorkDirectory "case-collision-package"
-$collisionPath = Join-Path $WorkDirectory "vitasdk-msys-case-collision-1.0-1-any.pkg.tar.xz"
+$packageRoot = Join-Path $FixtureDirectory "package-v1"
+$packagePath = Join-Path $FixtureDirectory "vitasdk-msys-probe-1.0-1-any.pkg.tar.xz"
+$packageV2Root = Join-Path $FixtureDirectory "package-v2"
+$packageV2Path = Join-Path $FixtureDirectory "vitasdk-msys-probe-2.0-1-any.pkg.tar.xz"
+$collisionRoot = Join-Path $FixtureDirectory "case-collision-package"
+$collisionPath = Join-Path $FixtureDirectory "vitasdk-msys-case-collision-1.0-1-any.pkg.tar.xz"
 
 @(
     $downloads,
     $extract,
+    $FixtureDirectory,
     $pacmanBin,
     $dbPath,
     $cachePath,
