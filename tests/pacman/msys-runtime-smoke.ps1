@@ -216,7 +216,9 @@ $commonArguments = @(
 
 # Exclude Git for Windows and any preinstalled MSYS2 tree from DLL lookup.
 $savedPath = $env:PATH
+$savedLang = $env:LANG
 $env:PATH = "${env:SystemRoot}\System32;${env:SystemRoot}"
+$env:LANG = "C.UTF-8"
 try {
     Invoke-Checked $pacman @("--version")
     Invoke-Checked $pacman @(
@@ -312,6 +314,12 @@ try {
 }
 finally {
     $env:PATH = $savedPath
+    if ($null -eq $savedLang) {
+        Remove-Item Env:LANG -ErrorAction SilentlyContinue
+    }
+    else {
+        $env:LANG = $savedLang
+    }
 }
 
 if ($Extended) {
