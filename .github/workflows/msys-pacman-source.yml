@@ -54,5 +54,7 @@ jobs:
         shell: pwsh
         run: |
           ./tests/pacman/msys-runtime-smoke.ps1 `
+            -WorkDirectory (Join-Path $env:RUNNER_TEMP "vitasdk-ñ-日本語 path") `
             -PacmanExecutable (Join-Path $env:RUNNER_TEMP "vitasdk-pacman/pacman.exe") `
-            -RuntimeDll (Join-Path $env:RUNNER_TEMP "vitasdk-pacman/msys-2.0.dll")
+            -RuntimeDll (Join-Path $env:RUNNER_TEMP "vitasdk-pacman/msys-2.0.dll") `
+            -Extended

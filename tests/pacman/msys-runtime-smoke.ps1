@@ -1,7 +1,8 @@
 param(
     [string]$WorkDirectory = (Join-Path $env:TEMP "vitasdk-msys-pacman-smoke"),
     [string]$PacmanExecutable = "",
-    [string]$RuntimeDll = ""
+    [string]$RuntimeDll = "",
+    [switch]$Extended
 )
 
 $ErrorActionPreference = "Stop"
@@ -30,6 +31,82 @@ function Invoke-Checked([string]$Program, [string[]]$Arguments) {
     }
 }
 
+function Invoke-ExpectedFailure([string]$Program, [string[]]$Arguments, [string]$Description) {
+    & $Program @Arguments
+    if ($LASTEXITCODE -eq 0) {
+        throw "operation unexpectedly succeeded: ${Description}"
+    }
+    Write-Host "Expected failure passed: ${Description}"
+}
+
+function Write-PackageMetadata(
+    [string]$Root,
+    [string]$Name,
+    [string]$Version,
+    [string]$Description
+) {
+    [IO.File]::WriteAllText((Join-Path $Root ".PKGINFO"), (@(
+        "pkgname = ${Name}",
+        "pkgbase = ${Name}",
+        "pkgver = ${Version}",
+        "pkgdesc = ${Description}",
+        "builddate = 0",
+        "packager = VitaSDK CI",
+        "size = 4096",
+        "arch = x86_64",
+        "license = MIT"
+    ) -join "`n") + "`n")
+}
+
+function New-ProbePackage(
+    [string]$Root,
+    [string]$Output,
+    [string]$Name,
+    [string]$Version,
+    [System.Collections.IDictionary]$Files
+) {
+    if (Test-Path $Root) {
+        Remove-Item -Recurse -Force $Root
+    }
+    New-Item -ItemType Directory -Force -Path $Root | Out-Null
+    Write-PackageMetadata $Root $Name $Version "VitaSDK MSYS Windows filesystem probe"
+
+    $archiveEntries = @(".PKGINFO")
+    foreach ($entry in ($Files.GetEnumerator() | Sort-Object Key)) {
+        $filePath = Join-Path $Root $entry.Key
+        New-Item -ItemType Directory -Force -Path (Split-Path $filePath) | Out-Null
+        [IO.File]::WriteAllText($filePath, $entry.Value)
+        $archiveEntries += $entry.Key
+    }
+
+    Invoke-Checked "tar.exe" (@("-cJf", $Output, "-C", $Root) + $archiveEntries)
+}
+
+function New-CaseCollisionPackage([string]$Root, [string]$Output) {
+    if (Test-Path $Root) {
+        Remove-Item -Recurse -Force $Root
+    }
+    $upperRoot = Join-Path $Root "upper"
+    $lowerRoot = Join-Path $Root "lower"
+    New-Item -ItemType Directory -Force -Path $upperRoot, $lowerRoot | Out-Null
+    Write-PackageMetadata $Root "vitasdk-msys-case-collision" "1.0-1" `
+        "Case-insensitive path collision probe"
+    [IO.File]::WriteAllText((Join-Path $upperRoot "Collision.h"), "upper`n")
+    [IO.File]::WriteAllText((Join-Path $lowerRoot "collision.h"), "lower`n")
+
+    # The source paths are distinct on Windows. Rewrite them only while adding
+    # them to the archive so the payload contains two case-folding equivalents.
+    Invoke-Checked "tar.exe" @(
+        "-cJf", $Output,
+        "-s", "|^upper/|arm-vita-eabi/include/case-probe/|",
+        "-s", "|^lower/|arm-vita-eabi/include/case-probe/|",
+        "-C", $Root,
+        ".PKGINFO",
+        "upper/Collision.h",
+        "lower/collision.h"
+    )
+}
+
 if (Test-Path $WorkDirectory) {
     Remove-Item -Recurse -Force $WorkDirectory
 }
@@ -42,8 +119,12 @@ $dbPath = Join-Path $sdkRoot "var/lib/pacman"
 $cachePath = Join-Path $sdkRoot "var/cache/pacman/pkg"
 $logPath = Join-Path $sdkRoot "var/log/pacman.log"
 $configPath = Join-Path $sdkRoot "etc/pacman.conf"
-$packageRoot = Join-Path $WorkDirectory "package"
+$packageRoot = Join-Path $WorkDirectory "package-v1"
 $packagePath = Join-Path $WorkDirectory "vitasdk-msys-probe-1.0-1-any.pkg.tar.xz"
+$packageV2Root = Join-Path $WorkDirectory "package-v2"
+$packageV2Path = Join-Path $WorkDirectory "vitasdk-msys-probe-2.0-1-any.pkg.tar.xz"
+$collisionRoot = Join-Path $WorkDirectory "case-collision-package"
+$collisionPath = Join-Path $WorkDirectory "vitasdk-msys-case-collision-1.0-1-any.pkg.tar.xz"
 
 @(
     $downloads,
@@ -52,8 +133,7 @@ $packagePath = Join-Path $WorkDirectory "vitasdk-msys-probe-1.0-1-any.pkg.tar.xz
     $dbPath,
     $cachePath,
     (Split-Path $logPath),
-    (Split-Path $configPath),
-    (Join-Path $packageRoot "arm-vita-eabi/include")
+    (Split-Path $configPath)
 ) | ForEach-Object { New-Item -ItemType Directory -Force -Path $_ | Out-Null }
 
 if (($PacmanExecutable -eq "") -xor ($RuntimeDll -eq "")) {
@@ -99,27 +179,26 @@ if ($runtimeFiles.Count -ne 2) {
     "CheckSpace"
 ) -join "`n") + "`n")
 
-# Pacman package metadata is a Unix text format. Force LF even on Windows.
-[IO.File]::WriteAllText((Join-Path $packageRoot ".PKGINFO"), (@(
-    "pkgname = vitasdk-msys-probe",
-    "pkgbase = vitasdk-msys-probe",
-    "pkgver = 1.0-1",
-    "pkgdesc = VitaSDK MSYS runtime smoke package",
-    "builddate = 0",
-    "packager = VitaSDK CI",
-    "size = 6",
-    "arch = x86_64",
-    "license = MIT"
-) -join "`n") + "`n")
-[IO.File]::WriteAllText(
-    (Join-Path $packageRoot "arm-vita-eabi/include/msys-probe.h"),
-    "probe`n"
-)
-Invoke-Checked "tar.exe" @(
-    "-cJf", $packagePath,
-    "-C", $packageRoot,
-    ".PKGINFO", "arm-vita-eabi/include/msys-probe.h"
-)
+$probeRelativePath = "arm-vita-eabi/include/msys-probe.h"
+$utf8RelativePath = "arm-vita-eabi/include/prueba-ñ-日本語.h"
+$replaceRelativePath = "arm-vita-eabi/include/replace-on-upgrade.h"
+$removedRelativePath = "arm-vita-eabi/include/remove-on-upgrade.h"
+$addedRelativePath = "arm-vita-eabi/include/added-on-upgrade.h"
+$longSegments = 1..6 | ForEach-Object {
+    "segment-${_}-" + [string]::new([char]120, 24)
+}
+$longRelativePath = "arm-vita-eabi/include/" + ($longSegments -join "/") + "/long-probe.h"
+
+$packageFiles = [ordered]@{
+    $probeRelativePath = "probe`n"
+}
+if ($Extended) {
+    $packageFiles[$utf8RelativePath] = "UTF-8 probe`n"
+    $packageFiles[$longRelativePath] = "long path probe`n"
+    $packageFiles[$replaceRelativePath] = "version 1`n"
+    $packageFiles[$removedRelativePath] = "removed by upgrade`n"
+}
+New-ProbePackage $packageRoot $packagePath "vitasdk-msys-probe" "1.0-1" $packageFiles
 
 $pacman = Join-Path $pacmanBin "pacman.exe"
 $commonArguments = @(
@@ -142,9 +221,67 @@ try {
     )
     Invoke-Checked $pacman @($commonArguments + @("--query", "vitasdk-msys-probe"))
 
-    $installedFile = Join-Path $sdkRoot "arm-vita-eabi/include/msys-probe.h"
+    $installedFile = Join-Path $sdkRoot $probeRelativePath
     if (-not (Test-Path $installedFile)) {
         throw "package payload was not installed"
+    }
+
+    if ($Extended) {
+        foreach ($relativePath in @(
+            $utf8RelativePath,
+            $longRelativePath,
+            $replaceRelativePath,
+            $removedRelativePath
+        )) {
+            if (-not (Test-Path (Join-Path $sdkRoot $relativePath))) {
+                throw "extended package payload was not installed: ${relativePath}"
+            }
+        }
+
+        $lockPath = Join-Path $dbPath "db.lck"
+        [IO.File]::WriteAllText($lockPath, "locked by VitaSDK smoke test`n")
+        try {
+            Invoke-ExpectedFailure $pacman ($commonArguments + @(
+                "--remove", "--noscriptlet", "--noconfirm", "vitasdk-msys-probe"
+            )) "transaction while the SDK database is locked"
+            if (-not (Test-Path $installedFile)) {
+                throw "locked transaction modified the installed package"
+            }
+        }
+        finally {
+            Remove-Item -Force $lockPath
+        }
+
+        $packageV2Files = [ordered]@{
+            $probeRelativePath = "probe version 2`n"
+            $utf8RelativePath = "UTF-8 probe version 2`n"
+            $longRelativePath = "long path probe version 2`n"
+            $replaceRelativePath = "version 2`n"
+            $addedRelativePath = "added by upgrade`n"
+        }
+        New-ProbePackage $packageV2Root $packageV2Path `
+            "vitasdk-msys-probe" "2.0-1" $packageV2Files
+        Invoke-Checked $pacman @(
+            $commonArguments + @(
+                "--upgrade", "--noscriptlet", "--noconfirm", (Get-MixedPath $packageV2Path)
+            )
+        )
+        Invoke-Checked $pacman @($commonArguments + @("--query", "vitasdk-msys-probe"))
+
+        if ([IO.File]::ReadAllText((Join-Path $sdkRoot $replaceRelativePath)) -ne "version 2`n") {
+            throw "upgrade did not replace an existing file"
+        }
+        if (Test-Path (Join-Path $sdkRoot $removedRelativePath)) {
+            throw "upgrade did not delete a file removed from the new package"
+        }
+        if (-not (Test-Path (Join-Path $sdkRoot $addedRelativePath))) {
+            throw "upgrade did not install its new file"
+        }
+
+        New-CaseCollisionPackage $collisionRoot $collisionPath
+        Invoke-ExpectedFailure $pacman ($commonArguments + @(
+            "--upgrade", "--noscriptlet", "--noconfirm", (Get-MixedPath $collisionPath)
+        )) "package containing case-insensitive duplicate paths"
     }
 
     Invoke-Checked $pacman @(
@@ -155,9 +292,26 @@ try {
     if (Test-Path $installedFile) {
         throw "package payload remains after removal"
     }
+    if ($Extended) {
+        foreach ($relativePath in @(
+            $utf8RelativePath,
+            $longRelativePath,
+            $replaceRelativePath,
+            $addedRelativePath
+        )) {
+            if (Test-Path (Join-Path $sdkRoot $relativePath)) {
+                throw "extended payload remains after removal: ${relativePath}"
+            }
+        }
+    }
 }
 finally {
     $env:PATH = $savedPath
 }
 
-Write-Host "MSYS pacman two-file runtime smoke test passed"
+if ($Extended) {
+    Write-Host "MSYS pacman extended Windows filesystem smoke test passed"
+}
+else {
+    Write-Host "MSYS pacman two-file runtime smoke test passed"
+}
