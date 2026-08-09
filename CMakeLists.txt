@@ -940,6 +940,7 @@ add_custom_target(finalize-sdk
     COMMAND ${CMAKE_COMMAND}
         -DOBJCOPY_COMMAND=${binutils_prefix}-objcopy
         "-DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/lib/gcc/${target_arch}/${GCC_VERSION}/*[!d][!d][!l].[ao]"
+        -DSKIP_GCC_LTO_PLUGIN=ON
         -P ${CMAKE_SOURCE_DIR}/cmake/strip_target_objects.cmake
     COMMAND ${CMAKE_COMMAND} -E remove_directory
         ${CMAKE_INSTALL_PREFIX}/share/man
@@ -951,6 +952,7 @@ add_custom_target(finalize-sdk
     COMMAND ${CMAKE_COMMAND}
         -DSDK_DIR=${CMAKE_INSTALL_PREFIX}
         -DTARGET_TRIPLE=${target_arch}
+        -DHOST_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
         -DVERSION_FILE=${version_info_file}
         -P ${CMAKE_SOURCE_DIR}/cmake/ValidateSdk.cmake
     COMMAND ${CMAKE_COMMAND}
