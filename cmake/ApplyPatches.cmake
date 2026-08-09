@@ -39,6 +39,7 @@ foreach(entry IN LISTS PATCH_SERIES)
             "--strip=${strip_level}"
             --fuzz=0
             --forward
+            --no-backup-if-mismatch
             --input "${patch_file}"
         RESULT_VARIABLE result
         OUTPUT_VARIABLE stdout

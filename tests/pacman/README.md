@@ -1,7 +1,7 @@
 # Pacman client spike
 
-The rootless prototype is based on the upstream pacman 7.1.0 tag, peeled to
-commit `5683f8477a0afcc6b331766175a83445b2dcfe89`. Clone it with:
+The rootless and MinGW prototypes are based on the upstream pacman 7.1.0 tag,
+peeled to commit `5683f8477a0afcc6b331766175a83445b2dcfe89`. Clone it with:
 
 ```sh
 git clone --depth 1 --branch v7.1.0 \
@@ -49,10 +49,49 @@ tests/pacman/rootless-smoke.sh /path/to/pacman /path/to/zlib.pkg.tar.xz
 ```
 
 The dynamic diagnostic build passes on macOS arm64 but links private Homebrew
-libraries. With both patches, `-Dbuildstatic=true` no longer creates a
+libraries. With the first two patches, `-Dbuildstatic=true` no longer creates a
 `libalpm.dylib` target and its final link lines embed `libalpm_objlib.a`. The
 hash-pinned static dependency build completes on macOS arm64, passes the host
 audit, and the resulting client passes the rootless package contract. Native
 Linux arm64 and x86_64 also complete with only libc and the system loader as
 runtime dependencies. Windows remains the explicit host-build gate before
 selecting the client.
+
+## MinGW libalpm spike
+
+The third patch ports only libalpm, not the pacman command-line client. On
+Windows it disables the Unix user/process sandbox, syslog and scriptlets;
+`CheckSpace` is also disabled until the mount-based implementation is replaced
+with `GetDiskFreeSpaceExW`. Downloads continue through libcurl. POSIX regular
+expressions come from libgnurx and a small adapter implements the flags-free
+`fnmatch` subset used by libalpm.
+
+The diagnostic build was reproduced in Fedora 42 with:
+
+```sh
+dnf install \
+  meson ninja-build mingw64-gcc mingw64-libarchive mingw64-curl \
+  mingw64-openssl mingw64-zlib mingw64-libgnurx-static
+
+tests/pacman/mingw-libalpm-spike.sh \
+  /path/to/patched-pacman /path/to/build-mingw-libalpm
+```
+
+The result is a MinGW static libalpm object archive and a PE64 smoke executable
+that calls `alpm_initialize`, prints `alpm_version`, and releases the handle.
+With Fedora's MinGW packages the smoke executable is 397 KiB and imports
+libarchive, libcrypto, libcurl and libgnurx DLLs plus the Windows CRT. Building
+those dependencies from the pinned static sources is separate follow-up work.
+
+An `nm -u` audit of the archive found only `fnmatch` and `mkstemp` beyond the
+expected MinGW CRT and third-party APIs. MinGW's runtime already supplies
+`mkstemp`; the patch supplies `fnmatch`, while libgnurx supplies `regcomp`,
+`regexec` and `regfree`. All 34 archive build steps complete without compiler
+warnings and the smoke executable links without unresolved symbols.
+
+The binary has not yet passed a native Windows transaction test. Wine 10.20 in
+the diagnostic container failed to finish its own prefix initialization, so it
+did not provide a meaningful libalpm runtime result. The next gate is a Windows
+runner test covering database initialization, repository download, package
+install/query/remove, UTF-8 and long paths, case-insensitive collisions, and
+Windows rename/delete behavior.
