@@ -20,6 +20,8 @@ file(WRITE "${target_lib}/libSceKernel_stub.a" "")
 
 # These are host plugins despite living below GCC's target-version directory.
 file(WRITE "${gcc_lib}/liblto_plugin.so" "")
+file(WRITE "${gcc_lib}/liblto_plugin.so.0" "")
+file(WRITE "${gcc_lib}/liblto_plugin.so.0.0.0" "")
 file(WRITE "${gcc_lib}/plugin/libcc1plugin.0.so" "")
 file(WRITE "${gcc_lib}/plugin/libcp1plugin.0.so" "")
 file(WRITE "${gcc_lib}/plugin/libcc1plugin.so.0" "")
