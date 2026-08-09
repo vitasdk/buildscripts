@@ -5,9 +5,9 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
-$pacmanUrl = "https://mirror.msys2.org/msys/x86_64/pacman-6.1.0-25-x86_64.pkg.tar.zst"
+$pacmanUrl = "https://repo.msys2.org/msys/x86_64/pacman-6.1.0-25-x86_64.pkg.tar.zst"
 $pacmanSha256 = "cb375279a44b37f646dbe834b440c233fddbacb97d6173e5c7d91362717c970f"
-$runtimeUrl = "https://mirror.msys2.org/msys/x86_64/msys2-runtime-3.6.10-1-x86_64.pkg.tar.zst"
+$runtimeUrl = "https://repo.msys2.org/msys/x86_64/msys2-runtime-3.6.10-1-x86_64.pkg.tar.zst"
 $runtimeSha256 = "0b68543d295aa52e6c16ede2d7d6113eff9bf8fa4876f140eb624b0cf33e0253"
 
 function Get-MixedPath([string]$Path) {
