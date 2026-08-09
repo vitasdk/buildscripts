@@ -17,7 +17,7 @@ Based on pacman 7.1.0 commit 5683f8477a0afcc6b331766175a83445b2dcfe89.
  #include <sys/stat.h>
  #include <fcntl.h>
  #include <limits.h>
-+#if defined(_WIN32)
++#if defined(__MSYS__) || defined(__CYGWIN__) || defined(_WIN32)
 +#include <windows.h>
 +#endif
  
@@ -27,7 +27,7 @@ Based on pacman 7.1.0 commit 5683f8477a0afcc6b331766175a83445b2dcfe89.
  	int fd;
  };
  
-+#if defined(_WIN32)
++#if defined(__MSYS__) || defined(__CYGWIN__) || defined(_WIN32)
 +struct casefold_path {
 +	const char *utf8;
 +	wchar_t *wide;
@@ -120,7 +120,7 @@ Based on pacman 7.1.0 commit 5683f8477a0afcc6b331766175a83445b2dcfe89.
  					"sorting package filelist for %s\n", pkgfile);
  
  			_alpm_filelist_sort(&newpkg->files);
-+#if defined(_WIN32)
++#if defined(__MSYS__) || defined(__CYGWIN__) || defined(_WIN32)
 +			ret = filelist_has_casefold_collision(handle, &newpkg->files);
 +			if(ret < 0) {
 +				goto error;
