@@ -55,6 +55,7 @@ jobs:
         run: |
           ./tests/pacman/msys-runtime-smoke.ps1 `
             -WorkDirectory (Join-Path $env:RUNNER_TEMP "vitasdk-ñ-日本語 path") `
+            -FixtureTar (Get-Command bsdtar.exe -ErrorAction Stop).Source `
             -PacmanExecutable (Join-Path $env:RUNNER_TEMP "vitasdk-pacman/pacman.exe") `
             -RuntimeDll (Join-Path $env:RUNNER_TEMP "vitasdk-pacman/msys-2.0.dll") `
             -Extended

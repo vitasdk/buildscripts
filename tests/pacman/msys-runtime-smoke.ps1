@@ -1,6 +1,7 @@
 param(
     [string]$WorkDirectory = (Join-Path $env:TEMP "vitasdk-msys-pacman-smoke"),
     [string]$FixtureDirectory = (Join-Path $env:TEMP "vitasdk-msys-pacman-fixtures-${PID}"),
+    [string]$FixtureTar = "tar.exe",
     [string]$PacmanExecutable = "",
     [string]$RuntimeDll = "",
     [switch]$Extended
@@ -83,7 +84,7 @@ function New-ProbePackage(
     Invoke-Checked "tar.exe" (@("-cJf", $Output, "-C", $Root) + $archiveEntries)
 }
 
-function New-CaseCollisionPackage([string]$Root, [string]$Output) {
+function New-CaseCollisionPackage([string]$Root, [string]$Output, [string]$TarProgram) {
     if (Test-Path $Root) {
         Remove-Item -Recurse -Force $Root
     }
@@ -97,7 +98,7 @@ function New-CaseCollisionPackage([string]$Root, [string]$Output) {
 
     # The source paths are distinct on Windows. Rewrite them only while adding
     # them to the archive so the payload contains two case-folding equivalents.
-    Invoke-Checked "tar.exe" @(
+    Invoke-Checked $TarProgram @(
         "-cJf", $Output,
         "-s", "|^upper/|arm-vita-eabi/include/case-probe/|",
         "-s", "|^lower/|arm-vita-eabi/include/case-probe/|",
@@ -283,7 +284,7 @@ try {
             throw "upgrade did not install its new file"
         }
 
-        New-CaseCollisionPackage $collisionRoot $collisionPath
+        New-CaseCollisionPackage $collisionRoot $collisionPath $FixtureTar
         Invoke-ExpectedFailure $pacman ($commonArguments + @(
             "--upgrade", "--noscriptlet", "--noconfirm", (Get-MixedPath $collisionPath)
         )) "package containing case-insensitive duplicate paths"
