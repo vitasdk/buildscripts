@@ -143,14 +143,10 @@ index 48dd7febf..79c169f30 100644
  #      endif
  #    endif
 
+diff --git a/libgomp/omp.h.in b/libgomp/omp.h.in
 --- a/libgomp/omp.h.in
 +++ b/libgomp/omp.h.in
-@@ -143,13 +143,14 @@ typedef enum omp_alloctrait_key_t
- {
-   omp_atk_sync_hint = 1,
-   omp_atk_alignment = 2,
-   omp_atk_access = 3,
-   omp_atk_pool_size = 4,
+@@ -148,7 +148,8 @@
    omp_atk_fallback = 5,
    omp_atk_fb_data = 6,
    omp_atk_pinned = 7,
@@ -160,4 +156,3 @@ index 48dd7febf..79c169f30 100644
  } omp_alloctrait_key_t;
  
  typedef enum omp_alloctrait_value_t
- {
