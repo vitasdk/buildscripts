@@ -1,23 +1,23 @@
 diff --git a/ld/configure.tgt b/ld/configure.tgt
-index 8e45dc5..b3a8e3f 100644
+index ea01ccf..8b3b862 100644
 --- a/ld/configure.tgt
 +++ b/ld/configure.tgt
-@@ -99,6 +99,10 @@ arm*-*-uclinux*)	targ_emul=armelf_linux
- 			targ_extra_emuls="armelf armelfb_linux armelfb"
- 			targ_extra_libpath=$targ_extra_emuls
+@@ -203,6 +203,10 @@ arm-*-phoenix*)		targ_emul=armelf
+ armeb-*-elf | armeb-*-eabi*)
+ 			targ_emul=armelfb
  			;;
 +arm*-*-vita-eabi* | arm-vita-eabi*)
 +			targ_emul=armvita
 +			targ_extra_emuls="armelf armelfb"
 +			;;
- arm-*-phoenix*)		targ_emul=armelf_phoenix
- 			targ_extra_emuls=armelf
+ arm-*-elf | arm*-*-eabi* | arm-*-rtems* | arm-*-genode*)
+ 			targ_emul=armelf
  			;;
 diff --git a/ld/emulparams/armelf.sh b/ld/emulparams/armelf.sh
-index 68a2bf6..9e3b97b 100644
+index dd71fe7..fdf9eb5 100644
 --- a/ld/emulparams/armelf.sh
 +++ b/ld/emulparams/armelf.sh
-@@ -3,7 +3,9 @@ MACHINE=
+@@ -3,7 +3,9 @@ SCRIPT_NAME=elf
  OUTPUT_FORMAT="elf32-littlearm"
  BIG_OUTPUT_FORMAT="elf32-bigarm"
  LITTLE_OUTPUT_FORMAT="elf32-littlearm"
@@ -30,58 +30,12 @@ index 68a2bf6..9e3b97b 100644
  OTHER_PLT_SECTIONS="
 diff --git a/ld/emulparams/armvita.sh b/ld/emulparams/armvita.sh
 new file mode 100644
-index 0000000..9e3b97b
+index 0000000..89a1475
 --- /dev/null
 +++ b/ld/emulparams/armvita.sh
-@@ -0,0 +1,6 @@
+@@ -0,0 +1,5 @@
 +. ${srcdir}/emulparams/armelf.sh
 +EMULATION_NAME=armvita
 +TEXT_START_ADDR=0x81000000
 +MAXPAGESIZE="0x10000"
 +COMMONPAGESIZE="0x10000"
-diff --git a/ld/Makefile.am b/ld/Makefile.am
-index b49bbdf..f66ea6d 100644
---- a/ld/Makefile.am
-+++ b/ld/Makefile.am
-@@ -308,6 +308,7 @@ ALL_EMULATION_SOURCES = \
- 	earmelf_nbsd.c \
- 	earmelf_phoenix.c \
- 	earmelf_vxworks.c \
-+	earmvita.c \
- 	earmelfb.c \
- 	earmelfb_fbsd.c \
- 	earmelfb_haiku.c \
-@@ -1071,6 +1072,10 @@ earmelf_vxworks.c: $(srcdir)/emulparams/armelf_vxworks.sh \
-   $(srcdir)/emulparams/vxworks.sh $(ELF_DEPS) \
-   $(srcdir)/emultempl/vxworks.em $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
- 	${GENSCRIPTS} armelf_vxworks "$(tdir_armelf_vxworks)"
-+earmvita.c: $(srcdir)/emulparams/armvita.sh $(srcdir)/emulparams/armelf.sh \
-+  $(ELF_DEPS) $(srcdir)/emultempl/armelf.em \
-+  $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
-+	${GENSCRIPTS} armvita "$(tdir_armvita)"
- earmelfb.c: $(srcdir)/emulparams/armelfb.sh $(srcdir)/emulparams/armelf.sh \
-   $(ELF_DEPS) $(srcdir)/emultempl/armelf.em \
-   $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
-diff --git a/ld/Makefile.in b/ld/Makefile.in
-index a836798..c2b29da 100644
---- a/ld/Makefile.in
-+++ b/ld/Makefile.in
-@@ -829,6 +829,7 @@ ALL_EMULATION_SOURCES = \
- 	earmelf_nbsd.c \
- 	earmelf_phoenix.c \
- 	earmelf_vxworks.c \
-+	earmvita.c \
- 	earmelfb.c \
- 	earmelfb_fbsd.c \
- 	earmelfb_haiku.c \
-@@ -2799,6 +2800,10 @@ earmelf_vxworks.c: $(srcdir)/emulparams/armelf_vxworks.sh \
-   $(srcdir)/emulparams/vxworks.sh $(ELF_DEPS) \
-   $(srcdir)/emultempl/vxworks.em $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
- 	${GENSCRIPTS} armelf_vxworks "$(tdir_armelf_vxworks)"
-+earmvita.c: $(srcdir)/emulparams/armvita.sh $(srcdir)/emulparams/armelf.sh \
-+  $(ELF_DEPS) $(srcdir)/emultempl/armelf.em \
-+  $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
-+	${GENSCRIPTS} armvita "$(tdir_armvita)"
- earmelfb.c: $(srcdir)/emulparams/armelfb.sh $(srcdir)/emulparams/armelf.sh \
-   $(ELF_DEPS) $(srcdir)/emultempl/armelf.em \
-   $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
