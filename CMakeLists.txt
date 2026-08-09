@@ -486,17 +486,9 @@ set(toolchain_build_depends_dir ${CMAKE_BINARY_DIR}/deps_${build_suffix})
 # Build the native vita-toolchain, gcc dependencies and binutils
 toolchain_deps("${toolchain_build_depends_dir}" "${toolchain_build_install_dir}" "${build_suffix}")
 
-option(BUILD_PACMAN_CLIENT "Build the experimental static package client" OFF)
+option(BUILD_PACMAN_CLIENT "Build the package client provided by vdpm" OFF)
 set(PACMAN_CLIENT_INSTALL_DIR "${CMAKE_BINARY_DIR}/pacman-client"
-    CACHE PATH "Staging directory for the experimental package client")
-
-if(BUILD_PACMAN_CLIENT)
-    include(cmake/PacmanClient.cmake)
-    vitasdk_add_pacman_client(
-        "${toolchain_build_depends_dir}"
-        "${PACMAN_CLIENT_INSTALL_DIR}"
-        "zlib_${build_suffix}")
-endif()
+    CACHE PATH "Staging directory for the vdpm package client")
 
 # Command used on vita-header build step
 set(vita_libs_gen_command "${toolchain_build_install_dir}/bin/vita-libs-gen")
@@ -786,7 +778,11 @@ set(vdpm_cmake_args
     -DCMAKE_BUILD_TYPE=Release
     -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
     -DBUILD_VDPM_FRONTEND=ON
-    -DBUILD_VDPM_CHANNEL=OFF
+    -DBUILD_VDPM_CHANNEL=${BUILD_PACMAN_CLIENT}
+    -DBUILD_VDPM_PACKAGE_CLIENT=${BUILD_PACMAN_CLIENT}
+    -DVDPM_PACKAGE_CLIENT_INSTALL_PREFIX=${PACMAN_CLIENT_INSTALL_DIR}
+    -DVDPM_DOWNLOAD_DIR=${DOWNLOAD_DIR}
+    -DVDPM_OFFLINE=${OFFLINE}
     "-DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}"
     "-DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}")
 if(CMAKE_TOOLCHAIN_FILE)
@@ -798,7 +794,6 @@ ExternalProject_Add(vdpm
     GIT_REPOSITORY ${VDPM_REPOSITORY}
     GIT_TAG ${VDPM_TAG}
     ${GIT_SHALLOW_SUPPORT}
-    SOURCE_SUBDIR src
     CMAKE_ARGS ${vdpm_cmake_args}
     INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target install
     COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include ${CMAKE_INSTALL_PREFIX}/bin/include
@@ -806,27 +801,17 @@ ExternalProject_Add(vdpm
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
-# Channel refresh verifies a signature, parses the manifest and hashes the
-# repository databases with this helper rather than with host tools. It links
-# the same static OpenSSL as the package client, so it is built on the same
-# opt-in path and reuses the clone that the vdpm target already made.
+# vdpm owns Pacman, its private dependencies and the channel helper. Keep this
+# compatibility target while buildscripts callers migrate to the component
+# boundary; the outer superbuild only waits for vdpm and audits the result.
 if(BUILD_PACMAN_CLIENT)
-    ExternalProject_Get_Property(vdpm SOURCE_DIR)
-    ExternalProject_Add(vdpm-channel
-        DEPENDS vdpm openssl-pacman
-        DOWNLOAD_COMMAND ""
-        SOURCE_DIR ${SOURCE_DIR}/src
-        CMAKE_ARGS
-            -DCMAKE_BUILD_TYPE=Release
-            -DCMAKE_INSTALL_PREFIX=${PACMAN_CLIENT_INSTALL_DIR}
-            "-DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}"
-            "-DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}"
-            -DBUILD_VDPM_FRONTEND=OFF
-            -DBUILD_VDPM_CHANNEL=ON
-            -DOPENSSL_ROOT_DIR=${toolchain_build_depends_dir}
-            -DOPENSSL_USE_STATIC_LIBS=TRUE
-        )
-    add_dependencies(pacman-client-spike vdpm-channel)
+    add_custom_target(pacman-client-spike
+        COMMAND ${CMAKE_COMMAND} -E env
+            VITASDK=${PACMAN_CLIENT_INSTALL_DIR}
+            VITASDK_HOST_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
+            ${PROJECT_SOURCE_DIR}/scripts/audit-host-deps.sh
+        DEPENDS vdpm
+        VERBATIM)
 endif()
 
 ExternalProject_Add(vita-makepkg
@@ -865,10 +850,6 @@ set(finalize_sdk_dependencies
     vita-makepkg
     gcc-final
     ${version_info_file})
-if(BUILD_PACMAN_CLIENT)
-    list(APPEND finalize_sdk_dependencies pacman-client)
-endif()
-
 # Finalize only after every component has installed into the SDK. This is the
 # single barrier for cleanup, stripping, provenance and structural checks.
 add_custom_target(finalize-sdk
