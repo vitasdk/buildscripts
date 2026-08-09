@@ -1,5 +1,7 @@
 param(
-    [string]$WorkDirectory = (Join-Path $env:TEMP "vitasdk-msys-pacman-smoke")
+    [string]$WorkDirectory = (Join-Path $env:TEMP "vitasdk-msys-pacman-smoke"),
+    [string]$PacmanExecutable = "",
+    [string]$RuntimeDll = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -54,21 +56,36 @@ $packagePath = Join-Path $WorkDirectory "vitasdk-msys-probe-1.0-1-any.pkg.tar.xz
     (Join-Path $packageRoot "arm-vita-eabi/include")
 ) | ForEach-Object { New-Item -ItemType Directory -Force -Path $_ | Out-Null }
 
-$pacmanArchive = Join-Path $downloads "pacman.pkg.tar.zst"
-$runtimeArchive = Join-Path $downloads "runtime.pkg.tar.zst"
-Invoke-WebRequest -Uri $pacmanUrl -OutFile $pacmanArchive
-Invoke-WebRequest -Uri $runtimeUrl -OutFile $runtimeArchive
-Assert-Sha256 $pacmanArchive $pacmanSha256
-Assert-Sha256 $runtimeArchive $runtimeSha256
+if (($PacmanExecutable -eq "") -xor ($RuntimeDll -eq "")) {
+    throw "PacmanExecutable and RuntimeDll must be supplied together"
+}
+if ($PacmanExecutable -ne "") {
+    if (-not (Test-Path -PathType Leaf $PacmanExecutable)) {
+        throw "built pacman executable is missing: ${PacmanExecutable}"
+    }
+    if (-not (Test-Path -PathType Leaf $RuntimeDll)) {
+        throw "MSYS runtime DLL is missing: ${RuntimeDll}"
+    }
+    Copy-Item $PacmanExecutable (Join-Path $pacmanBin "pacman.exe")
+    Copy-Item $RuntimeDll (Join-Path $pacmanBin "msys-2.0.dll")
+}
+else {
+    $pacmanArchive = Join-Path $downloads "pacman.pkg.tar.zst"
+    $runtimeArchive = Join-Path $downloads "runtime.pkg.tar.zst"
+    Invoke-WebRequest -Uri $pacmanUrl -OutFile $pacmanArchive
+    Invoke-WebRequest -Uri $runtimeUrl -OutFile $runtimeArchive
+    Assert-Sha256 $pacmanArchive $pacmanSha256
+    Assert-Sha256 $runtimeArchive $runtimeSha256
 
-Invoke-Checked "tar.exe" @(
-    "-xf", $pacmanArchive, "-C", $extract, "usr/bin/pacman.exe"
-)
-Invoke-Checked "tar.exe" @(
-    "-xf", $runtimeArchive, "-C", $extract, "usr/bin/msys-2.0.dll"
-)
-Copy-Item (Join-Path $extract "usr/bin/pacman.exe") $pacmanBin
-Copy-Item (Join-Path $extract "usr/bin/msys-2.0.dll") $pacmanBin
+    Invoke-Checked "tar.exe" @(
+        "-xf", $pacmanArchive, "-C", $extract, "usr/bin/pacman.exe"
+    )
+    Invoke-Checked "tar.exe" @(
+        "-xf", $runtimeArchive, "-C", $extract, "usr/bin/msys-2.0.dll"
+    )
+    Copy-Item (Join-Path $extract "usr/bin/pacman.exe") $pacmanBin
+    Copy-Item (Join-Path $extract "usr/bin/msys-2.0.dll") $pacmanBin
+}
 
 $runtimeFiles = @(Get-ChildItem -File $pacmanBin)
 if ($runtimeFiles.Count -ne 2) {
