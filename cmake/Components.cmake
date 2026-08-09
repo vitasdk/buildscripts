@@ -72,7 +72,7 @@ set(VITA_MAKEPKG_REPOSITORY https://github.com/vitasdk/vita-makepkg.git
 set(NEWLIB_TAG fbb8375870d799758e0b4358d2f1708781aa26a6 CACHE STRING "newlib branch, commit id or tag")
 set(SAMPLES_TAG 99194cf828003dca6505d3762e10d14d152056f7 CACHE STRING "samples branch, commit id or tag")
 set(HEADERS_TAG 17ac33bd2ff0ab71225824a7a99be6fc05d319e5 CACHE STRING "vita-headers branch, commit id or tag")
-set(TOOLCHAIN_TAG 43fc1e3c686a1fc035eca583fdfeaa5e6419a61a CACHE STRING "vita-toolchain branch, commit id or tag")
+set(TOOLCHAIN_TAG c527abce028df33f5281e9ed4994c25fcef53c7d CACHE STRING "vita-toolchain branch, commit id or tag")
 set(PTHREAD_TAG 63e1cd9152082d9ccb1b38d67a4caf975562fbeb CACHE STRING "pthread-embedded branch, commit id or tag")
 set(VDPM_TAG 13165ca8fc49655fecaf8fd8895cd5aadf1f95cb CACHE STRING "vdpm branch, commit id or tag")
 set(VITA_MAKEPKG_TAG 905038a8132405e0c70d21afff4612384c038168 CACHE STRING "vita-makepkg branch, commit id or tag")
