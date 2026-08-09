@@ -9,6 +9,11 @@ on:
 jobs:
   build-linux:
     runs-on: ubuntu-24.04
+    env:
+      CCACHE_DIR: ~/.ccache
+      CCACHE_MAXSIZE: 2G
+      CCACHE_COMPRESS: "1"
+      CCACHE_COMPRESSLEVEL: "6"
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
@@ -20,14 +25,15 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.ccache
-        key: ${{ runner.os }}-ccache-${{ github.sha }}
+        key: ${{ runner.os }}-ccache-${{ github.ref }}-${{ github.sha }}
         restore-keys: |
+          ${{ runner.os }}-ccache-${{ github.ref }}-
           ${{ runner.os }}-ccache-
     - name: downloads
       uses: actions/cache@v4
       with:
         path: build/downloads
-        key: ${{ runner.os }}-downloads-${{ hashFiles('CMakeLists.txt') }}
+        key: ${{ runner.os }}-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
         restore-keys: |
           ${{ runner.os }}-downloads-
     - name: Build
@@ -44,8 +50,14 @@ jobs:
       with:
         name: vitasdk-linux
         path: build/*.tar.bz2
+
   build-linux-arm64:
     runs-on: ubuntu-24.04-arm
+    env:
+      CCACHE_DIR: ~/.ccache
+      CCACHE_MAXSIZE: 2G
+      CCACHE_COMPRESS: "1"
+      CCACHE_COMPRESSLEVEL: "6"
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
@@ -57,14 +69,15 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.ccache
-        key: ${{ runner.os }}-ccache-${{ github.sha }}
+        key: ${{ runner.os }}-ccache-${{ github.ref }}-${{ github.sha }}
         restore-keys: |
+          ${{ runner.os }}-ccache-${{ github.ref }}-
           ${{ runner.os }}-ccache-
     - name: downloads
       uses: actions/cache@v4
       with:
         path: build/downloads
-        key: ${{ runner.os }}-downloads-${{ hashFiles('CMakeLists.txt') }}
+        key: ${{ runner.os }}-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
         restore-keys: |
           ${{ runner.os }}-downloads-
     - name: Build
@@ -81,8 +94,14 @@ jobs:
       with:
         name: vitasdk-linux-arm64
         path: build/*.tar.bz2
+
   build-macos:
     runs-on: macos-14
+    env:
+      CCACHE_DIR: ~/Library/Caches/ccache
+      CCACHE_MAXSIZE: 2G
+      CCACHE_COMPRESS: "1"
+      CCACHE_COMPRESSLEVEL: "6"
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
@@ -93,14 +112,15 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/Library/Caches/ccache
-        key: ${{ runner.os }}-ccache-${{ github.sha }}
+        key: ${{ runner.os }}-ccache-${{ github.ref }}-${{ github.sha }}
         restore-keys: |
+          ${{ runner.os }}-ccache-${{ github.ref }}-
           ${{ runner.os }}-ccache-
     - name: downloads
       uses: actions/cache@v4
       with:
         path: build/downloads
-        key: ${{ runner.os }}-downloads-${{ hashFiles('CMakeLists.txt') }}
+        key: ${{ runner.os }}-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
         restore-keys: |
           ${{ runner.os }}-downloads-
     - name: Build
@@ -117,8 +137,14 @@ jobs:
       with:
         name: vitasdk-macos
         path: build/*.tar.bz2
+
   build-windows:
     runs-on: ubuntu-22.04
+    env:
+      CCACHE_DIR: ~/.ccache
+      CCACHE_MAXSIZE: 2G
+      CCACHE_COMPRESS: "1"
+      CCACHE_COMPRESSLEVEL: "6"
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
@@ -130,14 +156,15 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.ccache
-        key: ${{ runner.os }}-ccache-${{ github.sha }}
+        key: ${{ runner.os }}-ccache-${{ github.ref }}-${{ github.sha }}
         restore-keys: |
+          ${{ runner.os }}-ccache-${{ github.ref }}-
           ${{ runner.os }}-ccache-
     - name: downloads
       uses: actions/cache@v4
       with:
         path: build/downloads
-        key: ${{ runner.os }}-downloads-${{ hashFiles('CMakeLists.txt') }}
+        key: ${{ runner.os }}-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
         restore-keys: |
           ${{ runner.os }}-downloads-
     - name: Build
