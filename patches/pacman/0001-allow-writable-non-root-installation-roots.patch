@@ -6,6 +6,11 @@ for alternate roots the caller cannot write. When extracting as a non-root
 user, preserve the package permissions but let the filesystem assign the
 caller's UID and GID instead of attempting a privileged chown.
 
+MSYS has no Unix privilege boundary and cannot reliably apply access(2) to a
+Win32 path supplied by the native frontend. There, accept only an explicit
+alternate root and let the transaction's filesystem operations reject a path
+the current Windows user cannot write.
+
 Based on pacman 7.1.0 commit 5683f8477a0afcc6b331766175a83445b2dcfe89.
 
 --- a/lib/libalpm/add.c
@@ -34,15 +39,20 @@ Based on pacman 7.1.0 commit 5683f8477a0afcc6b331766175a83445b2dcfe89.
  
 --- a/src/pacman/pacman.c
 +++ b/src/pacman/pacman.c
-@@ -1168,6 +1168,13 @@ static void cl_to_log(int argc, char *argv[])
+@@ -1168,6 +1168,18 @@ static void cl_to_log(int argc, char *argv[])
  	}
  }
  
 +static int has_writable_alternate_root(void)
 +{
-+	return config->rootdir != NULL
-+		&& strcmp(config->rootdir, "/") != 0
-+		&& access(config->rootdir, W_OK | X_OK) == 0;
++	if(config->rootdir == NULL || strcmp(config->rootdir, "/") == 0) {
++		return 0;
++	}
++#ifdef __MSYS__
++	return 1;
++#else
++	return access(config->rootdir, W_OK | X_OK) == 0;
++#endif
 +}
 +
  /** Main function.
