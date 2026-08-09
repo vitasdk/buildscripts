@@ -63,6 +63,15 @@ cmake -S "$repository_root" -B "$configure" \
 	-DBUILD_PACMAN_CLIENT=ON \
 	-DVDPM_WINDOWS_BUNDLE="$bundle" \
 	-DVDPM_WINDOWS_BUNDLE_SHA256="$digest" >/dev/null
+build_zlib_config="$configure/zlib_build-prefix/tmp/zlib_build-cfgcmd.txt"
+host_zlib_config="$configure/zlib_host-prefix/tmp/zlib_host-cfgcmd.txt"
+test -f "$build_zlib_config"
+test -f "$host_zlib_config"
+if grep -Fq -- '-DCMAKE_EXE_LINKER_FLAGS=-static ' "$build_zlib_config"; then
+	printf 'Windows target linker flags leaked into build-machine dependencies\n' >&2
+	exit 1
+fi
+grep -Fq -- '-DCMAKE_EXE_LINKER_FLAGS=-static ' "$host_zlib_config"
 cmake --build "$configure" --target vdpm >/dev/null
 test -f "$configure/vitasdk/bin/vdpm.exe"
 test -f "$configure/vitasdk/usr/bin/pacman.exe"

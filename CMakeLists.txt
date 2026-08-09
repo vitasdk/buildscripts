@@ -63,6 +63,9 @@ include(Utils)
 include(GetTriplet)
 include(ExternalProject)
 
+set(vitasdk_base_c_flags "${CMAKE_C_FLAGS}")
+set(vitasdk_base_cxx_flags "${CMAKE_CXX_FLAGS}")
+set(vitasdk_base_link_flags "${CMAKE_EXE_LINKER_FLAGS}")
 vitasdk_get_host_static_flags("${CMAKE_SYSTEM_NAME}"
     host_static_c_flags host_static_cxx_flags host_static_link_flags)
 vitasdk_append_flags(CMAKE_C_FLAGS ${host_static_c_flags})
@@ -118,21 +121,37 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         # Workaround for libelf configure step (doesn't detect the toolchain)
         set(cc_compiler "${host_native}-gcc")
         set(ranlib "${host_native}-ranlib")
+        set(dependency_c_flags "${CMAKE_C_FLAGS}")
+        set(dependency_cxx_flags "${CMAKE_CXX_FLAGS}")
+        set(dependency_link_flags "${CMAKE_EXE_LINKER_FLAGS}")
     else()
         # Use the same host triplet as the build env
         set(toolchain_host ${build_native})
         # Use the default toolchain
         set(cc_compiler "gcc")
         set(ranlib "ranlib")
+        vitasdk_get_host_static_flags("${CMAKE_HOST_SYSTEM_NAME}"
+            build_static_c_flags build_static_cxx_flags build_static_link_flags)
+        set(dependency_c_flags "${vitasdk_base_c_flags}")
+        set(dependency_cxx_flags "${vitasdk_base_cxx_flags}")
+        set(dependency_link_flags "${vitasdk_base_link_flags}")
+        vitasdk_append_flags(dependency_c_flags ${build_static_c_flags})
+        vitasdk_append_flags(dependency_cxx_flags ${build_static_cxx_flags})
+        vitasdk_append_flags(dependency_link_flags ${build_static_link_flags})
     endif()
 
     list(APPEND toolchain_cmake_args
-        "-DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}"
-        "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}"
-        "-DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}")
+        "-DCMAKE_C_FLAGS=${dependency_c_flags}"
+        "-DCMAKE_CXX_FLAGS=${dependency_cxx_flags}"
+        "-DCMAKE_EXE_LINKER_FLAGS=${dependency_link_flags}")
 
     set(suffix "_${toolchain_suffix}")
 
+    if(toolchain_file AND CMAKE_SYSTEM_NAME STREQUAL "Windows")
+        set(zlib_static_archive <BINARY_DIR>/libzlibstatic.a)
+    else()
+        set(zlib_static_archive <BINARY_DIR>/libz.a)
+    endif()
     ExternalProject_Add(zlib${suffix}
         URL ${ZLIB_URL}
         URL_HASH ${ZLIB_HASH}
@@ -141,32 +160,17 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${toolchain_deps_dir}
         ${toolchain_cmake_args}
         -DBUILD_SHARED_LIBS=OFF
+        -DZLIB_BUILD_EXAMPLES=OFF
+        BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target zlibstatic
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E make_directory
+            ${toolchain_deps_dir}/include ${toolchain_deps_dir}/lib/pkgconfig
+        COMMAND ${CMAKE_COMMAND} -E copy
+            ${zlib_static_archive} ${toolchain_deps_dir}/lib/libz.a
+        COMMAND ${CMAKE_COMMAND} -E copy
+            <SOURCE_DIR>/zlib.h <BINARY_DIR>/zconf.h ${toolchain_deps_dir}/include
+        COMMAND ${CMAKE_COMMAND} -E copy
+            <BINARY_DIR>/zlib.pc ${toolchain_deps_dir}/lib/pkgconfig/zlib.pc
         )
-
-    # Rename the zlib static file on windows so matches the other platforms
-    if(toolchain_file AND ${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-        ExternalProject_Add_Step(zlib${suffix}
-            copy_lib
-            DEPENDEES install
-            COMMAND ${CMAKE_COMMAND} -E copy
-            ${toolchain_deps_dir}/lib/libzlibstatic.a
-            ${toolchain_deps_dir}/lib/libz.a
-            COMMENT "Copying libzlibstatic to libz"
-            )
-
-    else()
-        ExternalProject_Add_Step(zlib${suffix}
-            delete_shared
-            DEPENDEES install
-            COMMAND ${CMAKE_COMMAND} -E rm -f
-            ${toolchain_deps_dir}/lib/libz.so
-            ${toolchain_deps_dir}/lib/libz.so.1
-            ${toolchain_deps_dir}/lib/libz.dylib
-            ${toolchain_deps_dir}/lib/libz.1.dylib
-            ${toolchain_deps_dir}/lib/libz.1.3.1.dylib
-            COMMENT "Delete shared libraries, if present"
-            )
-    endif()
 
     list(APPEND toolchain_cmake_args -DBUILD_SHARED_LIBS=OFF)
 
