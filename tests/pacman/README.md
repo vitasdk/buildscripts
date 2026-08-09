@@ -54,8 +54,31 @@ libraries. With the first two patches, `-Dbuildstatic=true` no longer creates a
 hash-pinned static dependency build completes on macOS arm64, passes the host
 audit, and the resulting client passes the rootless package contract. Native
 Linux arm64 and x86_64 also complete with only libc and the system loader as
-runtime dependencies. Windows remains the explicit host-build gate before
-selecting the client.
+runtime dependencies. Windows uses the same pacman CLI through the MSYS ABI;
+the minimal runtime contract is described below.
+
+## Windows MSYS runtime
+
+The selected version-one Windows design ships a pinned, patched `pacman.exe`
+with exactly one adjacent non-system runtime, `msys-2.0.dll`. It does not ship
+an MSYS2 shell, environment or tool collection. `vdpm.exe` starts pacman
+directly and always supplies the SDK-local configuration, root, database,
+cache and log paths.
+
+Run the two-file contract on native Windows with PowerShell 7:
+
+```powershell
+./tests/pacman/msys-runtime-smoke.ps1
+```
+
+The test downloads hash-pinned official MSYS2 artifacts, extracts only those
+two files, removes Git for Windows and installed MSYS2 directories from
+`PATH`, and performs install, query and remove operations on a synthetic
+package. This proves the deployment shape independently of the future VitaSDK
+pacman 7.1 build. The production gate still requires building that pinned,
+patched source with the MSYS ABI and extending the test to HTTPS repositories,
+UTF-8 and long paths, case-insensitive collisions, locking and Windows
+rename/delete behavior.
 
 ## MinGW libalpm spike
 
@@ -89,9 +112,9 @@ expected MinGW CRT and third-party APIs. MinGW's runtime already supplies
 `regexec` and `regfree`. All 34 archive build steps complete without compiler
 warnings and the smoke executable links without unresolved symbols.
 
-The binary has not yet passed a native Windows transaction test. Wine 10.20 in
-the diagnostic container failed to finish its own prefix initialization, so it
-did not provide a meaningful libalpm runtime result. The next gate is a Windows
-runner test covering database initialization, repository download, package
-install/query/remove, UTF-8 and long paths, case-insensitive collisions, and
-Windows rename/delete behavior.
+The native MinGW binary has not passed a Windows transaction test. Wine 10.20
+in the diagnostic container failed to finish its own prefix initialization,
+so it did not provide a meaningful libalpm runtime result. This path is now a
+preserved fallback rather than the version-one client: the MSYS pacman
+two-file runtime has completed the native install/query/remove test without a
+private VitaSDK POSIX compatibility layer.
