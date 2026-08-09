@@ -1,5 +1,5 @@
 diff --git a/gcc/genconditions.cc b/gcc/genconditions.cc
-index 3a5b85d11..3ca61913f 100644
+index 5eae207..b9b42b2 100644
 --- a/gcc/genconditions.cc
 +++ b/gcc/genconditions.cc
 @@ -58,7 +58,7 @@ write_header (void)
@@ -30,10 +30,10 @@ index 3a5b85d11..3ca61913f 100644
  	"    {\n"
  	"      printf (\"  (%d \\\"\", insn_conditions[i].value);\n"
 diff --git a/zlib/zutil.h b/zlib/zutil.h
-index 48dd7febf..79c169f30 100644
+index 4b596ad..44319d2 100644
 --- a/zlib/zutil.h
 +++ b/zlib/zutil.h
-@@ -134,7 +134,7 @@
+@@ -136,7 +136,7 @@ extern z_const char * const z_errmsg[10]; /* indexed by 2-zlib_error */
  #    if defined(__MWERKS__) && __dest_os != __be_os && __dest_os != __win32_os
  #      include <unix.h> /* for fdopen */
  #    else
