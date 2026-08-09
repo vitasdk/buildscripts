@@ -493,10 +493,10 @@ toolchain_deps("${toolchain_build_depends_dir}" "${toolchain_build_install_dir}"
 option(BUILD_PACMAN_CLIENT "Build the package client provided by vdpm" OFF)
 set(PACMAN_CLIENT_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}"
     CACHE PATH "Install directory for the vdpm package client")
-set(VDPM_WINDOWS_BUNDLE "" CACHE FILEPATH
-    "Verified vdpm Windows component bundle used by cross builds")
-set(VDPM_WINDOWS_BUNDLE_SHA256 "" CACHE STRING
-    "SHA-256 of VDPM_WINDOWS_BUNDLE")
+set(VDPM_BUNDLE "" CACHE FILEPATH
+    "Verified vdpm host component bundle incorporated into the SDK")
+set(VDPM_BUNDLE_SHA256 "" CACHE STRING
+    "SHA-256 of VDPM_BUNDLE")
 set(VDPM_MESON_EXECUTABLE "" CACHE FILEPATH
     "Optional Meson executable forwarded to the vdpm component")
 
@@ -784,17 +784,21 @@ ExternalProject_Add(samples
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
-set(vdpm_build_package_client ${BUILD_PACMAN_CLIENT})
-if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    set(vdpm_build_package_client OFF)
-endif()
 set(vdpm_use_release_bundle OFF)
-if(CMAKE_SYSTEM_NAME STREQUAL "Windows" AND BUILD_PACMAN_CLIENT)
-    if(NOT VDPM_WINDOWS_BUNDLE OR NOT VDPM_WINDOWS_BUNDLE_SHA256)
+if(BUILD_PACMAN_CLIENT AND (VDPM_BUNDLE OR VDPM_BUNDLE_SHA256))
+    if(NOT VDPM_BUNDLE OR NOT VDPM_BUNDLE_SHA256)
         message(FATAL_ERROR
-            "Windows package-client builds require VDPM_WINDOWS_BUNDLE and VDPM_WINDOWS_BUNDLE_SHA256")
+            "VDPM_BUNDLE and VDPM_BUNDLE_SHA256 must be supplied together")
     endif()
     set(vdpm_use_release_bundle ON)
+endif()
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows" AND BUILD_PACMAN_CLIENT AND NOT vdpm_use_release_bundle)
+    message(FATAL_ERROR
+        "Windows package-client builds require VDPM_BUNDLE and VDPM_BUNDLE_SHA256")
+endif()
+set(vdpm_build_package_client ${BUILD_PACMAN_CLIENT})
+if(vdpm_use_release_bundle OR CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    set(vdpm_build_package_client OFF)
 endif()
 set(vdpm_cmake_args
     -DCMAKE_BUILD_TYPE=Release
@@ -817,12 +821,12 @@ if(CMAKE_TOOLCHAIN_FILE)
 endif()
 
 if(vdpm_use_release_bundle)
-    # The Windows package client is the exact vdpm release product. Do not
-    # partially rebuild it in buildscripts: verify and incorporate the bundle.
+    # Production SDK builds consume the exact published vdpm host product.
+    # Source builds remain available as an explicit Unix development fallback.
     add_custom_target(vdpm
         COMMAND ${PROJECT_SOURCE_DIR}/scripts/install-vdpm-bundle.sh
-            ${VDPM_WINDOWS_BUNDLE}
-            ${VDPM_WINDOWS_BUNDLE_SHA256}
+            ${VDPM_BUNDLE}
+            ${VDPM_BUNDLE_SHA256}
             ${CMAKE_INSTALL_PREFIX}
             ${host_native}
         VERBATIM)
@@ -845,7 +849,7 @@ endif()
 if(BUILD_PACMAN_CLIENT)
     set(package_client_dependencies vdpm)
     set(package_client_audit_root ${PACMAN_CLIENT_INSTALL_DIR})
-    if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    if(vdpm_use_release_bundle)
         set(package_client_audit_root ${CMAKE_INSTALL_PREFIX})
     endif()
     add_custom_target(pacman-client-spike

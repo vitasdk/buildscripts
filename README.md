@@ -62,19 +62,21 @@ cmake /path/to/cmakelists -DBUILD_PACMAN_CLIENT=ON
 cmake --build . --target bootstrap-archive
 ```
 
-On Linux and macOS this builds the pinned Pacman client from the selected
-`VDPM_REPOSITORY`/`VDPM_TAG`. A Windows cross build must consume an already
-released vdpm host bundle and its immutable SHA-256 instead of rebuilding the
-MSYS runtime indirectly:
+Production builds on every host consume the matching published vdpm bundle and
+its immutable SHA-256. This keeps Linux, macOS and Windows on the same component
+boundary and ensures the tested release is exactly what enters the SDK:
 
 ``` sh
 cmake /path/to/cmakelists \
-  -DCMAKE_TOOLCHAIN_FILE=toolchain-x86_64-w64-mingw32.cmake \
   -DBUILD_PACMAN_CLIENT=ON \
-  -DVDPM_WINDOWS_BUNDLE=/path/to/vdpm-<version>-x86_64-w64-mingw32.tar.bz2 \
-  -DVDPM_WINDOWS_BUNDLE_SHA256=<64-lowercase-hex-digits>
+  -DVDPM_BUNDLE=/path/to/vdpm-<version>-<host-triplet>.tar.bz2 \
+  -DVDPM_BUNDLE_SHA256=<64-lowercase-hex-digits>
 cmake --build . --target bootstrap-archive
 ```
+
+For development on Linux or macOS, omitting `VDPM_BUNDLE` explicitly falls
+back to building `VDPM_REPOSITORY`/`VDPM_TAG` from source. Windows always
+requires a release bundle because its Pacman runtime is produced under MSYS2.
 
 The result is
 `bootstraps/vitasdk-bootstrap-<host-triplet>.tar.bz2` plus its `.sha256`.

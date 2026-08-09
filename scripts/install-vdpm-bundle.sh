@@ -41,8 +41,28 @@ root_count=$(find "$temporary_directory" -mindepth 1 -maxdepth 1 -type d | wc -l
 (( root_count == 1 )) || exit 1
 root=$(find "$temporary_directory" -mindepth 1 -maxdepth 1 -type d -print -quit)
 grep -Fqx "host=$host" "$root/share/vdpm/release-info.txt"
-test -f "$root/bin/vdpm.exe"
-test -f "$root/usr/bin/pacman.exe"
-test -f "$root/usr/bin/msys-2.0.dll"
+required=(
+	share/vdpm/release-info.txt
+	share/vdpm/THIRD_PARTY_NOTICES.md
+	share/vdpm/licenses/vdpm-LGPL-2.1.txt
+	share/vdpm/licenses/pacman-GPL-2.0.txt
+)
+if [[ $host == *-w64-mingw32 ]]; then
+	required+=(bin/vdpm.exe usr/bin/pacman.exe usr/bin/msys-2.0.dll)
+else
+	required+=(
+		bin/vdpm
+		bin/pacman
+		bin/pacman-conf
+		bin/vdpm-channel
+		bin/include/refresh-repositories.sh
+	)
+fi
+for relative_path in "${required[@]}"; do
+	[[ -f $root/$relative_path && ! -L $root/$relative_path ]] || {
+		printf 'vdpm bundle is missing required regular file: %s\n' "$relative_path" >&2
+		exit 1
+	}
+done
 mkdir -p "$sdk_root"
 cp -a "$root/." "$sdk_root/"
