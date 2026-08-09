@@ -561,6 +561,9 @@ set(common_gcc_configure_args
     --with-gnu-as
     --with-gnu-ld
     --with-newlib
+    # Do not auto-detect the runner's shared zstd. Optional zstd compression
+    # is outside the toolchain contract and would make the SDK non-relocatable.
+    --without-zstd
     --disable-multilib
     --with-arch=armv7-a
     --with-tune=cortex-a9
