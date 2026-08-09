@@ -69,7 +69,7 @@ set(VDPM_REPOSITORY https://github.com/vitasdk/vdpm.git
 set(VITA_MAKEPKG_REPOSITORY https://github.com/vitasdk/vita-makepkg.git
     CACHE STRING "vita-makepkg repository URL or local path")
 
-set(NEWLIB_TAG fbb8375870d799758e0b4358d2f1708781aa26a6 CACHE STRING "newlib branch, commit id or tag")
+set(NEWLIB_TAG 6cba98129f0a286949391de00519ef39762eff18 CACHE STRING "newlib branch, commit id or tag")
 set(SAMPLES_TAG 99194cf828003dca6505d3762e10d14d152056f7 CACHE STRING "samples branch, commit id or tag")
 set(HEADERS_TAG 17ac33bd2ff0ab71225824a7a99be6fc05d319e5 CACHE STRING "vita-headers branch, commit id or tag")
 set(TOOLCHAIN_TAG c527abce028df33f5281e9ed4994c25fcef53c7d CACHE STRING "vita-toolchain branch, commit id or tag")
