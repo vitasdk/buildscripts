@@ -37,7 +37,8 @@ actual_revision=$(git -C "$source_directory" rev-parse HEAD)
 for patch in \
 	"$repository_root/patches/pacman/0001-allow-writable-non-root-installation-roots.patch" \
 	"$repository_root/patches/pacman/0002-embed-libalpm-in-static-clients.patch" \
-	"$repository_root/patches/pacman/0004-initialize-locale-without-i18n.patch"
+	"$repository_root/patches/pacman/0004-initialize-locale-without-i18n.patch" \
+	"$repository_root/patches/pacman/0005-reject-windows-casefold-collisions.patch"
 do
 	git -C "$source_directory" apply --check --whitespace=error-all "$patch"
 	git -C "$source_directory" apply --whitespace=error-all "$patch"

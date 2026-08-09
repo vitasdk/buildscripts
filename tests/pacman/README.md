@@ -23,6 +23,11 @@ it, the reduced `-Di18n=false` client stays in the ASCII C application locale
 and libarchive cannot read UTF-8 package paths, even though the MSYS runtime
 uses UTF-8 internally for Windows filenames.
 
+The fifth patch rejects a Windows package before transaction preparation when
+two UTF-8 payload paths compare equal under Windows' case-insensitive Unicode
+ordering. This prevents distinct archive members from silently addressing and
+overwriting the same file on the SDK filesystem.
+
 The initial macOS arm64 diagnostic build used Meson 1.5.2 with:
 
 ```sh
