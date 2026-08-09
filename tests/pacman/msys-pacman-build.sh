@@ -19,7 +19,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-git clone --depth 1 --branch v7.1.0 \
+git -c core.autocrlf=false clone --depth 1 --branch v7.1.0 \
 	https://gitlab.archlinux.org/pacman/pacman.git "$source_directory"
 
 expected_revision=5683f8477a0afcc6b331766175a83445b2dcfe89
