@@ -1,7 +1,7 @@
 diff --git a/ld/emultempl/armelf.em b/ld/emultempl/armelf.em
 index a9ac12d6..627c9086 100644
---- a/src/binutils/ld/emultempl/armelf.em
-+++ b/src/binutils/ld/emultempl/armelf.em
+--- a/ld/emultempl/armelf.em
++++ b/ld/emultempl/armelf.em
 @@ -41,7 +41,7 @@ static struct elf32_arm_params params =
    BFD_ARM_STM32L4XX_FIX_NONE,	/* stm32l4xx_fix */
    0,				/* no_enum_size_warning */
