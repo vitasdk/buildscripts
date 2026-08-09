@@ -28,7 +28,8 @@ function(vitasdk_add_pacman_client deps_dir install_dir zlib_target)
         "${PROJECT_SOURCE_DIR}/patches/pacman/0001-allow-writable-non-root-installation-roots.patch|1"
         "${PROJECT_SOURCE_DIR}/patches/pacman/0002-embed-libalpm-in-static-clients.patch|1"
         "${PROJECT_SOURCE_DIR}/patches/pacman/0003-build-libalpm-with-mingw.patch|1"
-        "${PROJECT_SOURCE_DIR}/patches/pacman/0004-initialize-locale-without-i18n.patch|1")
+        "${PROJECT_SOURCE_DIR}/patches/pacman/0004-initialize-locale-without-i18n.patch|1"
+        "${PROJECT_SOURCE_DIR}/patches/pacman/0005-reject-windows-casefold-collisions.patch|1")
     list(JOIN pacman_patch_series "^" pacman_patch_series_arg)
 
     set(common_cmake_args
