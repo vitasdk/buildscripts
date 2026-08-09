@@ -28,12 +28,15 @@ endforeach()
 # they are checked by audit-host-deps.sh along with the other host binaries.
 file(GLOB_RECURSE host_gcc_plugins
     "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/liblto_plugin*.so"
+    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/liblto_plugin*.so.*"
     "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/liblto_plugin*.dylib"
     "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/liblto_plugin*.dll"
     "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/plugin/libcc1plugin*.so"
+    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/plugin/libcc1plugin*.so.*"
     "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/plugin/libcc1plugin*.dylib"
     "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/plugin/libcc1plugin*.dll"
     "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/plugin/libcp1plugin*.so"
+    "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/plugin/libcp1plugin*.so.*"
     "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/plugin/libcp1plugin*.dylib"
     "${SDK_DIR}/lib/gcc/${TARGET_TRIPLE}/*/plugin/libcp1plugin*.dll")
 list(REMOVE_ITEM target_shared ${host_gcc_plugins})
