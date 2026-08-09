@@ -8,13 +8,15 @@ git clone --depth 1 --branch v7.1.0 \
   https://gitlab.archlinux.org/pacman/pacman.git
 ```
 
-Apply the patches in `patches/pacman/` in numeric order with strip level 1 and
-zero fuzz. The first patch preserves pacman's normal root requirement for `/`
-and non-writable roots. For a writable alternate root it lets the filesystem
-assign the unprivileged caller's UID/GID while retaining the packaged
-permission bits. The second patch makes `-Dbuildstatic=true` embed the private
-libalpm archive in the command-line clients instead of producing a shared
-libalpm.
+Apply the relevant patches in `patches/pacman/` in numeric order with strip
+level 1 and zero fuzz. The first patch preserves pacman's normal root
+requirement for `/` and non-writable roots on Unix. Under MSYS it omits that
+Unix-only privilege check, because the private runtime maps the SDK directory
+itself to `/` and the process still has only the invoking Windows user's
+filesystem rights. For an unprivileged caller it lets the filesystem assign
+the UID/GID while retaining the packaged permission bits. The second patch
+makes `-Dbuildstatic=true` embed the private libalpm archive in the command-line
+clients instead of producing a shared libalpm.
 
 The initial macOS arm64 diagnostic build used Meson 1.5.2 with:
 
@@ -71,14 +73,33 @@ Run the two-file contract on native Windows with PowerShell 7:
 ./tests/pacman/msys-runtime-smoke.ps1
 ```
 
-The test downloads hash-pinned official MSYS2 artifacts, extracts only those
-two files, removes Git for Windows and installed MSYS2 directories from
-`PATH`, and performs install, query and remove operations on a synthetic
-package. This proves the deployment shape independently of the future VitaSDK
-pacman 7.1 build. The production gate still requires building that pinned,
-patched source with the MSYS ABI and extending the test to HTTPS repositories,
-UTF-8 and long paths, case-insensitive collisions, locking and Windows
-rename/delete behavior.
+With no arguments, the test downloads hash-pinned official MSYS2 artifacts,
+extracts only those two files, removes Git for Windows and installed MSYS2
+directories from `PATH`, and performs install, query and remove operations on
+a synthetic package.
+
+The VitaSDK source-build regression is
+`.github/workflows/msys-pacman-source.yml`. It installs the MSYS build tools,
+runs:
+
+```sh
+tests/pacman/msys-pacman-build.sh /path/to/output
+```
+
+and passes the resulting `pacman.exe` and adjacent `msys-2.0.dll` to the same
+PowerShell transaction test. The build clones tag 7.1.0, verifies commit
+`5683f8477a0afcc6b331766175a83445b2dcfe89`, restores upstream symlinks, applies
+the first two patches, embeds libalpm and its third-party libraries statically,
+and rejects any PE import set other than `msys-2.0.dll`, `CRYPT32.dll` and
+`KERNEL32.dll`.
+
+That patched 7.1.0 pair passes install, query and remove on native Windows, so
+the source build and two-file runtime shape are no longer open design work.
+Release production still needs a pinned MSYS2 package snapshot (the CI
+currently resolves its build dependencies from the current repository), exact
+hashes and notices for the shipped pair, plus HTTPS repositories, UTF-8 and
+long paths, case-insensitive collisions, locking and Windows rename/delete
+tests.
 
 ## MinGW libalpm spike
 
