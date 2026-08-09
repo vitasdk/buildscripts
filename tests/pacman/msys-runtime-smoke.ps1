@@ -75,24 +75,25 @@ if ($runtimeFiles.Count -ne 2) {
     throw "minimal runtime contains unexpected files"
 }
 
-[IO.File]::WriteAllText($configPath, @"
-[options]
-Architecture = x86_64
-SigLevel = Never
-CheckSpace
-"@)
+[IO.File]::WriteAllText($configPath, (@(
+    "[options]",
+    "Architecture = x86_64",
+    "SigLevel = Never",
+    "CheckSpace"
+) -join "`n") + "`n")
 
-[IO.File]::WriteAllText((Join-Path $packageRoot ".PKGINFO"), @"
-pkgname = vitasdk-msys-probe
-pkgbase = vitasdk-msys-probe
-pkgver = 1.0-1
-pkgdesc = VitaSDK MSYS runtime smoke package
-builddate = 0
-packager = VitaSDK CI
-size = 6
-arch = x86_64
-license = MIT
-"@)
+# Pacman package metadata is a Unix text format. Force LF even on Windows.
+[IO.File]::WriteAllText((Join-Path $packageRoot ".PKGINFO"), (@(
+    "pkgname = vitasdk-msys-probe",
+    "pkgbase = vitasdk-msys-probe",
+    "pkgver = 1.0-1",
+    "pkgdesc = VitaSDK MSYS runtime smoke package",
+    "builddate = 0",
+    "packager = VitaSDK CI",
+    "size = 6",
+    "arch = x86_64",
+    "license = MIT"
+) -join "`n") + "`n")
 [IO.File]::WriteAllText(
     (Join-Path $packageRoot "arm-vita-eabi/include/msys-probe.h"),
     "probe`n"
