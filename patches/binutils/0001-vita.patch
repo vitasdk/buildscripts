@@ -2,11 +2,12 @@ diff --git a/ld/scripttempl/elf.sc b/ld/scripttempl/elf.sc
 index 5471611..311ca7a 100644
 --- a/ld/scripttempl/elf.sc
 +++ b/ld/scripttempl/elf.sc
-@@ -665,6 +665,9 @@ cat <<EOF
+@@ -665,6 +665,10 @@ cat <<EOF
    ${CREATE_SHLIB+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}
    ${CREATE_PIE+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}
  
-+  /* Vita load segments require 64 KiB alignment.  */
++  /* Vita load segments require 64 KiB alignment and optional headroom for SCE metadata */
++  . += DEFINED(__sce_headroom) ? __sce_headroom : 0;
 +  . = ALIGN(0x10000);
 +
    /* Exception handling  */
