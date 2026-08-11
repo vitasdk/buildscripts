@@ -1,0 +1,13 @@
+diff --git a/ld/genscripts.sh b/ld/genscripts.sh
+index d92634d..682f641 100755
+--- a/ld/genscripts.sh
++++ b/ld/genscripts.sh
+@@ -313,6 +313,8 @@ DATA_ALIGNMENT_u="${DATA_ALIGNMENT_u-${DATA_ALIGNMENT_r}}"
+ 
+ # Create scripts using different settings of the LD_FLAG variable
+ 
++mkdir -p ldscripts
++
+ LD_FLAG=r
+ DATA_ALIGNMENT=${DATA_ALIGNMENT_r}
+ DEFAULT_DATA_ALIGNMENT="ALIGN(${SEGMENT_SIZE})"

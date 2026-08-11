@@ -13,7 +13,8 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         "${PROJECT_SOURCE_DIR}/patches/binutils/0001-vita.patch|1"
         "${PROJECT_SOURCE_DIR}/patches/binutils/0002-fix-broken-reloc.patch|1"
         "${PROJECT_SOURCE_DIR}/patches/binutils/0003-fix-elf-vaddr.patch|1"
-        "${PROJECT_SOURCE_DIR}/patches/binutils/0004-fix-interworking-veneers.patch|1")
+        "${PROJECT_SOURCE_DIR}/patches/binutils/0004-fix-interworking-veneers.patch|1"
+        "${PROJECT_SOURCE_DIR}/patches/binutils/0005-genscripts-mkdir.patch|1")
     set(gdb_patch_series
         "${PROJECT_SOURCE_DIR}/patches/gdb.patch|1"
         "${PROJECT_SOURCE_DIR}/patches/gdb-zlib.patch|1"
