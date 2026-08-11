@@ -296,7 +296,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
             ${PROJECT_SOURCE_DIR}/config.guess
             ${PROJECT_SOURCE_DIR}/config.sub
             <SOURCE_DIR>/
-        CONFIGURE_COMMAND CFLAGS=-std=gnu11 ${compiler_flags}
+        CONFIGURE_COMMAND CFLAGS=-std=gnu11\ -Wno-error=return-type\ -Wno-error=return-mismatch\ -Wno-return-mismatch ${compiler_flags}
         ${wrapper_command} <SOURCE_DIR>/configure
         --build=${build_native}
         --host=${toolchain_host}

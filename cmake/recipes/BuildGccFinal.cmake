@@ -34,7 +34,7 @@ if(CMAKE_TOOLCHAIN_FILE)
         ${common_gcc_configure_args}
         --enable-threads=posix
         --with-headers=yes
-        --enable-libgomp
+        --disable-libgomp
         "CFLAGS=${GCC_CFLAGS}"
         "CXXFLAGS=${GCC_CFLAGS}"
         BUILD_COMMAND ${toolchain_tools} ${wrapper_command} $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
