@@ -6,8 +6,11 @@
 # Build a complete gcc compiler to be able to compile the full gcc for the host when crosscompiling.
 # Using gcc-base doesn't work since is missing some headers.
 if(CMAKE_TOOLCHAIN_FILE)
+    # pthread-embedded supplies libpthread and pthread.h in the native sysroot.
+    # The target libraries configured below link full executables, so the POSIX
+    # thread layer must already be installed for those link tests to succeed.
     ExternalProject_add(gcc-complete
-        DEPENDS newlib gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix}
+        DEPENDS newlib pthread-embedded gmp_${build_suffix} mpfr_${build_suffix} mpc_${build_suffix} isl_${build_suffix} libelf_${build_suffix}
         URL ${GCC_URL}
         URL_HASH ${GCC_HASH}
         DOWNLOAD_DIR ${DOWNLOAD_DIR}
@@ -34,7 +37,7 @@ if(CMAKE_TOOLCHAIN_FILE)
         ${common_gcc_configure_args}
         --enable-threads=posix
         --with-headers=yes
-        --disable-libgomp
+        --enable-libgomp
         "CFLAGS=${GCC_CFLAGS}"
         "CXXFLAGS=${GCC_CFLAGS}"
         BUILD_COMMAND ${toolchain_tools} ${wrapper_command} $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
