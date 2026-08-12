@@ -111,4 +111,7 @@ echo "checking ARM unwind section generation"
         exit 1
     }
 
+echo "checking that public headers compile on their own"
+"${srcdir}/self-contained-headers.sh"
+
 echo "Vita GCC/binutils contract OK"
