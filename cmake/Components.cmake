@@ -75,4 +75,4 @@ set(HEADERS_TAG 2f499a02e335dc9e678f4680eb0302264e4603c0 CACHE STRING "vita-head
 set(TOOLCHAIN_TAG c527abce028df33f5281e9ed4994c25fcef53c7d CACHE STRING "vita-toolchain branch, commit id or tag")
 set(PTHREAD_TAG 610934f4841f02a42f19f0e8b0f01bb38b375dfc CACHE STRING "pthread-embedded branch, commit id or tag")
 set(VDPM_TAG v0.1.0-rc1 CACHE STRING "vdpm branch, commit id or tag")
-set(VITA_MAKEPKG_TAG 905038a8132405e0c70d21afff4612384c038168 CACHE STRING "vita-makepkg branch, commit id or tag")
+set(VITA_MAKEPKG_TAG 32f863c2a58a801b7d5a0296bdbbb443c9676e08 CACHE STRING "vita-makepkg branch, commit id or tag")
