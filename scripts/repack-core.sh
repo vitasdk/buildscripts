@@ -182,23 +182,10 @@ fi
 
 SOURCE_DATE_EPOCH=$source_date_epoch "$script_directory/create-core-package.sh" \
 	"$sdk_root" "$output_directory" "$host" "$package_version" "$source_revision"
+
+# The bootstrap archive is the whole SDK, so it is also the archive somebody
+# downloads by hand. A build publishes a second, dated copy because its tree
+# keeps moving while the two are cut; here both would come from the same
+# normalised tree and be the same bytes under two names.
 "$script_directory/create-bootstrap-archive.sh" \
 	"$sdk_root" "$output_directory" "$host" "$source_date_epoch"
-
-sdk_archive="$output_directory/vitasdk-$host-$package_version.tar.bz2"
-[[ ! -e $sdk_archive ]] || {
-	printf 'SDK archive already exists: %s\n' "$sdk_archive" >&2
-	exit 1
-}
-(
-	cd "$(dirname "$sdk_root")"
-	find "$(basename "$sdk_root")" -print | LC_ALL=C sort > archive.list
-	if tar --version 2>/dev/null | grep -q 'GNU tar'; then
-		tar --no-recursion --sort=name --mtime="@$source_date_epoch" \
-			--owner=0 --group=0 --numeric-owner -cjf "$sdk_archive" -T archive.list
-	else
-		COPYFILE_DISABLE=1 tar --no-recursion --uid 0 --gid 0 \
-			--uname root --gname root -cjf "$sdk_archive" -T archive.list
-	fi
-)
-printf '%s\n' "$sdk_archive"
