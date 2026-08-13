@@ -156,10 +156,18 @@ else
 	vita_makepkg_revision=unknown
 fi
 
+if command -v sha256sum >/dev/null; then
+	archive_digest=$(sha256sum "$archive")
+else
+	archive_digest=$(shasum -a 256 "$archive")
+fi
+
 # The component lines above this block still describe what produced the
-# binaries. These say who repacked them and with what.
+# binaries. These say who repacked them and with what, and name the source
+# archive by digest so the claim can be checked against what is published.
 {
 	printf 'repacked from     %s\n' "$(basename "$archive")"
+	printf 'source sha256     %s\n' "${archive_digest%% *}"
 	printf 'buildscripts      %s\n' "$source_revision"
 	printf 'vdpm              %s\n' "$vdpm_version"
 	printf 'vita-makepkg      %s\n' "$vita_makepkg_revision"
