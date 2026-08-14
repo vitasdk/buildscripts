@@ -25,11 +25,13 @@ pkgname=$(awk -F ' = ' '$1 == "pkgname" { print $2; exit }' <<< "$pkginfo")
 pkgver=$(awk -F ' = ' '$1 == "pkgver" { print $2; exit }' <<< "$pkginfo")
 architecture=$(awk -F ' = ' '$1 == "arch" { print $2; exit }' <<< "$pkginfo")
 
-[[ $pkgname == vitasdk-core && -n $pkgver && -n $architecture ]] || {
+# A core release ships the toolchain and the client that installs it, as two
+# packages, so both names are valid here and each has to own its own file name.
+[[ ($pkgname == vitasdk-core || $pkgname == vdpm) && -n $pkgver && -n $architecture ]] || {
 	printf 'invalid core package identity\n' >&2
 	exit 1
 }
-[[ $package_filename == "vitasdk-core-$pkgver-$architecture.pkg.tar."* ]] || {
+[[ $package_filename == "$pkgname-$pkgver-$architecture.pkg.tar."* ]] || {
 	printf 'core package filename does not match its metadata: %s\n' \
 		"$package_filename" >&2
 	exit 1
@@ -49,25 +51,34 @@ if grep -E '(^/|(^|/)\.\.(/|$))' <<< "$archive_entries"; then
 fi
 bsdtar -xOf "$package" .MTREE | gzip -t
 
-grep -Eq '^bin/arm-vita-eabi-gcc(\.exe)?$' <<< "$archive_entries" || {
-	printf 'core package does not contain the Vita compiler driver\n' >&2
-	exit 1
-}
-grep -qx 'version_info.txt' <<< "$archive_entries" || {
-	printf 'core package does not contain provenance information\n' >&2
-	exit 1
-}
-grep -qx 'etc/pacman.conf' <<< "$archive_entries" || {
-	printf 'core package does not contain pacman.conf\n' >&2
+if [[ $pkgname == vitasdk-core ]]; then
+	grep -Eq '^bin/arm-vita-eabi-gcc(\.exe)?$' <<< "$archive_entries" || {
+		printf 'core package does not contain the Vita compiler driver\n' >&2
+		exit 1
+	}
+	grep -qx 'version_info.txt' <<< "$archive_entries" || {
+		printf 'core package does not contain provenance information\n' >&2
+		exit 1
+	}
+else
+	grep -Eq '^bin/vdpm(\.exe)?$' <<< "$archive_entries" || {
+		printf 'client package does not contain the package client\n' >&2
+		exit 1
+	}
+fi
+# Nothing owns etc/pacman.conf: refresh writes it to name the selected
+# channel, and a package owning it would put the selection back.
+grep -qx 'etc/pacman.conf' <<< "$archive_entries" && {
+	printf '%s owns etc/pacman.conf\n' "$pkgname" >&2
 	exit 1
 }
 
-if (( require_package_client )); then
+if [[ $pkgname == vdpm ]]; then
 	for compliance_file in share/vdpm/THIRD_PARTY_NOTICES.md \
 		share/vdpm/licenses/vdpm-LGPL-2.1.txt \
 		share/vdpm/licenses/pacman-GPL-2.0.txt; do
 		grep -Fqx "$compliance_file" <<< "$archive_entries" || {
-			printf 'core package does not contain %s\n' "$compliance_file" >&2
+			printf 'client package does not contain %s\n' "$compliance_file" >&2
 			exit 1
 		}
 	done
@@ -76,39 +87,22 @@ if (( require_package_client )); then
 				usr/bin/vdpm-channel.exe usr/bin/msys-2.0.dll \
 				share/vdpm/refresh-repositories.ps1; do
 			grep -Fqx "$runtime_file" <<< "$archive_entries" || {
-				printf 'Windows core package does not contain %s\n' "$runtime_file" >&2
+				printf 'Windows client package does not contain %s\n' "$runtime_file" >&2
 				exit 1
 			}
 		done
 	else
 		for runtime_file in bin/vdpm bin/pacman bin/vdpm-channel; do
 			grep -Fqx "$runtime_file" <<< "$archive_entries" || {
-				printf 'core package does not contain %s\n' "$runtime_file" >&2
+				printf 'client package does not contain %s\n' "$runtime_file" >&2
 				exit 1
 			}
 		done
 	fi
 fi
 
-pacman_configuration=$(bsdtar -xOf "$package" etc/pacman.conf)
-grep -Eq "^Architecture = ${architecture//./\.} vita$" \
-	<<< "$pacman_configuration" || {
-	printf 'pacman.conf does not select the core host and vita architectures\n' >&2
-	exit 1
-}
-grep -qx 'SigLevel = Never' <<< "$pacman_configuration" || {
-	printf 'pacman.conf does not declare the external trust model\n' >&2
-	exit 1
-}
-grep -Fqx '# vdpm verifies signed channel metadata and the selected database hash before use.' \
-	<<< "$pacman_configuration" || {
-	printf 'pacman.conf does not document the external trust boundary\n' >&2
-	exit 1
-}
-if grep -E '^\[[^]]+\]$' <<< "$pacman_configuration" |
-	grep -vxq '\[options\]'; then
-	printf 'core package must not embed a mutable repository URL\n' >&2
-	exit 1
-fi
+# The contract that pacman.conf selects both architectures, declares the
+# external trust model and embeds no repository URL now belongs to whoever
+# writes it, which is refresh, and is asserted in the client's own tests.
 
 printf 'validated core package %s for %s\n' "$pkgver" "$architecture"

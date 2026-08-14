@@ -167,9 +167,14 @@ if(BUILD_PACMAN_CLIENT)
     set(core_package
         "${VITASDK_PACKAGE_OUTPUT_DIR}/vitasdk-core-${VITASDK_PACKAGE_VERSION}-1-${host_native}.pkg.tar.xz")
 
+    # A core release is two packages: the toolchain, and the client that
+    # installs it. Both are outputs, and both have to be gone before a rerun.
+    file(GLOB stale_client_packages
+        "${VITASDK_PACKAGE_OUTPUT_DIR}/vdpm-*-1-${host_native}.pkg.tar.xz")
+
     add_custom_command(OUTPUT ${core_package}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${VITASDK_PACKAGE_OUTPUT_DIR}
-        COMMAND ${CMAKE_COMMAND} -E rm -f ${core_package}
+        COMMAND ${CMAKE_COMMAND} -E rm -f ${core_package} ${stale_client_packages}
         COMMAND ${CMAKE_COMMAND} -E env
             SOURCE_DATE_EPOCH=${VITASDK_SOURCE_DATE_EPOCH}
             ${CMAKE_SOURCE_DIR}/scripts/create-core-package.sh
