@@ -23,10 +23,10 @@ script_directory=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 # etc/pacman.conf belongs to neither: refresh writes it on every use to name
 # the selected channel, so a package owning it would reset that selection on
 # its next upgrade.
-# Windows keeps its runtime somewhere else entirely, so the partition follows
-# the layout rather than a single list of names.
+# Windows keeps its runtime inside share/vdpm, in an MSYS root of its own, so
+# the partition follows the layout rather than a single list of names.
 if [[ $3 == *-w64-mingw32 ]]; then
-	client_paths=( bin/vdpm.exe usr share/vdpm )
+	client_paths=( bin/vdpm.exe share/vdpm )
 else
 	client_paths=(
 		bin/vdpm

@@ -50,9 +50,9 @@ required=(
 if [[ $host == *-w64-mingw32 ]]; then
 	required+=(
 		bin/vdpm.exe
-		usr/bin/pacman.exe
-		usr/bin/vdpm-channel.exe
-		usr/bin/msys-2.0.dll
+		share/vdpm/msys/usr/bin/pacman.exe
+		share/vdpm/msys/usr/bin/vdpm-channel.exe
+		share/vdpm/msys/usr/bin/msys-2.0.dll
 		share/vdpm/refresh-repositories.ps1
 	)
 else

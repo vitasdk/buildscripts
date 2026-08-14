@@ -9,11 +9,11 @@ trap cleanup EXIT
 
 host=x86_64-w64-mingw32
 root="$temporary_directory/input/vdpm-test-$host"
-mkdir -p "$root/bin" "$root/usr/bin" "$root/share/vdpm/licenses"
+mkdir -p "$root/bin" "$root/share/vdpm/msys/usr/bin" "$root/share/vdpm/licenses"
 printf 'frontend\n' > "$root/bin/vdpm.exe"
-printf 'pacman\n' > "$root/usr/bin/pacman.exe"
-printf 'channel\n' > "$root/usr/bin/vdpm-channel.exe"
-printf 'runtime\n' > "$root/usr/bin/msys-2.0.dll"
+printf 'pacman\n' > "$root/share/vdpm/msys/usr/bin/pacman.exe"
+printf 'channel\n' > "$root/share/vdpm/msys/usr/bin/vdpm-channel.exe"
+printf 'runtime\n' > "$root/share/vdpm/msys/usr/bin/msys-2.0.dll"
 printf 'refresh\n' > "$root/share/vdpm/refresh-repositories.ps1"
 printf 'notices\n' > "$root/share/vdpm/THIRD_PARTY_NOTICES.md"
 printf 'license\n' > "$root/share/vdpm/licenses/vdpm-LGPL-2.1.txt"
@@ -33,9 +33,9 @@ sdk="$temporary_directory/sdk"
 "$repository_root/scripts/install-vdpm-bundle.sh" \
 	"$bundle" "$digest" "$sdk" "$host"
 test -f "$sdk/bin/vdpm.exe"
-test -f "$sdk/usr/bin/pacman.exe"
-test -f "$sdk/usr/bin/vdpm-channel.exe"
-test -f "$sdk/usr/bin/msys-2.0.dll"
+test -f "$sdk/share/vdpm/msys/usr/bin/pacman.exe"
+test -f "$sdk/share/vdpm/msys/usr/bin/vdpm-channel.exe"
+test -f "$sdk/share/vdpm/msys/usr/bin/msys-2.0.dll"
 
 if [[ ${digest:0:1} == 0 ]]; then
 	bad_digest=1${digest:1}
@@ -109,8 +109,8 @@ fi
 grep -Fq -- '-DCMAKE_EXE_LINKER_FLAGS=-static ' "$host_zlib_config"
 cmake --build "$configure" --target vdpm >/dev/null
 test -f "$configure/vitasdk/bin/vdpm.exe"
-test -f "$configure/vitasdk/usr/bin/pacman.exe"
-test -f "$configure/vitasdk/usr/bin/vdpm-channel.exe"
-test -f "$configure/vitasdk/usr/bin/msys-2.0.dll"
+test -f "$configure/vitasdk/share/vdpm/msys/usr/bin/pacman.exe"
+test -f "$configure/vitasdk/share/vdpm/msys/usr/bin/vdpm-channel.exe"
+test -f "$configure/vitasdk/share/vdpm/msys/usr/bin/msys-2.0.dll"
 
 printf 'vdpm release bundle incorporation contract passed\n'

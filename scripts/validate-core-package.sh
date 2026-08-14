@@ -83,8 +83,10 @@ if [[ $pkgname == vdpm ]]; then
 		}
 	done
 	if [[ $architecture == *-w64-mingw32 ]]; then
-		for runtime_file in bin/vdpm.exe usr/bin/pacman.exe \
-				usr/bin/vdpm-channel.exe usr/bin/msys-2.0.dll \
+		for runtime_file in bin/vdpm.exe \
+				share/vdpm/msys/usr/bin/pacman.exe \
+				share/vdpm/msys/usr/bin/vdpm-channel.exe \
+				share/vdpm/msys/usr/bin/msys-2.0.dll \
 				share/vdpm/refresh-repositories.ps1; do
 			grep -Fqx "$runtime_file" <<< "$archive_entries" || {
 				printf 'Windows client package does not contain %s\n' "$runtime_file" >&2

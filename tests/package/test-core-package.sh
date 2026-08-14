@@ -117,4 +117,57 @@ EOF
 		pac --query --owns /sdk/bin/arm-vita-eabi-gcc | grep -q "vitasdk-core 0.1-1"
 	'
 
+# Windows partitions by layout, not by a list of names, and the layout carries
+# a rule the other hosts do not have: the MSYS runtime lives in a root of its
+# own under share/vdpm. An msys-2.0.dll in the SDK's own usr/bin would make the
+# SDK an MSYS root, and pacman would then write every bin/ file a package
+# installs into usr/bin instead.
+windows_root="$temporary_root/windows-sdk"
+mkdir -p "$windows_root/bin" "$windows_root/arm-vita-eabi/lib" \
+	"$windows_root/share/vdpm/licenses" "$windows_root/share/vdpm/msys/usr/bin"
+printf 'gcc\n' > "$windows_root/bin/arm-vita-eabi-gcc.exe"
+printf 'vdpm\n' > "$windows_root/bin/vdpm.exe"
+printf 'archive\n' > "$windows_root/arm-vita-eabi/lib/libfixture.a"
+printf 'source=fixture\n' > "$windows_root/version_info.txt"
+printf 'notices\n' > "$windows_root/share/vdpm/THIRD_PARTY_NOTICES.md"
+printf 'refresh\n' > "$windows_root/share/vdpm/refresh-repositories.ps1"
+printf 'vdpm license\n' > "$windows_root/share/vdpm/licenses/vdpm-LGPL-2.1.txt"
+printf 'pacman license\n' > "$windows_root/share/vdpm/licenses/pacman-GPL-2.0.txt"
+printf 'version=0.1.0\nhost=x86_64-w64-mingw32\n' > "$windows_root/share/vdpm/release-info.txt"
+for runtime in pacman.exe vdpm-channel.exe msys-2.0.dll; do
+	printf '%s\n' "$runtime" > "$windows_root/share/vdpm/msys/usr/bin/$runtime"
+done
+
+SOURCE_DATE_EPOCH=1700000000 \
+	"$repository_root/scripts/create-core-package.sh" \
+	"$windows_root" "$temporary_root/windows" x86_64-w64-mingw32 \
+	0.1 0123456789abcdef
+
+windows_core=$(bsdtar -tf "$temporary_root/windows/vitasdk-core-0.1-1-x86_64-w64-mingw32.pkg.tar.xz")
+windows_client=$(bsdtar -tf "$temporary_root/windows/vdpm-0.1.0-1-x86_64-w64-mingw32.pkg.tar.xz")
+
+for path in bin/vdpm.exe share/vdpm/refresh-repositories.ps1 \
+		share/vdpm/msys/usr/bin/pacman.exe share/vdpm/msys/usr/bin/msys-2.0.dll; do
+	grep -qx "$path" <<< "$windows_client" || {
+		printf 'the Windows client package does not own %s\n' "$path" >&2
+		exit 1
+	}
+	grep -qx "$path" <<< "$windows_core" && {
+		printf 'the Windows core package still owns %s\n' "$path" >&2
+		exit 1
+	}
+done
+
+grep -qx 'bin/arm-vita-eabi-gcc.exe' <<< "$windows_core" || {
+	printf 'the Windows core package lost the toolchain\n' >&2
+	exit 1
+}
+
+for entries in "$windows_core" "$windows_client"; do
+	grep -q '^usr/' <<< "$entries" && {
+		printf 'a Windows package installs into the SDK own usr/, which makes it an MSYS root\n' >&2
+		exit 1
+	}
+done
+
 printf 'VitaSDK core package contracts passed\n'
