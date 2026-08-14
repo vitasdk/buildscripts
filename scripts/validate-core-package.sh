@@ -73,6 +73,18 @@ grep -qx 'etc/pacman.conf' <<< "$archive_entries" && {
 	exit 1
 }
 
+# An msys-2.0.dll under the SDK's own usr/bin makes the SDK an MSYS root, and
+# an MSYS root turns /bin into an alias of /usr/bin: pacman would then write
+# every bin/ file a package installs -- the whole toolchain front end -- into
+# usr/bin instead. The runtime lives in a root of its own under share/vdpm, so
+# nothing here may put anything in usr/. Repacking an older tree is how one
+# would arrive back at it.
+if [[ $architecture == *-w64-mingw32 ]] && grep -q '^usr/' <<< "$archive_entries"; then
+	printf '%s installs into the SDK own usr/, which makes it an MSYS root\n' \
+		"$pkgname" >&2
+	exit 1
+fi
+
 if [[ $pkgname == vdpm ]]; then
 	for compliance_file in share/vdpm/THIRD_PARTY_NOTICES.md \
 		share/vdpm/licenses/vdpm-LGPL-2.1.txt \
