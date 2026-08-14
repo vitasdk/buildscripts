@@ -170,4 +170,28 @@ for entries in "$windows_core" "$windows_client"; do
 	}
 done
 
+# Repackaging the same sources moves the core's release and nothing else.
+# Publishing the split inside an existing release is exactly that, and the
+# client must not be dragged along: the same client version arriving as -2 in
+# one series and -1 in another is an upgrade in one direction and a downgrade
+# in the other, for a package whose bytes did not change.
+SOURCE_DATE_EPOCH=1700000000 \
+	"$repository_root/scripts/create-core-package.sh" \
+	"$sdk_root" "$temporary_root/second" x86_64-linux-gnu \
+	0.1 0123456789abcdef 2
+
+[[ -f $temporary_root/second/vitasdk-core-0.1-2-x86_64-linux-gnu.pkg.tar.xz ]] || {
+	printf 'the core did not take the release it was given\n' >&2
+	exit 1
+}
+[[ -f $temporary_root/second/vdpm-0.1.0-1-x86_64-linux-gnu.pkg.tar.xz ]] || {
+	printf 'the client followed the core release instead of keeping its own\n' >&2
+	exit 1
+}
+bsdtar -xOf "$temporary_root/second/vitasdk-core-0.1-2-x86_64-linux-gnu.pkg.tar.xz" .PKGINFO |
+	grep -qx 'depend = vdpm>=0.1.0-1' || {
+		printf 'the core asks for a client release that is not published\n' >&2
+		exit 1
+	}
+
 printf 'VitaSDK core package contracts passed\n'

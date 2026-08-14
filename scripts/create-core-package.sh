@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-if [[ $# -ne 5 ]]; then
-	printf 'usage: %s <sdk-root> <output-directory> <host-architecture> <version> <source-revision>\n' \
+if [[ $# -lt 5 || $# -gt 6 ]]; then
+	printf 'usage: %s <sdk-root> <output-directory> <host-architecture> <version> <source-revision> [package-release]\n' \
 		"$0" >&2
 	exit 2
 fi
@@ -13,6 +13,13 @@ output_directory=$2
 host_architecture=$3
 package_version=$4
 source_revision=$5
+# Repackaging the same sources -- which is what moving the client out of the
+# core is -- moves this and nothing else.
+package_release=${6:-1}
+[[ $package_release =~ ^[1-9][0-9]*$ ]] || {
+	printf 'package release must be a positive integer\n' >&2
+	exit 2
+}
 source_date_epoch=${SOURCE_DATE_EPOCH:-}
 script_directory=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 
@@ -72,9 +79,11 @@ client_version=$(awk -F= '$1 == "version" { print $2; exit }' \
 	exit 1
 }
 
-package_release=1
 full_version=$package_version-$package_release
-client_full_version=$client_version-$package_release
+# The client's release is its own: it is the same package whichever core it is
+# published beside, and tying it to the core's would have it arrive as an
+# upgrade in one series and a downgrade in another.
+client_full_version=$client_version-1
 
 temporary_directory=$(mktemp -d "$output_directory/.vitasdk-core.XXXXXXXX")
 cleanup() {

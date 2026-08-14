@@ -11,6 +11,7 @@ set -euo pipefail
 usage() {
 	printf 'usage: %s --archive <sdk.tar.bz2> --host <triplet> --vdpm-bundle <bundle.tar.bz2>\n' "$0" >&2
 	printf '           --vdpm-sha256 <hex> --vita-makepkg <checkout> --version <version>\n' >&2
+	printf '           [--package-release <n>]\n' >&2
 	printf '           --source-revision <hex> --output <directory>\n' >&2
 	exit 2
 }
@@ -32,6 +33,7 @@ while (( $# )); do
 		--vdpm-sha256) vdpm_sha256=${2-}; shift 2 ;;
 		--vita-makepkg) vita_makepkg=${2-}; shift 2 ;;
 		--version) package_version=${2-}; shift 2 ;;
+		--package-release) package_release=${2-}; shift 2 ;;
 		--source-revision) source_revision=${2-}; shift 2 ;;
 		--output) output_directory=${2-}; shift 2 ;;
 		*) usage ;;
@@ -181,7 +183,8 @@ else
 fi
 
 SOURCE_DATE_EPOCH=$source_date_epoch "$script_directory/create-core-package.sh" \
-	"$sdk_root" "$output_directory" "$host" "$package_version" "$source_revision"
+	"$sdk_root" "$output_directory" "$host" "$package_version" "$source_revision" \
+	"${package_release:-1}"
 
 # The bootstrap archive is the whole SDK, so it is also the archive somebody
 # downloads by hand. A build publishes a second, dated copy because its tree
