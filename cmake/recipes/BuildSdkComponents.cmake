@@ -7,7 +7,6 @@ ExternalProject_add(vita-headers
     DEPENDS binutils_${build_suffix} vita-toolchain_${build_suffix}
     GIT_REPOSITORY ${HEADERS_REPOSITORY}
     GIT_TAG ${HEADERS_TAG}
-    ${GIT_SHALLOW_SUPPORT}
     CONFIGURE_COMMAND ${vita_libs_gen_command}-2 -yml=<SOURCE_DIR>/db -output=<BINARY_DIR>
     BUILD_COMMAND ARCH=${binutils_prefix} make
     # Copy the generated .a files to the install directory
@@ -36,7 +35,6 @@ ExternalProject_Add(newlib
     DEPENDS binutils_${target_suffix} gcc-base vita-headers
     GIT_REPOSITORY ${NEWLIB_REPOSITORY}
     GIT_TAG ${NEWLIB_TAG}
-    ${GIT_SHALLOW_SUPPORT}
     # Pass the compiler_target_tools here so newlib picks up the fresh gcc-base compiler
     CONFIGURE_COMMAND ${compiler_flags} ${toolchain_tools} ${compiler_target_tools}
     ${wrapper_command} <SOURCE_DIR>/configure "CFLAGS_FOR_TARGET=-g -O2 -ffunction-sections -fdata-sections"
@@ -65,7 +63,6 @@ ExternalProject_Add(pthread-embedded
     DEPENDS binutils_${target_suffix} gcc-base newlib vita-headers
     GIT_REPOSITORY ${PTHREAD_REPOSITORY}
     GIT_TAG ${PTHREAD_TAG}
-    ${GIT_SHALLOW_SUPPORT}
     # TODO: this project should have a proper makefile to support out-of-source builds
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
@@ -82,7 +79,6 @@ ExternalProject_Add(pthread-embedded
 ExternalProject_Add(samples
     GIT_REPOSITORY ${SAMPLES_REPOSITORY}
     GIT_TAG ${SAMPLES_TAG}
-    ${GIT_SHALLOW_SUPPORT}
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
@@ -156,7 +152,6 @@ endif()
 ExternalProject_Add(vita-makepkg
     GIT_REPOSITORY ${VITA_MAKEPKG_REPOSITORY}
     GIT_TAG ${VITA_MAKEPKG_TAG}
-    ${GIT_SHALLOW_SUPPORT}
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
