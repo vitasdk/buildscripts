@@ -263,7 +263,6 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         DEPENDS libelf${suffix} zlib${suffix} libzip${suffix} libyaml${suffix}
         GIT_REPOSITORY ${TOOLCHAIN_REPOSITORY}
         GIT_TAG ${TOOLCHAIN_TAG}
-        ${GIT_SHALLOW_SUPPORT}
         # ExternalProject's GIT_SHALLOW only applies to the top-level clone.
         # Initialize this required submodule explicitly at depth 1 as well.
         GIT_SUBMODULES ""
