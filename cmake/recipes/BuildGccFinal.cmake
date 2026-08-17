@@ -5,7 +5,12 @@
 
 # Build a complete gcc compiler to be able to compile the full gcc for the host when crosscompiling.
 # Using gcc-base doesn't work since is missing some headers.
-if(CMAKE_TOOLCHAIN_FILE)
+if(CMAKE_TOOLCHAIN_FILE AND VITASDK_STAGE1_DIR)
+    # Stage 2: the native compiler used to build gcc-final's target libraries
+    # is the imported stage-1 SDK; gcc-complete is a stub defined by
+    # ImportStage1.cmake that only guarantees the sysroot has been copied.
+    set(GCC_DEPENDS gcc-complete)
+elseif(CMAKE_TOOLCHAIN_FILE)
     # pthread-embedded supplies libpthread and pthread.h in the native sysroot.
     # The target libraries configured below link full executables, so the POSIX
     # thread layer must already be installed for those link tests to succeed.

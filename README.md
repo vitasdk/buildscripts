@@ -142,3 +142,44 @@ make check-toolchain-contract
 make check-static-policy
 make audit-host-dependencies
 ```
+
+## Staged builds
+
+The build can run as a single native build (the historical behaviour, still
+fully supported on every OS) or split into stages:
+
+* **Stage 1 — native Linux.** `cmake .. && make tarball`. Builds everything,
+  including the native `arm-vita-eabi` compiler and the target sysroot
+  (newlib, pthread-embedded, vita-headers). The resulting tarball is both a
+  complete Linux SDK and the input for stage 2.
+* **Stage 2 — cross hosts.** Unpack a stage-1 SDK, put its `bin/` in `PATH`
+  and configure with a host toolchain file plus `VITASDK_STAGE1_DIR`:
+
+  ```sh
+  cmake .. \
+      -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-w64-mingw32.cmake \
+      -DVITASDK_STAGE1_DIR=/path/to/unpacked/vitasdk
+  make tarball
+  ```
+
+  Only the host binaries (binutils, gcc, gdb, vita-toolchain and their
+  private dependencies) are compiled; the native toolchain and the target
+  sysroot are imported from stage 1, which removes the most expensive part
+  of the historical cross build.
+
+Available host toolchain files under `cmake/toolchains/`:
+
+| File | Host | Notes |
+| --- | --- | --- |
+| `x86_64-w64-mingw32.cmake` | Windows x86_64 | mingw-w64 |
+| `i686-w64-mingw32.cmake` | Windows i686 | mingw-w64 |
+| `x86_64-linux-musl.cmake` | Linux x86_64 (musl) | fully static; runs on Alpine and glibc distros |
+| `aarch64-linux-musl.cmake` | Linux aarch64 (musl) | fully static |
+| `aarch64-linux-gnu.cmake` | Linux aarch64 (glibc) | alternative to a native arm64 build |
+| `x86_64-apple-darwin.cmake` | macOS x86_64 | requires osxcross; see file header |
+| `aarch64-apple-darwin.cmake` | macOS arm64 | requires osxcross; see file header |
+
+Native builds without `VITASDK_STAGE1_DIR` (Linux, macOS, msys2) behave
+exactly as before: no stage-1 artifact is required to build from source on
+your own OS. `VITASDK_STAGE1_DIR` is an optional shortcut, not a
+requirement.

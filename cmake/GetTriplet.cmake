@@ -1,4 +1,13 @@
 function(get_host_triplet triplet)
+    # A toolchain file can pin the exact host triplet. Required whenever the
+    # heuristics below cannot tell the libc/vendor apart from the build
+    # machine (e.g. cross compiling *to* musl from a glibc host, or targeting
+    # macOS through osxcross).
+    if(VITASDK_HOST_TRIPLET)
+        set(${triplet} "${VITASDK_HOST_TRIPLET}" PARENT_SCOPE)
+        return()
+    endif()
+
     set(host_arch ${CMAKE_SYSTEM_PROCESSOR})
     if(host_arch STREQUAL "x86")
         set(host_arch "i686")

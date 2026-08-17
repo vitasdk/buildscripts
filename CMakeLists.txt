@@ -20,6 +20,35 @@ include(cmake/StaticPolicy.cmake)
 # Location to save the downloaded tarballs. Can be overriden from command line.
 set(DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/downloads CACHE PATH "Default download path for tarballs")
 
+# Staged builds
+# =============
+# Stage 1 (native, usually Linux): builds the whole SDK, including the
+# target sysroot (newlib, pthread-embedded, vita-headers) and a native
+# arm-vita-eabi compiler. Its tarball is a complete SDK *and* the input
+# for stage 2.
+# Stage 2 (cross, e.g. mingw/musl/osxcross): point VITASDK_STAGE1_DIR at an
+# unpacked stage-1 SDK. The native toolchain and the target sysroot are
+# imported from it instead of being rebuilt, so only the host binaries
+# (binutils, gcc, gdb, vita-toolchain) are compiled for the new host.
+# Native builds on any OS (no toolchain file, no stage-1 dir) keep working
+# exactly as before; staging is an optimization, not a requirement.
+set(VITASDK_STAGE1_DIR "" CACHE PATH
+    "Unpacked stage-1 native SDK used to skip the native toolchain and sysroot rebuild when cross compiling")
+
+if(VITASDK_STAGE1_DIR)
+    if(NOT CMAKE_TOOLCHAIN_FILE)
+        message(FATAL_ERROR "VITASDK_STAGE1_DIR only makes sense when cross compiling (CMAKE_TOOLCHAIN_FILE is not set). For a native build just drop the option.")
+    endif()
+    get_filename_component(VITASDK_STAGE1_DIR "${VITASDK_STAGE1_DIR}" ABSOLUTE)
+    if(NOT EXISTS "${VITASDK_STAGE1_DIR}/bin/arm-vita-eabi-gcc")
+        message(FATAL_ERROR "VITASDK_STAGE1_DIR='${VITASDK_STAGE1_DIR}' does not look like a stage-1 SDK (missing bin/arm-vita-eabi-gcc)")
+    endif()
+    if(NOT EXISTS "${VITASDK_STAGE1_DIR}/arm-vita-eabi/lib/libc.a")
+        message(FATAL_ERROR "VITASDK_STAGE1_DIR='${VITASDK_STAGE1_DIR}' has no target sysroot (missing arm-vita-eabi/lib/libc.a)")
+    endif()
+    message(STATUS "Stage 2 build: importing native toolchain and sysroot from ${VITASDK_STAGE1_DIR}")
+endif()
+
 set(OFFLINE YES CACHE BOOL "Disable updates for Git-backed ExternalProject sources")
 set(UPDATE_DISCONNECTED_SUPPORT UPDATE_DISCONNECTED ${OFFLINE})
 
@@ -113,12 +142,20 @@ else()
     set(toolchain_target_depends_dir "${CMAKE_BINARY_DIR}/deps_${target_suffix}")
 endif()
 
-# Native toolchain install dir (used to build the real toolchain)
-set(toolchain_build_install_dir ${CMAKE_BINARY_DIR}/toolchain_${build_suffix})
-# Native toolchain dependencies dir
-set(toolchain_build_depends_dir ${CMAKE_BINARY_DIR}/deps_${build_suffix})
-# Build the native vita-toolchain, gcc dependencies and binutils
-toolchain_deps("${toolchain_build_depends_dir}" "${toolchain_build_install_dir}" "${build_suffix}")
+if(VITASDK_STAGE1_DIR)
+    # Stage 2: the native toolchain is the imported stage-1 SDK. Everything
+    # that used to be built into toolchain_${build_suffix} (native binutils,
+    # gcc, vita-libs-gen and the sysroot copies) is already there.
+    set(toolchain_build_install_dir ${VITASDK_STAGE1_DIR})
+    set(toolchain_build_depends_dir ${CMAKE_BINARY_DIR}/deps_${build_suffix})
+else()
+    # Native toolchain install dir (used to build the real toolchain)
+    set(toolchain_build_install_dir ${CMAKE_BINARY_DIR}/toolchain_${build_suffix})
+    # Native toolchain dependencies dir
+    set(toolchain_build_depends_dir ${CMAKE_BINARY_DIR}/deps_${build_suffix})
+    # Build the native vita-toolchain, gcc dependencies and binutils
+    toolchain_deps("${toolchain_build_depends_dir}" "${toolchain_build_install_dir}" "${build_suffix}")
+endif()
 
 option(BUILD_PACMAN_CLIENT "Build the package client provided by vdpm" OFF)
 set(PACMAN_CLIENT_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}"
@@ -163,7 +200,15 @@ list(APPEND pthread_tools
     )
 
 # Modular recipes
-include(cmake/recipes/BuildGccBase.cmake)
-include(cmake/recipes/BuildSdkComponents.cmake)
+if(VITASDK_STAGE1_DIR)
+    # Stage 2: gcc-base is not built (common gcc configure args still needed
+    # by gcc-final) and the sysroot components are imported from stage 1.
+    include(cmake/recipes/GccCommonArgs.cmake)
+    include(cmake/recipes/ImportStage1.cmake)
+else()
+    include(cmake/recipes/GccCommonArgs.cmake)
+    include(cmake/recipes/BuildGccBase.cmake)
+    include(cmake/recipes/BuildSdkComponents.cmake)
+endif()
 include(cmake/recipes/BuildGccFinal.cmake)
 include(cmake/recipes/FinalizeSdk.cmake)

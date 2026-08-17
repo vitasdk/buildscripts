@@ -6,8 +6,16 @@ on:
   repository_dispatch:
     types: [run_build]
 
+env:
+  DEBIAN_DEPS: cmake cmake-data git build-essential autoconf automake libtool texinfo bison flex pkg-config ccache
+
 jobs:
-  build-linux:
+  # ---------------------------------------------------------------------
+  # Stage 1: full native build on Linux. Produces a complete SDK whose
+  # tarball doubles as the input artifact for every stage-2 cross build
+  # (it carries the native arm-vita-eabi compiler and the target sysroot).
+  # ---------------------------------------------------------------------
+  stage1-linux:
     runs-on: ubuntu-24.04
     env:
       CCACHE_DIR: ~/.ccache
@@ -20,15 +28,15 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y cmake cmake-data git build-essential autoconf automake libtool texinfo bison flex pkg-config ccache
+        sudo apt-get install -y $DEBIAN_DEPS
     - name: ccache
       uses: actions/cache@v6
       with:
         path: ~/.ccache
-        key: ${{ runner.os }}-ccache-${{ github.ref }}-${{ github.sha }}
+        key: stage1-linux-ccache-${{ github.ref }}-${{ github.sha }}
         restore-keys: |
-          ${{ runner.os }}-ccache-${{ github.ref }}-
-          ${{ runner.os }}-ccache-
+          stage1-linux-ccache-${{ github.ref }}-
+          stage1-linux-ccache-
     - name: downloads
       uses: actions/cache@v6
       with:
@@ -38,8 +46,8 @@ jobs:
           ${{ runner.os }}-downloads-
     - name: Build
       run: |
-        git config --global user.email "builds@travis-ci.com"
-        git config --global user.name "Travis CI"
+        git config --global user.email "builds@ci.invalid"
+        git config --global user.name "CI"
         mkdir -p build
         cd build
         cmake ..
@@ -51,7 +59,9 @@ jobs:
         name: vitasdk-linux
         path: build/*.tar.bz2
 
-  build-linux-arm64:
+  # Native arm64 Linux build. Kept native because stage-2 cross builds must
+  # execute the stage-1 (x86_64) binaries on the build machine.
+  stage1-linux-arm64:
     runs-on: ubuntu-24.04-arm
     env:
       CCACHE_DIR: ~/.ccache
@@ -64,26 +74,26 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y cmake cmake-data git build-essential autoconf automake libtool texinfo bison flex pkg-config ccache
+        sudo apt-get install -y $DEBIAN_DEPS
     - name: ccache
       uses: actions/cache@v6
       with:
         path: ~/.ccache
-        key: ${{ runner.os }}-ccache-${{ github.ref }}-${{ github.sha }}
+        key: stage1-arm64-ccache-${{ github.ref }}-${{ github.sha }}
         restore-keys: |
-          ${{ runner.os }}-ccache-${{ github.ref }}-
-          ${{ runner.os }}-ccache-
+          stage1-arm64-ccache-${{ github.ref }}-
+          stage1-arm64-ccache-
     - name: downloads
       uses: actions/cache@v6
       with:
         path: build/downloads
-        key: ${{ runner.os }}-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
+        key: ${{ runner.os }}-arm64-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
         restore-keys: |
-          ${{ runner.os }}-downloads-
+          ${{ runner.os }}-arm64-downloads-
     - name: Build
       run: |
-        git config --global user.email "builds@travis-ci.com"
-        git config --global user.name "Travis CI"
+        git config --global user.email "builds@ci.invalid"
+        git config --global user.name "CI"
         mkdir -p build
         cd build
         cmake ..
@@ -95,8 +105,111 @@ jobs:
         name: vitasdk-linux-arm64
         path: build/*.tar.bz2
 
+  # ---------------------------------------------------------------------
+  # Stage 2: cross builds that consume the stage-1 SDK. Only the host
+  # binaries are compiled; the native toolchain and the target sysroot are
+  # imported, so these jobs are much faster than a full build.
+  # ---------------------------------------------------------------------
+  stage2:
+    needs: stage1-linux
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows-x86_64
+            toolchain: cmake/toolchains/x86_64-w64-mingw32.cmake
+            apt: g++-mingw-w64-x86-64
+          - name: windows-i686
+            toolchain: cmake/toolchains/i686-w64-mingw32.cmake
+            apt: g++-mingw-w64-i686
+          - name: linux-musl-x86_64
+            toolchain: cmake/toolchains/x86_64-linux-musl.cmake
+            musl: x86_64-linux-musl-cross
+          - name: linux-musl-aarch64
+            toolchain: cmake/toolchains/aarch64-linux-musl.cmake
+            musl: aarch64-linux-musl-cross
+    env:
+      CCACHE_DIR: ~/.ccache
+      CCACHE_MAXSIZE: 2G
+      CCACHE_COMPRESS: "1"
+      CCACHE_COMPRESSLEVEL: "6"
+    steps:
+    - uses: actions/checkout@v7
+    - uses: actions/setup-python@v7
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y $DEBIAN_DEPS ${{ matrix.apt }}
+    - name: Install musl cross toolchain
+      if: ${{ matrix.musl }}
+      run: |
+        curl -fLO https://musl.cc/${{ matrix.musl }}.tgz
+        sudo tar -xzf ${{ matrix.musl }}.tgz -C /opt
+        echo "/opt/${{ matrix.musl }}/bin" >> $GITHUB_PATH
+    - name: ccache
+      uses: actions/cache@v6
+      with:
+        path: ~/.ccache
+        key: stage2-${{ matrix.name }}-ccache-${{ github.ref }}-${{ github.sha }}
+        restore-keys: |
+          stage2-${{ matrix.name }}-ccache-${{ github.ref }}-
+          stage2-${{ matrix.name }}-ccache-
+    - name: downloads
+      uses: actions/cache@v6
+      with:
+        path: build/downloads
+        key: ${{ runner.os }}-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
+        restore-keys: |
+          ${{ runner.os }}-downloads-
+    - name: Fetch stage-1 SDK
+      uses: actions/download-artifact@v7
+      with:
+        name: vitasdk-linux
+        path: stage1-artifact
+    - name: Unpack stage-1 SDK
+      run: |
+        mkdir -p stage1
+        tar -xjf stage1-artifact/*.tar.bz2 -C stage1
+        STAGE1_DIR=$(dirname "$(dirname "$(find "$PWD/stage1" -type f -name arm-vita-eabi-gcc -path '*/bin/*' | head -1)")")
+        test -n "$STAGE1_DIR"
+        echo "STAGE1_DIR=$STAGE1_DIR" >> $GITHUB_ENV
+        echo "$STAGE1_DIR/bin" >> $GITHUB_PATH
+    - name: Build
+      run: |
+        git config --global user.email "builds@ci.invalid"
+        git config --global user.name "CI"
+        unset CC CXX
+        mkdir -p build
+        cd build
+        cmake .. \
+          -DCMAKE_TOOLCHAIN_FILE=${{ matrix.toolchain }} \
+          -DVITASDK_STAGE1_DIR="$STAGE1_DIR"
+        make -j$(nproc) tarball
+    - name: Upload artifacts
+      if: ${{ success() }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: vitasdk-${{ matrix.name }}
+        path: build/*.tar.bz2
+
+  # ---------------------------------------------------------------------
+  # macOS: kept as native builds. A stage-2 cross build would need osxcross
+  # plus a macOS SDK extracted from Xcode, whose license restricts use to
+  # Apple hardware; a toolchain file (cmake/toolchains/*-apple-darwin.cmake)
+  # is provided for environments where that is already settled.
+  # macos-14 covers arm64, macos-13 adds the previously missing x86_64 SDK.
+  # ---------------------------------------------------------------------
   build-macos:
-    runs-on: macos-14
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            name: macos-arm64
+          - runner: macos-13
+            name: macos-x86_64
+    runs-on: ${{ matrix.runner }}
     env:
       CCACHE_DIR: ~/Library/Caches/ccache
       CCACHE_MAXSIZE: 2G
@@ -112,21 +225,21 @@ jobs:
       uses: actions/cache@v6
       with:
         path: ~/Library/Caches/ccache
-        key: ${{ runner.os }}-ccache-${{ github.ref }}-${{ github.sha }}
+        key: ${{ matrix.name }}-ccache-${{ github.ref }}-${{ github.sha }}
         restore-keys: |
-          ${{ runner.os }}-ccache-${{ github.ref }}-
-          ${{ runner.os }}-ccache-
+          ${{ matrix.name }}-ccache-${{ github.ref }}-
+          ${{ matrix.name }}-ccache-
     - name: downloads
       uses: actions/cache@v6
       with:
         path: build/downloads
-        key: ${{ runner.os }}-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
+        key: ${{ matrix.name }}-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
         restore-keys: |
-          ${{ runner.os }}-downloads-
+          ${{ matrix.name }}-downloads-
     - name: Build
       run: |
-        git config --global user.email "builds@travis-ci.com"
-        git config --global user.name "Travis CI"
+        git config --global user.email "builds@ci.invalid"
+        git config --global user.name "CI"
         mkdir -p build
         cd build
         cmake ..
@@ -135,51 +248,5 @@ jobs:
       if: ${{ success() }}
       uses: actions/upload-artifact@v7
       with:
-        name: vitasdk-macos
-        path: build/*.tar.bz2
-
-  build-windows:
-    runs-on: ubuntu-22.04
-    env:
-      CCACHE_DIR: ~/.ccache
-      CCACHE_MAXSIZE: 2G
-      CCACHE_COMPRESS: "1"
-      CCACHE_COMPRESSLEVEL: "6"
-    steps:
-    - uses: actions/checkout@v7
-    - uses: actions/setup-python@v7
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y cmake cmake-data git build-essential autoconf automake libtool texinfo bison flex pkg-config g++-mingw-w64 ccache
-    - name: ccache
-      uses: actions/cache@v6
-      with:
-        path: ~/.ccache
-        key: ${{ runner.os }}-ccache-${{ github.ref }}-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-ccache-${{ github.ref }}-
-          ${{ runner.os }}-ccache-
-    - name: downloads
-      uses: actions/cache@v6
-      with:
-        path: build/downloads
-        key: ${{ runner.os }}-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
-        restore-keys: |
-          ${{ runner.os }}-downloads-
-    - name: Build
-      run: |
-        git config --global user.email "builds@travis-ci.com"
-        git config --global user.name "Travis CI"
-        unset CXX
-        unset CC
-        mkdir -p build
-        cd build
-        cmake .. -DCMAKE_TOOLCHAIN_FILE=toolchain-x86_64-w64-mingw32.cmake
-        make -j$(nproc) tarball
-    - name: Upload artifacts
-      if: ${{ success() }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: vitasdk-windows
+        name: vitasdk-${{ matrix.name }}
         path: build/*.tar.bz2

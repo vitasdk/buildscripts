@@ -23,4 +23,12 @@ assert_flags(Windows
     "-static;-static-libgcc;-static-libstdc++")
 assert_flags(Darwin "" "" "")
 
+# musl hosts request a fully static link (see cmake/toolchains/*-linux-musl.cmake)
+set(VITASDK_FULLY_STATIC ON)
+assert_flags(Linux
+    "-static-libgcc"
+    "-static;-static-libgcc;-static-libstdc++"
+    "-static;-static-libgcc;-static-libstdc++")
+unset(VITASDK_FULLY_STATIC)
+
 message(STATUS "Static host-link policy checks passed")

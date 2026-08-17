@@ -8,7 +8,13 @@ function(vitasdk_get_host_static_flags system_name out_c out_cxx out_link)
     set(cxx_flags)
     set(link_flags)
 
-    if(system_name STREQUAL "Linux")
+    if(system_name STREQUAL "Linux" AND VITASDK_FULLY_STATIC)
+        # musl hosts: link the whole binary statically so the resulting SDK
+        # runs unmodified on Alpine and on any glibc distribution.
+        set(c_flags -static-libgcc)
+        set(cxx_flags -static -static-libgcc -static-libstdc++)
+        set(link_flags -static -static-libgcc -static-libstdc++)
+    elseif(system_name STREQUAL "Linux")
         set(c_flags -static-libgcc)
         set(cxx_flags -static-libgcc -static-libstdc++)
         set(link_flags -static-libgcc -static-libstdc++)
