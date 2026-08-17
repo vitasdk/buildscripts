@@ -129,6 +129,16 @@ jobs:
           - name: linux-musl-aarch64
             toolchain: cmake/toolchains/aarch64-linux-musl.cmake
             musl: aarch64-linux-musl-cross
+          - name: freebsd-x86_64
+            toolchain: cmake/toolchains/x86_64-unknown-freebsd.cmake
+            freebsd: "14.3"
+            freebsd_arch: x86_64
+            apt: clang lld llvm
+          - name: freebsd-aarch64
+            toolchain: cmake/toolchains/aarch64-unknown-freebsd.cmake
+            freebsd: "14.3"
+            freebsd_arch: aarch64
+            apt: clang lld llvm
     env:
       CCACHE_DIR: ~/.ccache
       CCACHE_MAXSIZE: 2G
@@ -147,6 +157,13 @@ jobs:
         curl -fLO https://musl.cc/${{ matrix.musl }}.tgz
         sudo tar -xzf ${{ matrix.musl }}.tgz -C /opt
         echo "/opt/${{ matrix.musl }}/bin" >> $GITHUB_PATH
+    - name: Install FreeBSD cross environment
+      if: ${{ matrix.freebsd }}
+      run: |
+        sudo mkdir -p /opt/freebsd-cross
+        sudo chown $(id -u) /opt/freebsd-cross
+        sh scripts/setup-freebsd-cross.sh ${{ matrix.freebsd }} /opt/freebsd-cross ${{ matrix.freebsd_arch }}
+        echo "/opt/freebsd-cross/bin" >> $GITHUB_PATH
     - name: ccache
       uses: actions/cache@v6
       with:

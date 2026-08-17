@@ -176,6 +176,8 @@ Available host toolchain files under `cmake/toolchains/`:
 | `x86_64-linux-musl.cmake` | Linux x86_64 (musl) | fully static; runs on Alpine and glibc distros |
 | `aarch64-linux-musl.cmake` | Linux aarch64 (musl) | fully static |
 | `aarch64-linux-gnu.cmake` | Linux aarch64 (glibc) | alternative to a native arm64 build |
+| `x86_64-unknown-freebsd.cmake` | FreeBSD x86_64 | clang + base.txz sysroot, see `scripts/setup-freebsd-cross.sh` |
+| `aarch64-unknown-freebsd.cmake` | FreeBSD aarch64 | clang + base.txz sysroot, see `scripts/setup-freebsd-cross.sh` |
 | `x86_64-apple-darwin.cmake` | macOS x86_64 | requires osxcross; see file header |
 | `aarch64-apple-darwin.cmake` | macOS arm64 | requires osxcross; see file header |
 
