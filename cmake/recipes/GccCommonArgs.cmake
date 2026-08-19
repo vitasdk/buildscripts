@@ -36,7 +36,7 @@ set(common_gcc_configure_args
     --disable-libstdcxx-pch
     --disable-nls
     --disable-shared
-    --disable-tls
+    --enable-tls
     --with-gnu-as
     --with-gnu-ld
     --with-newlib
