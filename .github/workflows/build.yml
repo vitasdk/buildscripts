@@ -15,14 +15,14 @@ jobs:
       CCACHE_COMPRESS: "1"
       CCACHE_COMPRESSLEVEL: "6"
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - uses: actions/checkout@v7
+    - uses: actions/setup-python@v7
     - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y cmake cmake-data git build-essential autoconf automake libtool texinfo bison flex pkg-config ccache
     - name: ccache
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: ~/.ccache
         key: ${{ runner.os }}-ccache-${{ github.ref }}-${{ github.sha }}
@@ -30,7 +30,7 @@ jobs:
           ${{ runner.os }}-ccache-${{ github.ref }}-
           ${{ runner.os }}-ccache-
     - name: downloads
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: build/downloads
         key: ${{ runner.os }}-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
@@ -46,7 +46,7 @@ jobs:
         make -j$(nproc) tarball
     - name: Upload artifacts
       if: ${{ success() }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: vitasdk-linux
         path: build/*.tar.bz2
@@ -59,14 +59,14 @@ jobs:
       CCACHE_COMPRESS: "1"
       CCACHE_COMPRESSLEVEL: "6"
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - uses: actions/checkout@v7
+    - uses: actions/setup-python@v7
     - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y cmake cmake-data git build-essential autoconf automake libtool texinfo bison flex pkg-config ccache
     - name: ccache
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: ~/.ccache
         key: ${{ runner.os }}-ccache-${{ github.ref }}-${{ github.sha }}
@@ -74,7 +74,7 @@ jobs:
           ${{ runner.os }}-ccache-${{ github.ref }}-
           ${{ runner.os }}-ccache-
     - name: downloads
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: build/downloads
         key: ${{ runner.os }}-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
@@ -90,7 +90,7 @@ jobs:
         make -j$(nproc) tarball
     - name: Upload artifacts
       if: ${{ success() }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: vitasdk-linux-arm64
         path: build/*.tar.bz2
@@ -103,13 +103,13 @@ jobs:
       CCACHE_COMPRESS: "1"
       CCACHE_COMPRESSLEVEL: "6"
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - uses: actions/checkout@v7
+    - uses: actions/setup-python@v7
     - name: Install dependencies
       run: |
         brew install autoconf automake libtool texinfo ccache
     - name: ccache
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: ~/Library/Caches/ccache
         key: ${{ runner.os }}-ccache-${{ github.ref }}-${{ github.sha }}
@@ -117,7 +117,7 @@ jobs:
           ${{ runner.os }}-ccache-${{ github.ref }}-
           ${{ runner.os }}-ccache-
     - name: downloads
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: build/downloads
         key: ${{ runner.os }}-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
@@ -133,7 +133,7 @@ jobs:
         make -j$(sysctl -n hw.logicalcpu) tarball
     - name: Upload artifacts
       if: ${{ success() }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: vitasdk-macos
         path: build/*.tar.bz2
@@ -146,14 +146,14 @@ jobs:
       CCACHE_COMPRESS: "1"
       CCACHE_COMPRESSLEVEL: "6"
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - uses: actions/checkout@v7
+    - uses: actions/setup-python@v7
     - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y cmake cmake-data git build-essential autoconf automake libtool texinfo bison flex pkg-config g++-mingw-w64 ccache
     - name: ccache
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: ~/.ccache
         key: ${{ runner.os }}-ccache-${{ github.ref }}-${{ github.sha }}
@@ -161,7 +161,7 @@ jobs:
           ${{ runner.os }}-ccache-${{ github.ref }}-
           ${{ runner.os }}-ccache-
     - name: downloads
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: build/downloads
         key: ${{ runner.os }}-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
@@ -179,7 +179,7 @@ jobs:
         make -j$(nproc) tarball
     - name: Upload artifacts
       if: ${{ success() }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: vitasdk-windows
         path: build/*.tar.bz2
