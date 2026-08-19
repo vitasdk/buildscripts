@@ -38,6 +38,7 @@ if(VITASDK_FLOAT_ABI STREQUAL "softfp")
         COMMAND ${PROJECT_SOURCE_DIR}/scripts/build-softfp-shim.sh
             ${binutils_prefix}-gcc ${binutils_prefix}-ar ${binutils_prefix}-objcopy
             ${PROJECT_SOURCE_DIR}/softfp-shim
+            ${CMAKE_INSTALL_PREFIX}/${target_arch}/include
             ${CMAKE_INSTALL_PREFIX}/${target_arch}/lib
             ${toolchain_build_install_dir}/${target_arch}/lib
         COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/softfp-shim.stamp
