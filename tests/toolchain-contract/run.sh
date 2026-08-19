@@ -46,13 +46,42 @@ echo "checking predefined macros"
 macros=$("${CC}" -dM -E -x c /dev/null)
 expect_text "${macros}" "#define __vita__ 1" "__vita__ macro"
 expect_text "${macros}" "#define __ARM_EABI__ 1" "ARM EABI macro"
-expect_text "${macros}" "#define __ARM_PCS_VFP 1" "hard-float PCS macro"
 expect_text "${macros}" "#define __ARM_ARCH 7" "ARMv7 default"
 expect_text "${macros}" "#define __ARM_NEON 1" "NEON default"
+
+echo "checking float ABI contract"
+# The float ABI (hard vs softfp) is a build parameter (VITASDK_FLOAT_ABI):
+# detect which one this compiler defaults to, then assert the contract for
+# that world in both directions instead of assuming hard-float.
+expect_text "${macros}" "#define __ARM_FP " \
+    "hardware FPU macro (both float ABIs compute on VFP hardware)"
+if printf '%s\n' "${macros}" | grep -qF '#define __ARM_PCS_VFP 1'; then
+    float_abi=hard
+else
+    float_abi=softfp
+fi
+echo "detected float ABI: ${float_abi}"
+
+if [ "${float_abi}" = "hard" ]; then
+    expect_text "${macros}" "#define __ARM_PCS_VFP 1" "hard-float PCS macro"
+else
+    reject_text "${macros}" "#define __ARM_PCS_VFP 1" \
+        "hard-float PCS macro in a softfp toolchain"
+fi
 
 echo "checking C ABI"
 "${CC}" -std=c11 -Wall -Wextra -Werror -c \
     "${srcdir}/abi.c" -o "${workdir}/abi.o"
+
+echo "checking ARM float ABI attribute"
+abi_attributes=$("${READELF}" -A "${workdir}/abi.o")
+if [ "${float_abi}" = "hard" ]; then
+    expect_text "${abi_attributes}" "Tag_ABI_VFP_args" \
+        "VFP-args ABI attribute in a hard-float object"
+else
+    reject_text "${abi_attributes}" "Tag_ABI_VFP_args" \
+        "VFP-args ABI attribute in a softfp object"
+fi
 
 echo "checking C++ ABI, exceptions and RTTI"
 "${CXX}" -std=c++17 -Wall -Wextra -Werror -c \
@@ -113,5 +142,31 @@ echo "checking ARM unwind section generation"
 
 echo "checking that public headers compile on their own"
 "${srcdir}/self-contained-headers.sh"
+
+if [ "${float_abi}" = "softfp" ]; then
+    echo "checking the softfp ABI shims (23 functions) resolve against the shim, not the raw stub"
+    shim_map="${workdir}/softfp-shim.map"
+    "${CC}" -std=c11 -Wall -Wextra -Werror \
+        "${srcdir}/softfp-shim.c" -o "${workdir}/softfp-shim.elf" \
+        -lSceGxm_stub -lSceMotion_stub -lScePaf_stub -lScePgf_stub -lScePvf_stub \
+        -Wl,-Map="${shim_map}"
+
+    shim_map_text=$(cat "${shim_map}")
+    for shimmed_function in \
+        sceGxmSetViewport sceGxmSetWClampValue \
+        sceGxmDepthStencilSurfaceSetBackgroundDepth \
+        sceGxmDepthStencilSurfaceGetBackgroundDepth \
+        sceMotionSetAngleThreshold sceMotionGetAngleThreshold sceMotionRotateYaw \
+        scePafGraphicsUpdateCurrentWave sce_paf_strtod \
+        sceFontSetResolution sceFontPixelToPointH sceFontPixelToPointV \
+        sceFontPointToPixelH sceFontPointToPixelV \
+        scePvfSetCharSize scePvfSetEM scePvfSetEmboldenRate scePvfSetResolution \
+        scePvfSetSkewValue scePvfPixelToPointH scePvfPixelToPointV \
+        scePvfPointToPixelH scePvfPointToPixelV
+    do
+        expect_text "${shim_map_text}" "(${shimmed_function}.o)" \
+            "${shimmed_function} resolved against the softfp shim wrapper"
+    done
+fi
 
 echo "Vita GCC/binutils contract OK"

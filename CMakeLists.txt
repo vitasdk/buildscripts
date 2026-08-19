@@ -91,6 +91,23 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 # Toolchain arch target
 set(target_arch arm-vita-eabi)
+
+# Float ABI baked into the toolchain: a build parameter, never a branch (see
+# PLAN-softfp.md). Selects --with-float in the GCC configure; world_arch is
+# the identity stamped into the core (pacman Architecture, makepkg CARCH,
+# version_info.txt) so a softfp core can never be mistaken for the default one.
+set(VITASDK_FLOAT_ABI "hard" CACHE STRING
+    "Float ABI baked into the toolchain: hard (default) or softfp")
+set_property(CACHE VITASDK_FLOAT_ABI PROPERTY STRINGS hard softfp)
+if(NOT VITASDK_FLOAT_ABI STREQUAL "hard" AND NOT VITASDK_FLOAT_ABI STREQUAL "softfp")
+    message(FATAL_ERROR "VITASDK_FLOAT_ABI must be 'hard' or 'softfp', got '${VITASDK_FLOAT_ABI}'")
+endif()
+if(VITASDK_FLOAT_ABI STREQUAL "softfp")
+    set(world_arch "vita-softfp")
+else()
+    set(world_arch "vita")
+endif()
+
 # Build date
 string(TIMESTAMP build_date "%Y-%m-%d_%H-%M-%S")
 string(TIMESTAMP default_package_version "0.%Y%m%d.%H%M%S" UTC)

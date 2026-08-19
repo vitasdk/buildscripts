@@ -7,6 +7,7 @@ file(READ ${INPUT_DIR}/pthread-embedded-version.txt _pthread_sha1)
 file(READ ${INPUT_DIR}/samples-version.txt _samples_sha1)
 
 file(WRITE ${OUTPUT_FILE} "Built at ${BUILD_DATE}\n")
+file(APPEND ${OUTPUT_FILE} "world             ${WORLD_ARCH} (float-abi=${VITASDK_FLOAT_ABI})\n")
 file(APPEND ${OUTPUT_FILE} "newlib            ${_newlib_sha1}")
 file(APPEND ${OUTPUT_FILE} "pthread-embedded  ${_pthread_sha1}")
 file(APPEND ${OUTPUT_FILE} "samples           ${_samples_sha1}")
