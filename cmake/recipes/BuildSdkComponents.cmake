@@ -106,4 +106,3 @@ ExternalProject_Add(samples
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/samples-version.txt
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
-
