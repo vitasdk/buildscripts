@@ -308,6 +308,14 @@ jobs:
       run: |
         scripts/setup-freebsd-cross.sh ${{ matrix.freebsd }} /opt/freebsd-cross ${{ matrix.freebsd_arch }}
         echo "/opt/freebsd-cross/bin" >> $GITHUB_PATH
+        # These two jobs are the only ones that unpack a second operating
+        # system onto the runner, and they are the only ones whose runner
+        # has died mid-build -- three times out of five, always around three
+        # minutes in, with no message beyond "shutdown signal". Record what
+        # the machine had left, so the next one is evidence and not a guess.
+        du -sh /opt/freebsd-cross
+        df -h /
+        free -m
     - name: Set up the macOS x86_64 cross environment
       if: ${{ matrix.name == 'macos-x86_64' }}
       run: |
