@@ -1,8 +1,10 @@
 # CMake toolchain for cross compiling the SDK host binaries to x86_64 musl.
 # The result is a fully static SDK that runs on Alpine and on any glibc
 # distribution alike. Expects a musl cross compiler in PATH, e.g. the
-# x86_64-linux-musl-cross tarball from https://musl.cc or one built with
-# richfelker/musl-cross-make.
+# release from https://github.com/cross-tools/musl-cross or one built with
+# richfelker/musl-cross-make. The published toolchains name the host with a
+# vendor field (x86_64-unknown-linux-musl); the SDK does not, and CI aliases
+# the tools so both names resolve.
 
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR x86_64)

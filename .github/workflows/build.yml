@@ -109,10 +109,10 @@ jobs:
             apt: g++-mingw-w64-i686
           - name: linux-musl-x86_64
             toolchain: cmake/toolchains/x86_64-linux-musl.cmake
-            musl: x86_64-linux-musl-cross
+            musl: x86_64-unknown-linux-musl
           - name: linux-musl-aarch64
             toolchain: cmake/toolchains/aarch64-linux-musl.cmake
-            musl: aarch64-linux-musl-cross
+            musl: aarch64-unknown-linux-musl
           - name: freebsd-x86_64
             toolchain: cmake/toolchains/x86_64-unknown-freebsd.cmake
             freebsd: "14.3"
@@ -137,9 +137,26 @@ jobs:
         sudo apt-get install -y $DEBIAN_DEPS ${{ matrix.apt }}
     - name: Install musl cross toolchain
       if: ${{ matrix.musl }}
+      env:
+        # Pinned: a toolchain that changes under us changes the SDK we ship.
+        MUSL_CROSS_RELEASE: "20260515"
       run: |
-        curl -fLO https://musl.cc/${{ matrix.musl }}.tgz
-        sudo tar -xzf ${{ matrix.musl }}.tgz -C /opt
+        base=https://github.com/cross-tools/musl-cross/releases/download/$MUSL_CROSS_RELEASE
+        for suffix in tar.xz tar.xz.sha256; do
+          curl -fL --retry 5 --retry-all-errors --retry-delay 5 \
+            -O "$base/${{ matrix.musl }}.$suffix"
+        done
+        # The published checksum is the bare hash, without a file name.
+        echo "$(cat ${{ matrix.musl }}.tar.xz.sha256)  ${{ matrix.musl }}.tar.xz" \
+          | sha256sum -c -
+        sudo tar -xJf ${{ matrix.musl }}.tar.xz -C /opt
+        # These toolchains carry the vendor field; the SDK names the same host
+        # without it (x86_64-linux-musl), and autotools looks its tools up by
+        # that exact prefix. Alias every tool rather than rename the host.
+        cd /opt/${{ matrix.musl }}/bin
+        for tool in *-unknown-*; do
+          sudo ln -sf "$tool" "$(echo "$tool" | sed 's/-unknown-/-/')"
+        done
         echo "/opt/${{ matrix.musl }}/bin" >> $GITHUB_PATH
     - name: Install FreeBSD cross environment
       if: ${{ matrix.freebsd }}
