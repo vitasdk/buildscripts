@@ -223,6 +223,14 @@ jobs:
         cd build
         cmake .. -DVITASDK_STAGE1_DIR="$STAGE1_DIR" ${{ matrix.cmake_extra }}
         make -j$(nproc) tarball
+    - name: Check the toolchain contract
+      # Only where the SDK just built runs on this runner. It compiles and
+      # links real code and checks the ABI both ways, which is the only
+      # thing here that would notice a compiler that builds but does not
+      # work -- and gcc is now built one way in stage 1 and another in
+      # stage 2.
+      if: ${{ matrix.cmake_extra == '' }}
+      run: make -C build check-toolchain-contract
     - name: ccache statistics
       if: ${{ always() }}
       run: ccache --show-stats
@@ -341,6 +349,14 @@ jobs:
         cd build
         cmake .. -DVITASDK_STAGE1_DIR="$STAGE1_DIR" ${{ matrix.cmake_extra }}
         make -j$(getconf _NPROCESSORS_ONLN) tarball
+    - name: Check the toolchain contract
+      # Only where the SDK just built runs on this runner. It compiles and
+      # links real code and checks the ABI both ways, which is the only
+      # thing here that would notice a compiler that builds but does not
+      # work -- and gcc is now built one way in stage 1 and another in
+      # stage 2.
+      if: ${{ matrix.cmake_extra == '' }}
+      run: make -C build check-toolchain-contract
     - name: ccache statistics
       if: ${{ always() }}
       run: ccache --show-stats
