@@ -35,12 +35,16 @@ curl -fL "$base_url" |
     tar -xJf - -C "$sysroot" ./lib ./usr/lib ./usr/include ./usr/libdata
 
 # clang wrappers under the gcc names autoconf probes for a --host triplet.
+# -fuse-ld=lld reaches every invocation, compile-only ones included, and the
+# driver warns about it there; the callers never wrote that flag, so a build
+# with -Werror must not die on it.
 for tool in gcc:clang g++:clang++ cc:clang c++:clang++; do
     name=${tool%%:*}
     real=${tool##*:}
     cat > "$bindir/${triplet}-${name}" <<WRAP
 #!/bin/sh
-exec ${real} --target=${triplet} --sysroot=${sysroot} -fuse-ld=lld "\$@"
+exec ${real} --target=${triplet} --sysroot=${sysroot} -fuse-ld=lld \
+    -Wno-unused-command-line-argument "\$@"
 WRAP
     chmod +x "$bindir/${triplet}-${name}"
 done
