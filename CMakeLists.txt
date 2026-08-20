@@ -210,5 +210,9 @@ else()
     include(cmake/recipes/BuildGccBase.cmake)
     include(cmake/recipes/BuildSdkComponents.cmake)
 endif()
+# vdpm/vita-makepkg are host tools, rebuilt per host in both stages -- stage 2
+# cannot import them from stage 1's sysroot the way it does the target pieces
+# above, since stage 1's copies were built for stage 1's own host.
+include(cmake/recipes/BuildHostTools.cmake)
 include(cmake/recipes/BuildGccFinal.cmake)
 include(cmake/recipes/FinalizeSdk.cmake)
