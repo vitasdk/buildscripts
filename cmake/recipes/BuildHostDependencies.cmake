@@ -6,7 +6,8 @@
 # Function to build the dependencies required for the vitasdk toolchain/headers
 function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffix)
     set(extra_macro_args ${ARGN})
-    set(toolchain_cmake_args)
+    # Every CMake-configured sub-project gets these; see CMakeLists.txt.
+    set(toolchain_cmake_args ${compiler_launcher_args})
     set(libelf_patch_series
         "${PROJECT_SOURCE_DIR}/patches/libelf-configure-in.patch|1")
     set(binutils_patch_series
@@ -32,7 +33,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
     if(toolchain_file)
         # Use the host triplet when crosscompiling
         set(toolchain_host ${host_native})
-        set(toolchain_cmake_args -DCMAKE_TOOLCHAIN_FILE=${toolchain_file})
+        list(APPEND toolchain_cmake_args -DCMAKE_TOOLCHAIN_FILE=${toolchain_file})
         # Workaround for libelf configure step (doesn't detect the toolchain)
         set(cc_compiler "${host_native}-gcc")
         set(ranlib "${host_native}-ranlib")

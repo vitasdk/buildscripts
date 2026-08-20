@@ -46,6 +46,16 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y $DEBIAN_DEPS
+    - name: Enable ccache
+      run: |
+        # gcc, binutils, gdb and newlib are autotools: they honour no CMake
+        # variable, and a shim directory in PATH is the only way they pick
+        # ccache up. Listing it leaves the covered compilers in the log.
+        if [ -x /usr/sbin/update-ccache-symlinks ]; then
+          sudo /usr/sbin/update-ccache-symlinks
+        fi
+        ls /usr/lib/ccache
+        echo /usr/lib/ccache >> $GITHUB_PATH
     - name: ccache
       uses: actions/cache@v6
       with:
@@ -69,6 +79,9 @@ jobs:
         cd build
         cmake ..
         make -j$(nproc) tarball
+    - name: ccache statistics
+      if: ${{ always() }}
+      run: ccache --show-stats
     - name: Upload artifacts
       if: ${{ success() }}
       uses: actions/upload-artifact@v7
@@ -135,6 +148,16 @@ jobs:
         sudo chown $(id -u) /opt/freebsd-cross
         sh scripts/setup-freebsd-cross.sh ${{ matrix.freebsd }} /opt/freebsd-cross ${{ matrix.freebsd_arch }}
         echo "/opt/freebsd-cross/bin" >> $GITHUB_PATH
+    - name: Enable ccache
+      run: |
+        # gcc, binutils, gdb and newlib are autotools: they honour no CMake
+        # variable, and a shim directory in PATH is the only way they pick
+        # ccache up. Listing it leaves the covered compilers in the log.
+        if [ -x /usr/sbin/update-ccache-symlinks ]; then
+          sudo /usr/sbin/update-ccache-symlinks
+        fi
+        ls /usr/lib/ccache
+        echo /usr/lib/ccache >> $GITHUB_PATH
     - name: ccache
       uses: actions/cache@v6
       with:
@@ -174,6 +197,9 @@ jobs:
           -DCMAKE_TOOLCHAIN_FILE=${{ matrix.toolchain }} \
           -DVITASDK_STAGE1_DIR="$STAGE1_DIR"
         make -j$(nproc) tarball
+    - name: ccache statistics
+      if: ${{ always() }}
+      run: ccache --show-stats
     - name: Upload artifacts
       if: ${{ success() }}
       uses: actions/upload-artifact@v7
@@ -225,6 +251,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y $DEBIAN_DEPS
         fi
+    - name: Enable ccache
+      run: |
+        # See the note in stage1-linux: the autotools sub-builds only pick
+        # ccache up through a shim directory in PATH.
+        if [ "$RUNNER_OS" = "macOS" ]; then
+          shims="$(brew --prefix ccache)/libexec"
+        else
+          if [ -x /usr/sbin/update-ccache-symlinks ]; then
+            sudo /usr/sbin/update-ccache-symlinks
+          fi
+          shims=/usr/lib/ccache
+        fi
+        ls "$shims"
+        echo "$shims" >> $GITHUB_PATH
     - name: ccache
       uses: actions/cache@v6
       with:
@@ -260,6 +300,9 @@ jobs:
         cd build
         cmake .. -DVITASDK_STAGE1_DIR="$STAGE1_DIR"
         make -j$(getconf _NPROCESSORS_ONLN) tarball
+    - name: ccache statistics
+      if: ${{ always() }}
+      run: ccache --show-stats
     - name: Upload artifacts
       if: ${{ success() }}
       uses: actions/upload-artifact@v7

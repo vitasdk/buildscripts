@@ -7,11 +7,18 @@ cmake_minimum_required(VERSION 3.16)
 
 project(vitasdk)
 
-# ccache support
+# ccache. This is a superbuild: it compiles nothing of its own, so a launcher
+# set here reaches no compiler at all. It has to be forwarded to the
+# sub-projects CMake configures. The heavy sub-projects (gcc, binutils, gdb,
+# newlib) are autotools and honour no CMake variable whatsoever -- they pick up
+# ccache only through a shim directory in PATH, which is what CI does.
 find_program(CCACHE_PROGRAM ccache)
+set(compiler_launcher_args)
 if(CCACHE_PROGRAM)
-    set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
-    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+    message(STATUS "ccache: ${CCACHE_PROGRAM}")
+    list(APPEND compiler_launcher_args
+        -DCMAKE_C_COMPILER_LAUNCHER=${CCACHE_PROGRAM}
+        -DCMAKE_CXX_COMPILER_LAUNCHER=${CCACHE_PROGRAM})
 endif()
 
 include(cmake/Components.cmake)
