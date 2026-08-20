@@ -208,16 +208,18 @@ jobs:
         path: build/*.tar.bz2
 
   # ---------------------------------------------------------------------
-  # Stage 2, native hosts. These runners are the product's host: arm64
-  # Linux and both macOS architectures, none of which can execute the
-  # stage-1 x86_64 Linux binaries. They do not have to: the target half
-  # arrives as data, nothing here compiles target code, and so no native
-  # arm-vita-eabi compiler is built on them either.
+  # Stage 2 on runners other than Linux x86_64: arm64 Linux and Apple
+  # hardware. None of them can execute the stage-1 x86_64 Linux binaries,
+  # and none of them has to -- the target half arrives as data, nothing
+  # here compiles target code, and so no arm-vita-eabi compiler is built
+  # on them either.
   #
-  # macOS could not be cross built anyway -- osxcross needs a macOS SDK
-  # extracted from Xcode, whose license restricts it to Apple hardware.
-  # A toolchain file (cmake/toolchains/*-apple-darwin.cmake) is provided
-  # for environments where that is already settled.
+  # Both macOS SDKs are produced on Apple silicon: arm64 natively, x86_64
+  # through the same Xcode toolchain with -arch x86_64. Apple's SDK
+  # licence keeps it on Apple hardware, which rules out osxcross in public
+  # CI; building the other architecture on the vendor's own runner does
+  # not need it. The Intel runners are being retired, so depending on them
+  # is depending on something that is going away.
   # ---------------------------------------------------------------------
   stage2-native:
     needs: stage1-linux
@@ -228,12 +230,15 @@ jobs:
           - runner: ubuntu-24.04-arm
             name: linux-arm64
             ccache_dir: ~/.ccache
+            cmake_extra: ""
           - runner: macos-14
             name: macos-arm64
             ccache_dir: ~/Library/Caches/ccache
-          - runner: macos-13
+            cmake_extra: ""
+          - runner: macos-14
             name: macos-x86_64
             ccache_dir: ~/Library/Caches/ccache
+            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-apple-darwin.cmake
     runs-on: ${{ matrix.runner }}
     env:
       CCACHE_DIR: ${{ matrix.ccache_dir }}
@@ -251,6 +256,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y $DEBIAN_DEPS
         fi
+    - name: Set up the macOS x86_64 cross environment
+      if: ${{ matrix.name == 'macos-x86_64' }}
+      run: |
+        scripts/setup-macos-cross.sh "$PWD/macos-cross"
+        echo "$PWD/macos-cross/bin" >> $GITHUB_PATH
     - name: Enable ccache
       run: |
         # See the note in stage1-linux: the autotools sub-builds only pick
@@ -298,7 +308,7 @@ jobs:
         git config --global user.name "CI"
         mkdir -p build
         cd build
-        cmake .. -DVITASDK_STAGE1_DIR="$STAGE1_DIR"
+        cmake .. -DVITASDK_STAGE1_DIR="$STAGE1_DIR" ${{ matrix.cmake_extra }}
         make -j$(getconf _NPROCESSORS_ONLN) tarball
     - name: ccache statistics
       if: ${{ always() }}

@@ -1,23 +1,18 @@
-# CMake toolchain for cross compiling the SDK host binaries to x86_64 macOS
-# through osxcross (https://github.com/tpoechtrager/osxcross).
+# CMake toolchain for building the SDK host binaries for x86_64 macOS on an
+# Apple silicon build machine, through the system Xcode toolchain with
+# -arch x86_64. Apple's SDK licence keeps it on Apple hardware, so this is how
+# an x86_64 SDK is produced without osxcross: same runner, same SDK, other
+# architecture. Expects the wrappers from scripts/setup-macos-cross.sh in PATH.
 #
-# osxcross requires a macOS SDK extracted from Xcode; Apple's license only
-# allows using it on Apple hardware unless you accept the risk, which is why
-# CI keeps native macOS runners as the default and this file exists for
-# environments where osxcross is already set up. Expects the osxcross bin
-# directory in PATH and OSXCROSS_TARGET_TRIPLE (e.g. x86_64-apple-darwin23)
-# exported, or adjust the compiler names below.
+# On a Linux build machine with osxcross already set up, override the two
+# compiler variables with the osxcross names (o64-clang / o64-clang++, or
+# $OSXCROSS_TARGET_TRIPLE-clang); nothing else in this file changes.
 
 set(CMAKE_SYSTEM_NAME Darwin)
 set(CMAKE_SYSTEM_PROCESSOR x86_64)
 
-if(DEFINED ENV{OSXCROSS_TARGET_TRIPLE})
-    set(CMAKE_C_COMPILER $ENV{OSXCROSS_TARGET_TRIPLE}-clang)
-    set(CMAKE_CXX_COMPILER $ENV{OSXCROSS_TARGET_TRIPLE}-clang++)
-else()
-    set(CMAKE_C_COMPILER o64-clang)
-    set(CMAKE_CXX_COMPILER o64-clang++)
-endif()
+set(CMAKE_C_COMPILER x86_64-apple-darwin-gcc)
+set(CMAKE_CXX_COMPILER x86_64-apple-darwin-g++)
 
 set(VITASDK_HOST_TRIPLET x86_64-apple-darwin CACHE STRING "" FORCE)
 
