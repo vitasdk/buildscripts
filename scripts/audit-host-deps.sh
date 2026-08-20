@@ -15,6 +15,16 @@ fail_dependency() {
 
 audit_linux() {
     find "$VITASDK" -type f -print | while IFS= read -r binary; do
+        # ldd runs what it is handed: it asks the loader to trace the
+        # program, and a statically linked one has no loader to obey, so it
+        # simply executes and prints its own diagnostics where a dependency
+        # list should be. On a fully static SDK that turns this audit into
+        # an audit of nm's error messages -- and into running every binary
+        # it was meant to inspect. Ask file(1) first.
+        case "$(file -b "$binary" 2>/dev/null)" in
+            *"dynamically linked"*) ;;
+            *) continue ;;
+        esac
         dependencies=$(ldd "$binary" 2>/dev/null || true)
         [ -n "$dependencies" ] || continue
 
