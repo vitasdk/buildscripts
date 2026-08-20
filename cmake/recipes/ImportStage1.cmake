@@ -12,30 +12,23 @@
 # untouched. Each stage-1 payload is copied exactly once and every stub
 # depends on that single copy step.
 #
-# What gcc-final still builds in stage 2: the host compiler binaries and the
-# target runtime libraries that belong to the GCC version being built
-# (libgcc, libstdc++, libgomp). Those are compiled with the *stage-1 native*
-# arm-vita-eabi-gcc through CC_FOR_TARGET/GCC_FOR_TARGET, which is why
-# toolchain_build_install_dir points at VITASDK_STAGE1_DIR.
+# What gcc-final builds in stage 2: the compiler proper and nothing else
+# (all-gcc). Every target artifact -- newlib, the stubs, libstdc++, libgomp,
+# libgcc and the crt objects -- comes from stage 1, so target code is compiled
+# exactly once for the whole matrix and no host needs a native arm-vita-eabi
+# compiler of its own. cmake/SysrootManifest.cmake holds the partition.
 
 include_guard(GLOBAL)
 
 set(stage1_import_stamp ${CMAKE_BINARY_DIR}/stage1-import.stamp)
 
 add_custom_command(OUTPUT ${stage1_import_stamp}
-    # Target sysroot: newlib, pthread-embedded, vita-headers includes and
-    # stub libraries, all already installed under ${target_arch} by stage 1.
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${VITASDK_STAGE1_DIR}/${target_arch}
-        ${CMAKE_INSTALL_PREFIX}/${target_arch}
-    # NID database consumed by vita-libs-gen and downstream tooling.
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${VITASDK_STAGE1_DIR}/share/vita-headers
-        ${CMAKE_INSTALL_PREFIX}/share/vita-headers
-    # Samples and the gcc python pretty-printers share this prefix.
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${VITASDK_STAGE1_DIR}/share/gcc-${target_arch}
-        ${CMAKE_INSTALL_PREFIX}/share/gcc-${target_arch}
+    COMMAND ${CMAKE_COMMAND}
+        -DSTAGE1_DIR=${VITASDK_STAGE1_DIR}
+        -DPREFIX=${CMAKE_INSTALL_PREFIX}
+        -DTARGET_TRIPLE=${target_arch}
+        -DGCC_VERSION=${GCC_VERSION}
+        -P ${PROJECT_SOURCE_DIR}/cmake/ImportSysroot.cmake
     COMMAND ${CMAKE_COMMAND} -E touch ${stage1_import_stamp}
     COMMENT "Importing stage-1 sysroot from ${VITASDK_STAGE1_DIR}"
     VERBATIM)
