@@ -23,6 +23,15 @@ foreach(directory include lib)
     endif()
 endforeach()
 
+# Everything in a bin directory must be a binary for this host. A staged
+# build merges two machines into one tree, so this is where a producer's
+# binary that rode along on an import gets caught.
+if(DEFINED HOST_TRIPLE AND NOT HOST_TRIPLE STREQUAL "")
+    include("${CMAKE_CURRENT_LIST_DIR}/HostBinaryFormat.cmake")
+    vitasdk_check_binary_directory("${SDK_DIR}/bin" "${HOST_SYSTEM_NAME}" "${HOST_TRIPLE}")
+    vitasdk_check_binary_directory("${sysroot}/bin" "${HOST_SYSTEM_NAME}" "${HOST_TRIPLE}")
+endif()
+
 if(DEFINED VERSION_FILE AND NOT EXISTS "${VERSION_FILE}")
     message(FATAL_ERROR "Missing provenance file: ${VERSION_FILE}")
 endif()
