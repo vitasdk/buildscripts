@@ -66,6 +66,23 @@ if(BUILD_PACMAN_CLIENT)
     list(APPEND finalize_sdk_dependencies package-client-configuration)
 endif()
 
+# Target objects are stripped where they are produced. In stage 2 they arrive
+# already stripped from stage 1, and the objcopy that would do it belongs to
+# the stage-1 host anyway -- unusable on a host that only imports the sysroot.
+set(target_object_strip_commands)
+if(NOT VITASDK_STAGE1_DIR)
+    list(APPEND target_object_strip_commands
+        COMMAND ${CMAKE_COMMAND}
+            -DOBJCOPY_COMMAND=${binutils_prefix}-objcopy
+            "-DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/${target_arch}/lib/*.[ao]"
+            -P ${CMAKE_SOURCE_DIR}/cmake/strip_target_objects.cmake
+        COMMAND ${CMAKE_COMMAND}
+            -DOBJCOPY_COMMAND=${binutils_prefix}-objcopy
+            "-DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/lib/gcc/${target_arch}/${GCC_VERSION}/*[!d][!d][!l].[ao]"
+            -DSKIP_GCC_LTO_PLUGIN=ON
+            -P ${CMAKE_SOURCE_DIR}/cmake/strip_target_objects.cmake)
+endif()
+
 # Finalize only after every component has installed into the SDK. This is the
 # single barrier for cleanup, stripping, provenance and structural checks.
 add_custom_target(finalize-sdk
@@ -81,15 +98,7 @@ add_custom_target(finalize-sdk
         -DHOST_SYSTEM_NAME=${CMAKE_HOST_SYSTEM_NAME}
         -DBINDIR=${CMAKE_INSTALL_PREFIX}/lib/gcc/${target_arch}/${GCC_VERSION}
         -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake
-    COMMAND ${CMAKE_COMMAND}
-        -DOBJCOPY_COMMAND=${binutils_prefix}-objcopy
-        "-DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/${target_arch}/lib/*.[ao]"
-        -P ${CMAKE_SOURCE_DIR}/cmake/strip_target_objects.cmake
-    COMMAND ${CMAKE_COMMAND}
-        -DOBJCOPY_COMMAND=${binutils_prefix}-objcopy
-        "-DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/lib/gcc/${target_arch}/${GCC_VERSION}/*[!d][!d][!l].[ao]"
-        -DSKIP_GCC_LTO_PLUGIN=ON
-        -P ${CMAKE_SOURCE_DIR}/cmake/strip_target_objects.cmake
+    ${target_object_strip_commands}
     COMMAND ${CMAKE_COMMAND} -E remove_directory
         ${CMAKE_INSTALL_PREFIX}/share/man
     COMMAND ${CMAKE_COMMAND} -E remove_directory
@@ -101,6 +110,7 @@ add_custom_target(finalize-sdk
         -DSDK_DIR=${CMAKE_INSTALL_PREFIX}
         -DTARGET_TRIPLE=${target_arch}
         -DHOST_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
+        -DHOST_TRIPLE=${host_native}
         -DVERSION_FILE=${version_info_file}
         -P ${CMAKE_SOURCE_DIR}/cmake/ValidateSdk.cmake
     COMMAND ${CMAKE_COMMAND}
@@ -134,6 +144,13 @@ add_custom_target(audit-host-dependencies
     DEPENDS finalize-sdk
     VERBATIM
     )
+
+add_custom_target(check-sdk-partition
+    COMMAND ${CMAKE_COMMAND}
+        -P ${CMAKE_SOURCE_DIR}/tests/cmake/sysroot-manifest.cmake
+    COMMAND ${CMAKE_COMMAND}
+        -P ${CMAKE_SOURCE_DIR}/tests/cmake/host-binary-format.cmake
+    VERBATIM)
 
 add_custom_target(check-static-policy
     COMMAND ${CMAKE_COMMAND}

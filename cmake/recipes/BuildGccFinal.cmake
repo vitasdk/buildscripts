@@ -5,12 +5,18 @@
 
 # Build a complete gcc compiler to be able to compile the full gcc for the host when crosscompiling.
 # Using gcc-base doesn't work since is missing some headers.
-if(CMAKE_TOOLCHAIN_FILE AND VITASDK_STAGE1_DIR)
-    # Stage 2: the native compiler used to build gcc-final's target libraries
-    # is the imported stage-1 SDK; gcc-complete is a stub defined by
-    # ImportStage1.cmake that only guarantees the sysroot has been copied.
+if(VITASDK_STAGE1_DIR)
+    # Stage 2: every target artifact comes from stage 1, so gcc-final builds
+    # the compiler proper and stops there. Nothing here compiles target code,
+    # which is what lets a host with no runnable arm-vita-eabi compiler --
+    # every host but the stage-1 one -- take part. gcc-complete is a stub
+    # defined by ImportStage1.cmake guaranteeing the sysroot has been copied.
     set(GCC_DEPENDS gcc-complete)
+    set(gcc_final_build_targets all-gcc all-lto-plugin)
+    set(gcc_final_install_targets install-gcc install-lto-plugin)
 elseif(CMAKE_TOOLCHAIN_FILE)
+    set(gcc_final_build_targets)
+    set(gcc_final_install_targets install)
     # pthread-embedded supplies libpthread and pthread.h in the native sysroot.
     # The target libraries configured below link full executables, so the POSIX
     # thread layer must already be installed for those link tests to succeed.
@@ -53,6 +59,8 @@ elseif(CMAKE_TOOLCHAIN_FILE)
 else()
     # Just use gcc-base as the dependency of the final gcc target
     set(GCC_DEPENDS gcc-base)
+    set(gcc_final_build_targets)
+    set(gcc_final_install_targets install)
 endif()
 
 ExternalProject_add(gcc-final
@@ -87,6 +95,6 @@ ExternalProject_add(gcc-final
     "CFLAGS=${GCC_CFLAGS}"
     "CXXFLAGS=${GCC_CFLAGS}"
     BUILD_COMMAND ${toolchain_tools} ${compiler_target_tools} ${wrapper_command}
-    $(MAKE) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
-    INSTALL_COMMAND $(MAKE) install
+    $(MAKE) ${gcc_final_build_targets} INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
+    INSTALL_COMMAND $(MAKE) ${gcc_final_install_targets}
     )

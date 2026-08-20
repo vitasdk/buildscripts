@@ -140,20 +140,24 @@ are available after a complete build:
 ``` sh
 make check-toolchain-contract
 make check-static-policy
+make check-sdk-partition
 make audit-host-dependencies
 ```
 
 ## Staged builds
 
 The build can run as a single native build (the historical behaviour, still
-fully supported on every OS) or split into stages:
+fully supported on every OS) or split into two stages. The split follows one
+line: stage 1 compiles every artifact that is target code, and every other
+host compiles only its own binaries.
 
-* **Stage 1 — native Linux.** `cmake .. && make tarball`. Builds everything,
-  including the native `arm-vita-eabi` compiler and the target sysroot
-  (newlib, pthread-embedded, vita-headers). The resulting tarball is both a
-  complete Linux SDK and the input for stage 2.
-* **Stage 2 — cross hosts.** Unpack a stage-1 SDK, put its `bin/` in `PATH`
-  and configure with a host toolchain file plus `VITASDK_STAGE1_DIR`:
+* **Stage 1 — native Linux x86_64.** `cmake .. && make tarball`. Builds
+  everything, including the native `arm-vita-eabi` compiler, the target
+  sysroot (newlib, pthread-embedded, vita-headers) and the target runtimes
+  (libgcc, libstdc++, libgomp). The resulting tarball is both a complete
+  Linux SDK and the input for stage 2.
+* **Stage 2 — every other host.** Unpack a stage-1 SDK and point
+  `VITASDK_STAGE1_DIR` at it. A cross host adds its toolchain file:
 
   ```sh
   cmake .. \
@@ -162,10 +166,26 @@ fully supported on every OS) or split into stages:
   make tarball
   ```
 
-  Only the host binaries (binutils, gcc, gdb, vita-toolchain and their
-  private dependencies) are compiled; the native toolchain and the target
-  sysroot are imported from stage 1, which removes the most expensive part
-  of the historical cross build.
+  A host that builds natively (arm64 Linux, macOS) drops the toolchain file
+  and keeps the option:
+
+  ```sh
+  cmake .. -DVITASDK_STAGE1_DIR=/path/to/unpacked/vitasdk
+  make tarball
+  ```
+
+  Either way gcc is built through `all-gcc` alone: the compiler proper and
+  nothing else. libgcc, the crt objects, the runtimes and the whole sysroot
+  are imported, so a stage-2 host never needs a native `arm-vita-eabi`
+  compiler of its own — which is what lets hosts that cannot execute the
+  stage-1 binaries take part.
+
+`cmake/SysrootManifest.cmake` holds the partition: what counts as target
+code and what belongs to the host. The cut runs through files rather than
+directories, because `<triple>/bin` is host binutils and
+`lib/gcc/<triple>/<version>` mixes `cc1` with `libgcc.a`. `make
+check-sdk-partition` covers it, and `finalize-sdk` rejects an SDK carrying a
+binary built for another host.
 
 Available host toolchain files under `cmake/toolchains/`:
 

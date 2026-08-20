@@ -22,31 +22,31 @@ set(DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/downloads CACHE PATH "Default download path
 
 # Staged builds
 # =============
-# Stage 1 (native, usually Linux): builds the whole SDK, including the
-# target sysroot (newlib, pthread-embedded, vita-headers) and a native
-# arm-vita-eabi compiler. Its tarball is a complete SDK *and* the input
-# for stage 2.
-# Stage 2 (cross, e.g. mingw/musl/osxcross): point VITASDK_STAGE1_DIR at an
-# unpacked stage-1 SDK. The native toolchain and the target sysroot are
-# imported from it instead of being rebuilt, so only the host binaries
-# (binutils, gcc, gdb, vita-toolchain) are compiled for the new host.
-# Native builds on any OS (no toolchain file, no stage-1 dir) keep working
-# exactly as before; staging is an optimization, not a requirement.
+# Stage 1 (native, Linux x86_64 in CI): builds everything that is target code
+# -- the sysroot, newlib, pthread-embedded, the stubs, libgcc and the target
+# runtimes -- with a native arm-vita-eabi compiler of its own.
+# Stage 2 (every other host, cross or native): point VITASDK_STAGE1_DIR at an
+# unpacked stage-1 SDK. The target half is imported, and the host half (the
+# compiler proper, binutils, gdb, vita-toolchain, the package tools) is the
+# only thing built. Target code is therefore compiled exactly once for the
+# whole matrix, and no host but stage 1 needs a native arm-vita-eabi compiler.
+# Native builds with no stage-1 dir keep working exactly as before; staging is
+# an optimization, not a requirement.
 set(VITASDK_STAGE1_DIR "" CACHE PATH
-    "Unpacked stage-1 native SDK used to skip the native toolchain and sysroot rebuild when cross compiling")
+    "Unpacked stage-1 SDK whose target half is imported instead of rebuilt")
 
 if(VITASDK_STAGE1_DIR)
-    if(NOT CMAKE_TOOLCHAIN_FILE)
-        message(FATAL_ERROR "VITASDK_STAGE1_DIR only makes sense when cross compiling (CMAKE_TOOLCHAIN_FILE is not set). For a native build just drop the option.")
-    endif()
     get_filename_component(VITASDK_STAGE1_DIR "${VITASDK_STAGE1_DIR}" ABSOLUTE)
-    if(NOT EXISTS "${VITASDK_STAGE1_DIR}/bin/arm-vita-eabi-gcc")
-        message(FATAL_ERROR "VITASDK_STAGE1_DIR='${VITASDK_STAGE1_DIR}' does not look like a stage-1 SDK (missing bin/arm-vita-eabi-gcc)")
-    endif()
+    # What stage 2 consumes is target code, not the stage-1 host binaries, so
+    # this checks for the payload and not for a compiler that would be useless
+    # on a host of a different kind anyway.
     if(NOT EXISTS "${VITASDK_STAGE1_DIR}/arm-vita-eabi/lib/libc.a")
         message(FATAL_ERROR "VITASDK_STAGE1_DIR='${VITASDK_STAGE1_DIR}' has no target sysroot (missing arm-vita-eabi/lib/libc.a)")
     endif()
-    message(STATUS "Stage 2 build: importing native toolchain and sysroot from ${VITASDK_STAGE1_DIR}")
+    if(NOT EXISTS "${VITASDK_STAGE1_DIR}/lib/gcc/arm-vita-eabi/${GCC_VERSION}/libgcc.a")
+        message(FATAL_ERROR "VITASDK_STAGE1_DIR='${VITASDK_STAGE1_DIR}' carries no libgcc for gcc ${GCC_VERSION}; it was built from a different gcc")
+    endif()
+    message(STATUS "Stage 2 build: importing the target half from ${VITASDK_STAGE1_DIR}")
 endif()
 
 set(OFFLINE YES CACHE BOOL "Disable updates for Git-backed ExternalProject sources")
@@ -142,10 +142,15 @@ else()
     set(toolchain_target_depends_dir "${CMAKE_BINARY_DIR}/deps_${target_suffix}")
 endif()
 
-if(VITASDK_STAGE1_DIR)
-    # Stage 2: the native toolchain is the imported stage-1 SDK. Everything
-    # that used to be built into toolchain_${build_suffix} (native binutils,
-    # gcc, vita-libs-gen and the sysroot copies) is already there.
+if(VITASDK_STAGE1_DIR AND CMAKE_TOOLCHAIN_FILE)
+    # Cross stage 2: nothing here compiles target code, so the throwaway
+    # native toolchain that feeds *_FOR_TARGET is not built at all. The
+    # variables still name the stage-1 tree for the recipes that interpolate
+    # them; no build step runs those binaries.
+    #
+    # A native stage 2 takes the branch below instead: there the build-suffix
+    # toolchain is also the SDK's own binutils, gdb and vita-toolchain, which
+    # every host has to build for itself.
     set(toolchain_build_install_dir ${VITASDK_STAGE1_DIR})
     set(toolchain_build_depends_dir ${CMAKE_BINARY_DIR}/deps_${build_suffix})
 else()
