@@ -308,11 +308,10 @@ jobs:
       run: |
         scripts/setup-freebsd-cross.sh ${{ matrix.freebsd }} /opt/freebsd-cross ${{ matrix.freebsd_arch }}
         echo "/opt/freebsd-cross/bin" >> $GITHUB_PATH
-        # These two jobs are the only ones that unpack a second operating
-        # system onto the runner, and they are the only ones whose runner
-        # has died mid-build -- three times out of five, always around three
-        # minutes in, with no message beyond "shutdown signal". Record what
-        # the machine had left, so the next one is evidence and not a guess.
+        # These two jobs are the only ones whose runner has died mid-build.
+        # Measured once: 297 MB of sysroot, 86 GB of disk free and 12 GB of
+        # memory free, so it is neither. Kept because it is one line and the
+        # question is not closed.
         du -sh /opt/freebsd-cross
         df -h /
         free -m
@@ -370,6 +369,24 @@ jobs:
         git config --global user.email "builds@ci.invalid"
         git config --global user.name "CI"
         unset CC CXX
+        # The FreeBSD runners die mid-build with nothing but "shutdown
+        # signal", at no fixed point, with disk and memory to spare when
+        # last measured. Sample the machine into this step's own log, which
+        # survives whatever happens to the machine, so the final seconds are
+        # recorded rather than reconstructed.
+        if [ -n "${{ matrix.freebsd }}" ]; then
+          ( while true; do
+              printf 'SAMPLE %s mem_avail=%sM disk_avail=%sM load=%s procs=%s\n' \
+                "$(date -u +%H:%M:%S)" \
+                "$(free -m | awk '/^Mem:/{print $7}')" \
+                "$(df -m / | awk 'NR==2{print $4}')" \
+                "$(cut -d' ' -f1-3 /proc/loadavg)" \
+                "$(ps -e --no-headers | wc -l)"
+              sleep 10
+            done ) &
+          sampler=$!
+          trap 'kill $sampler 2>/dev/null || true' EXIT
+        fi
         mkdir -p build
         cd build
         cmake .. -DVITASDK_STAGE1_DIR="$STAGE1_DIR" ${{ matrix.cmake_extra }}
