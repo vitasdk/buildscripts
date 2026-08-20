@@ -158,30 +158,35 @@ host compiles only its own binaries.
   validation — what it emits is not an SDK for any host, it is what every
   host imports. The compiler and binutils it had to build to get there stay
   behind in the build prefix.
-* **Stage 2 — every host, Linux x86_64 included.** Unpack a stage-1 sysroot
-  and point
-  `VITASDK_STAGE1_DIR` at it. A cross host adds its toolchain file:
+* **Stage 2 — the hosts that are the machine building them** (Linux x86_64,
+  arm64 Linux, macOS arm64). Unpack a stage-1 sysroot and point
+  `VITASDK_STAGE1_DIR` at it:
+
+  ```sh
+  cmake .. -DVITASDK_STAGE1_DIR=/path/to/unpacked/sysroot
+  make tarball
+  ```
+
+* **Stage 3 — the canadian crosses** (Windows, musl, FreeBSD, macOS
+  x86_64). The same import plus a host toolchain file:
 
   ```sh
   cmake .. \
       -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-w64-mingw32.cmake \
-      -DVITASDK_STAGE1_DIR=/path/to/unpacked/vitasdk
+      -DVITASDK_STAGE1_DIR=/path/to/unpacked/sdk
   make tarball
   ```
 
-  A host that builds on its own machine (Linux x86_64, arm64 Linux, macOS)
-  drops the toolchain file and keeps the option:
-
-  ```sh
-  cmake .. -DVITASDK_STAGE1_DIR=/path/to/unpacked/vitasdk
-  make tarball
-  ```
+  A cross build needs one thing beyond the sysroot: a working
+  `arm-vita-eabi-gcc` **for the machine doing the building**, on PATH.
+  `all-gcc` compiles no target code, but it runs the compiler exactly once
+  — `-dumpspecs`, to write the specs file `GCC_PASSES` depends on — and a
+  compiler built for another host cannot answer. Any stage-2 SDK for that
+  machine's own host serves, which is why the CI matrix has a third level.
 
   Either way gcc is built through `all-gcc` alone: the compiler proper and
   nothing else. libgcc, the crt objects, the runtimes and the whole sysroot
-  are imported, so a stage-2 host never needs a native `arm-vita-eabi`
-  compiler of its own — which is what lets hosts that cannot execute the
-  stage-1 binaries take part.
+  are imported, so no host but stage 1 ever compiles target code.
 
 `cmake/SysrootManifest.cmake` holds the partition: what counts as target
 code and what belongs to the host. The cut runs through files rather than

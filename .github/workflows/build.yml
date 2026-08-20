@@ -94,189 +94,26 @@ jobs:
         path: build/vitasdk-sysroot-*.tar.bz2
 
   # ---------------------------------------------------------------------
-  # Stage 2: cross builds that consume the stage-1 SDK. Only the host
-  # binaries are compiled; the native toolchain and the target sysroot are
-  # imported, so these jobs are much faster than a full build.
+  # Stage 2: the hosts that can run what they build. Their freshly built
+  # xgcc executes on the machine building it, which is all gcc needs to
+  # produce its specs file -- the one thing in all-gcc that runs the
+  # compiler rather than just compiling it.
   # ---------------------------------------------------------------------
   stage2:
     needs: stage1
-    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Linux x86_64 is a consumer like the rest: the runner that built
-          # the target half has no privileged claim to an SDK.
-          - name: linux-x86_64
-            cmake_extra: ""
-          - name: windows-x86_64
-            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-w64-mingw32.cmake
-            apt: g++-mingw-w64-x86-64
-          - name: windows-i686
-            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/i686-w64-mingw32.cmake
-            apt: g++-mingw-w64-i686
-          - name: linux-musl-x86_64
-            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-linux-musl.cmake
-            musl: x86_64-unknown-linux-musl
-          - name: linux-musl-aarch64
-            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/aarch64-linux-musl.cmake
-            musl: aarch64-unknown-linux-musl
-          - name: freebsd-x86_64
-            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-unknown-freebsd.cmake
-            freebsd: "14.3"
-            freebsd_arch: x86_64
-            apt: clang lld llvm
-          - name: freebsd-aarch64
-            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/aarch64-unknown-freebsd.cmake
-            freebsd: "14.3"
-            freebsd_arch: aarch64
-            apt: clang lld llvm
-    env:
-      CCACHE_MAXSIZE: 2G
-      CCACHE_COMPRESS: "1"
-      CCACHE_COMPRESSLEVEL: "6"
-    steps:
-    - uses: actions/checkout@v7
-    - uses: actions/setup-python@v7
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y $DEBIAN_DEPS ${{ matrix.apt }}
-    - name: Install musl cross toolchain
-      if: ${{ matrix.musl }}
-      env:
-        # Pinned to a release whose gcc is the one we build, 15.2. The 20260515
-        # release ships gcc 16, which cannot compile gcc 15's libcody: it
-        # defaults to a newer C++ where u8"" is const char8_t, and S2C takes
-        # const char. A host compiler ahead of the sources is not a free
-        # upgrade -- and a toolchain that changes under us changes the SDK.
-        MUSL_CROSS_RELEASE: "20260430"
-      run: |
-        base=https://github.com/cross-tools/musl-cross/releases/download/$MUSL_CROSS_RELEASE
-        for suffix in tar.xz tar.xz.sha256; do
-          curl -fL --retry 5 --retry-all-errors --retry-delay 5 \
-            -O "$base/${{ matrix.musl }}.$suffix"
-        done
-        # The published checksum is the bare hash, without a file name.
-        echo "$(cat ${{ matrix.musl }}.tar.xz.sha256)  ${{ matrix.musl }}.tar.xz" \
-          | sha256sum -c -
-        sudo tar -xJf ${{ matrix.musl }}.tar.xz -C /opt
-        # These toolchains carry the vendor field; the SDK names the same host
-        # without it (x86_64-linux-musl), and autotools looks its tools up by
-        # that exact prefix. Alias every tool rather than rename the host.
-        cd /opt/${{ matrix.musl }}/bin
-        for tool in *-unknown-*; do
-          sudo ln -sf "$tool" "$(echo "$tool" | sed 's/-unknown-/-/')"
-        done
-        echo "/opt/${{ matrix.musl }}/bin" >> $GITHUB_PATH
-    - name: Install FreeBSD cross environment
-      if: ${{ matrix.freebsd }}
-      run: |
-        sudo mkdir -p /opt/freebsd-cross
-        sudo chown $(id -u) /opt/freebsd-cross
-        sh scripts/setup-freebsd-cross.sh ${{ matrix.freebsd }} /opt/freebsd-cross ${{ matrix.freebsd_arch }}
-        echo "/opt/freebsd-cross/bin" >> $GITHUB_PATH
-    - name: Enable ccache
-      run: |
-        # gcc, binutils, gdb and newlib are autotools: they honour no CMake
-        # variable, and a shim directory in PATH is the only way they pick
-        # ccache up. Listing it leaves the covered compilers in the log.
-        if [ -x /usr/sbin/update-ccache-symlinks ]; then
-          sudo /usr/sbin/update-ccache-symlinks
-        fi
-        ls /usr/lib/ccache
-        echo /usr/lib/ccache >> $GITHUB_PATH
-        # A job env block runs through no shell, so CCACHE_DIR=~/.ccache
-        # reached ccache as a literal tilde and it cached into a directory
-        # named "~" wherever each sub-build happened to run. Expand it here.
-        echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
-    - name: ccache
-      uses: actions/cache@v6
-      with:
-        path: ~/.ccache
-        key: stage2-${{ matrix.name }}-ccache-${{ github.ref }}-${{ github.sha }}
-        restore-keys: |
-          stage2-${{ matrix.name }}-ccache-${{ github.ref }}-
-          stage2-${{ matrix.name }}-ccache-
-    - name: downloads
-      uses: actions/cache@v6
-      with:
-        path: build/downloads
-        key: ${{ runner.os }}-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
-        restore-keys: |
-          ${{ runner.os }}-downloads-
-    - name: Fetch the stage-1 sysroot
-      uses: actions/download-artifact@v7
-      with:
-        name: vitasdk-sysroot
-        path: stage1-artifact
-    - name: Unpack the stage-1 sysroot
-      run: |
-        mkdir -p stage1
-        tar -xjf stage1-artifact/*.tar.bz2 -C stage1
-        STAGE1_DIR=$(dirname "$(dirname "$(dirname "$(find "$PWD/stage1" -type f -path '*/arm-vita-eabi/lib/libc.a' | head -1)")")")
-        test -n "$STAGE1_DIR"
-        echo "STAGE1_DIR=$STAGE1_DIR" >> $GITHUB_ENV
-        echo "$STAGE1_DIR/bin" >> $GITHUB_PATH
-    - name: Build
-      run: |
-        git config --global user.email "builds@ci.invalid"
-        git config --global user.name "CI"
-        unset CC CXX
-        mkdir -p build
-        cd build
-        cmake .. -DVITASDK_STAGE1_DIR="$STAGE1_DIR" ${{ matrix.cmake_extra }}
-        make -j$(nproc) tarball
-    - name: Check the toolchain contract
-      # Only where the SDK just built runs on this runner. It compiles and
-      # links real code and checks the ABI both ways, which is the only
-      # thing here that would notice a compiler that builds but does not
-      # work -- and gcc is now built one way in stage 1 and another in
-      # stage 2.
-      if: ${{ matrix.cmake_extra == '' }}
-      run: make -C build check-toolchain-contract
-    - name: ccache statistics
-      if: ${{ always() }}
-      run: ccache --show-stats
-    - name: Upload artifacts
-      if: ${{ success() }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: vitasdk-${{ matrix.name }}
-        path: build/*.tar.bz2
-
-  # ---------------------------------------------------------------------
-  # Stage 2 on runners other than Linux x86_64: arm64 Linux and Apple
-  # hardware. None of them can execute the stage-1 x86_64 Linux binaries,
-  # and none of them has to -- the target half arrives as data, nothing
-  # here compiles target code, and so no arm-vita-eabi compiler is built
-  # on them either.
-  #
-  # Both macOS SDKs are produced on Apple silicon: arm64 natively, x86_64
-  # through the same Xcode toolchain with -arch x86_64. Apple's SDK
-  # licence keeps it on Apple hardware, which rules out osxcross in public
-  # CI; building the other architecture on the vendor's own runner does
-  # not need it. The Intel runners are being retired, so depending on them
-  # is depending on something that is going away.
-  # ---------------------------------------------------------------------
-  stage2-native:
-    needs: stage1
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
+          - runner: ubuntu-24.04
+            name: linux-x86_64
+            ccache_dir: ~/.ccache
           - runner: ubuntu-24.04-arm
             name: linux-arm64
             ccache_dir: ~/.ccache
-            cmake_extra: ""
           - runner: macos-14
             name: macos-arm64
             ccache_dir: ~/Library/Caches/ccache
-            cmake_extra: ""
-          - runner: macos-14
-            name: macos-x86_64
-            ccache_dir: ~/Library/Caches/ccache
-            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-apple-darwin.cmake
     runs-on: ${{ matrix.runner }}
     env:
       CCACHE_MAXSIZE: 2G
@@ -293,31 +130,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y $DEBIAN_DEPS
         fi
-    - name: Set up the macOS x86_64 cross environment
-      if: ${{ matrix.name == 'macos-x86_64' }}
-      run: |
-        scripts/setup-macos-cross.sh "$PWD/macos-cross"
-        echo "$PWD/macos-cross/bin" >> $GITHUB_PATH
     - name: Enable ccache
       run: |
-        # See the note in stage1: the autotools sub-builds only pick
-        # ccache up through a shim directory in PATH.
         if [ "$RUNNER_OS" = "macOS" ]; then
           shims="$(brew --prefix ccache)/libexec"
+          echo "CCACHE_DIR=$HOME/Library/Caches/ccache" >> $GITHUB_ENV
         else
           if [ -x /usr/sbin/update-ccache-symlinks ]; then
             sudo /usr/sbin/update-ccache-symlinks
           fi
           shims=/usr/lib/ccache
+          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
         fi
         ls "$shims"
         echo "$shims" >> $GITHUB_PATH
-        # See the note in stage1: the tilde needs a shell to expand it.
-        if [ "$RUNNER_OS" = "macOS" ]; then
-          echo "CCACHE_DIR=$HOME/Library/Caches/ccache" >> $GITHUB_ENV
-        else
-          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
-        fi
     - name: ccache
       uses: actions/cache@v6
       with:
@@ -351,16 +177,195 @@ jobs:
         git config --global user.name "CI"
         mkdir -p build
         cd build
-        cmake .. -DVITASDK_STAGE1_DIR="$STAGE1_DIR" ${{ matrix.cmake_extra }}
+        cmake .. -DVITASDK_STAGE1_DIR="$STAGE1_DIR"
         make -j$(getconf _NPROCESSORS_ONLN) tarball
     - name: Check the toolchain contract
-      # Only where the SDK just built runs on this runner. It compiles and
-      # links real code and checks the ABI both ways, which is the only
-      # thing here that would notice a compiler that builds but does not
-      # work -- and gcc is now built one way in stage 1 and another in
-      # stage 2.
-      if: ${{ matrix.cmake_extra == '' }}
+      # These hosts are the runner, so the SDK can be asked to build a
+      # program. It compiles and links real code and checks the ABI both
+      # ways -- the only thing here that notices a compiler that builds but
+      # does not work.
       run: make -C build check-toolchain-contract
+    - name: ccache statistics
+      if: ${{ always() }}
+      run: ccache --show-stats
+    - name: Upload artifacts
+      if: ${{ success() }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: vitasdk-${{ matrix.name }}
+        path: build/*.tar.bz2
+
+  # ---------------------------------------------------------------------
+  # Stage 3: the canadian crosses. Their gcc is built for a host that
+  # cannot run on the machine building it, and all-gcc runs the compiler
+  # exactly once -- "arm-vita-eabi-gcc -dumpspecs", to write the specs file
+  # that GCC_PASSES depends on. So each of these needs a working
+  # arm-vita-eabi-gcc for its *build* machine, and the only one that exists
+  # is the SDK stage 2 just produced for that machine's own host.
+  #
+  # That SDK is a complete one, so it serves as both: its target half is
+  # imported through VITASDK_STAGE1_DIR, and its bin/ goes on PATH.
+  # ---------------------------------------------------------------------
+  stage3:
+    needs: stage2
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            name: windows-x86_64
+            build_sdk: vitasdk-linux-x86_64
+            ccache_dir: ~/.ccache
+            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-w64-mingw32.cmake
+            apt: g++-mingw-w64-x86-64
+          - runner: ubuntu-24.04
+            name: windows-i686
+            build_sdk: vitasdk-linux-x86_64
+            ccache_dir: ~/.ccache
+            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/i686-w64-mingw32.cmake
+            apt: g++-mingw-w64-i686
+          - runner: ubuntu-24.04
+            name: linux-musl-x86_64
+            build_sdk: vitasdk-linux-x86_64
+            ccache_dir: ~/.ccache
+            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-linux-musl.cmake
+            musl: x86_64-unknown-linux-musl
+          - runner: ubuntu-24.04
+            name: linux-musl-aarch64
+            build_sdk: vitasdk-linux-x86_64
+            ccache_dir: ~/.ccache
+            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/aarch64-linux-musl.cmake
+            musl: aarch64-unknown-linux-musl
+          - runner: ubuntu-24.04
+            name: freebsd-x86_64
+            build_sdk: vitasdk-linux-x86_64
+            ccache_dir: ~/.ccache
+            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-unknown-freebsd.cmake
+            freebsd: "14.3"
+            freebsd_arch: x86_64
+            apt: clang lld llvm
+          - runner: ubuntu-24.04
+            name: freebsd-aarch64
+            build_sdk: vitasdk-linux-x86_64
+            ccache_dir: ~/.ccache
+            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/aarch64-unknown-freebsd.cmake
+            freebsd: "14.3"
+            freebsd_arch: aarch64
+            apt: clang lld llvm
+          # Apple hardware builds both Apple SDKs: the licence keeps the
+          # macOS SDK there, and the arm64 SDK from stage 2 is the only
+          # arm-vita-eabi-gcc that runs on this runner.
+          - runner: macos-14
+            name: macos-x86_64
+            build_sdk: vitasdk-macos-arm64
+            ccache_dir: ~/Library/Caches/ccache
+            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-apple-darwin.cmake
+    runs-on: ${{ matrix.runner }}
+    env:
+      CCACHE_MAXSIZE: 2G
+      CCACHE_COMPRESS: "1"
+      CCACHE_COMPRESSLEVEL: "6"
+    steps:
+    - uses: actions/checkout@v7
+    - uses: actions/setup-python@v7
+    - name: Install dependencies
+      run: |
+        if [ "$RUNNER_OS" = "macOS" ]; then
+          brew install autoconf automake libtool texinfo ccache
+        else
+          sudo apt-get update
+          sudo apt-get install -y $DEBIAN_DEPS ${{ matrix.apt }}
+        fi
+    - name: Install musl cross toolchain
+      if: ${{ matrix.musl }}
+      env:
+        # Pinned to a release whose gcc is the one we build, 15.2. The 20260515
+        # release ships gcc 16, which cannot compile gcc 15's libcody: it
+        # defaults to a newer C++ where u8"" is const char8_t, and S2C takes
+        # const char. A host compiler ahead of the sources is not a free
+        # upgrade -- and a toolchain that changes under us changes the SDK.
+        MUSL_CROSS_RELEASE: "20260430"
+      run: |
+        base=https://github.com/cross-tools/musl-cross/releases/download/$MUSL_CROSS_RELEASE
+        for suffix in tar.xz tar.xz.sha256; do
+          curl -fL --retry 5 --retry-all-errors --retry-delay 5 \
+            -O "$base/${{ matrix.musl }}.$suffix"
+        done
+        # The published checksum is the bare hash, without a file name.
+        echo "$(cat ${{ matrix.musl }}.tar.xz.sha256)  ${{ matrix.musl }}.tar.xz" \
+          | sha256sum -c -
+        sudo tar -xJf ${{ matrix.musl }}.tar.xz -C /opt
+        # These toolchains carry the vendor field; the SDK names the same host
+        # without it (x86_64-linux-musl), and autotools looks its tools up by
+        # that exact prefix. Alias every tool rather than rename the host.
+        cd /opt/${{ matrix.musl }}/bin
+        for tool in *-unknown-*; do
+          sudo ln -sf "$tool" "$(echo "$tool" | sed 's/-unknown-/-/')"
+        done
+        echo "/opt/${{ matrix.musl }}/bin" >> $GITHUB_PATH
+    - name: Install FreeBSD cross environment
+      if: ${{ matrix.freebsd }}
+      run: |
+        scripts/setup-freebsd-cross.sh ${{ matrix.freebsd }} /opt/freebsd-cross ${{ matrix.freebsd_arch }}
+        echo "/opt/freebsd-cross/bin" >> $GITHUB_PATH
+    - name: Set up the macOS x86_64 cross environment
+      if: ${{ matrix.name == 'macos-x86_64' }}
+      run: |
+        scripts/setup-macos-cross.sh "$PWD/macos-cross"
+        echo "$PWD/macos-cross/bin" >> $GITHUB_PATH
+    - name: Enable ccache
+      run: |
+        if [ "$RUNNER_OS" = "macOS" ]; then
+          shims="$(brew --prefix ccache)/libexec"
+          echo "CCACHE_DIR=$HOME/Library/Caches/ccache" >> $GITHUB_ENV
+        else
+          if [ -x /usr/sbin/update-ccache-symlinks ]; then
+            sudo /usr/sbin/update-ccache-symlinks
+          fi
+          shims=/usr/lib/ccache
+          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
+        fi
+        ls "$shims"
+        echo "$shims" >> $GITHUB_PATH
+    - name: ccache
+      uses: actions/cache@v6
+      with:
+        path: ${{ matrix.ccache_dir }}
+        key: stage3-${{ matrix.name }}-ccache-${{ github.ref }}-${{ github.sha }}
+        restore-keys: |
+          stage3-${{ matrix.name }}-ccache-${{ github.ref }}-
+          stage3-${{ matrix.name }}-ccache-
+    - name: downloads
+      uses: actions/cache@v6
+      with:
+        path: build/downloads
+        key: ${{ matrix.name }}-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
+        restore-keys: |
+          ${{ matrix.name }}-downloads-
+    - name: Fetch the build machine's SDK
+      uses: actions/download-artifact@v7
+      with:
+        name: ${{ matrix.build_sdk }}
+        path: build-sdk-artifact
+    - name: Unpack the build machine's SDK
+      run: |
+        mkdir -p build-sdk
+        tar -xjf build-sdk-artifact/*.tar.bz2 -C build-sdk
+        STAGE1_DIR=$(dirname "$(dirname "$(dirname "$(find "$PWD/build-sdk" -type f -path '*/arm-vita-eabi/lib/libc.a' | head -1)")")")
+        test -n "$STAGE1_DIR"
+        echo "STAGE1_DIR=$STAGE1_DIR" >> $GITHUB_ENV
+        # gcc runs arm-vita-eabi-gcc -dumpspecs during all-gcc; this is the
+        # one that runs here.
+        echo "$STAGE1_DIR/bin" >> $GITHUB_PATH
+    - name: Build
+      run: |
+        git config --global user.email "builds@ci.invalid"
+        git config --global user.name "CI"
+        unset CC CXX
+        mkdir -p build
+        cd build
+        cmake .. -DVITASDK_STAGE1_DIR="$STAGE1_DIR" ${{ matrix.cmake_extra }}
+        make -j$(getconf _NPROCESSORS_ONLN) tarball
     - name: ccache statistics
       if: ${{ always() }}
       run: ccache --show-stats
