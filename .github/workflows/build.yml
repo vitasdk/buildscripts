@@ -145,8 +145,12 @@ jobs:
     - name: Install musl cross toolchain
       if: ${{ matrix.musl }}
       env:
-        # Pinned: a toolchain that changes under us changes the SDK we ship.
-        MUSL_CROSS_RELEASE: "20260515"
+        # Pinned to a release whose gcc is the one we build, 15.2. The 20260515
+        # release ships gcc 16, which cannot compile gcc 15's libcody: it
+        # defaults to a newer C++ where u8"" is const char8_t, and S2C takes
+        # const char. A host compiler ahead of the sources is not a free
+        # upgrade -- and a toolchain that changes under us changes the SDK.
+        MUSL_CROSS_RELEASE: "20260430"
       run: |
         base=https://github.com/cross-tools/musl-cross/releases/download/$MUSL_CROSS_RELEASE
         for suffix in tar.xz tar.xz.sha256; do
