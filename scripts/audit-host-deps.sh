@@ -14,28 +14,33 @@ fail_dependency() {
 }
 
 audit_linux() {
+    if ! command -v "$objdump_command" >/dev/null 2>&1; then
+        echo "missing ELF dependency inspector: $objdump_command" >&2
+        exit 2
+    fi
+
     find "$VITASDK" -type f -print | while IFS= read -r binary; do
-        # ldd runs what it is handed: it asks the loader to trace the
-        # program, and a statically linked one has no loader to obey, so it
-        # simply executes and prints its own diagnostics where a dependency
-        # list should be. On a fully static SDK that turns this audit into
-        # an audit of nm's error messages -- and into running every binary
-        # it was meant to inspect. Ask file(1) first.
+        # Read the dynamic section; never ask the loader. ldd answers by
+        # running the program, which cannot work here: these binaries are
+        # built for the SDK's host, not for this machine. A musl binary on a
+        # glibc runner has no interpreter to load it, and ldd reports its own
+        # failure on stdout, where a dependency list is expected --
+        #
+        #   unexpected dynamic host dependency: .../arm-vita-eabi/bin/nm -> nm:
+        #
+        # which is ldd naming the file it could not load, not a dependency.
+        # A statically linked one is worse: nothing stops it, so it simply
+        # runs. objdump is how the Windows audit below has always done it.
         case "$(file -b "$binary" 2>/dev/null)" in
-            *"dynamically linked"*) ;;
+            *ELF*executable*|*ELF*"shared object"*) ;;
             *) continue ;;
         esac
-        dependencies=$(ldd "$binary" 2>/dev/null || true)
-        [ -n "$dependencies" ] || continue
 
-        for dependency in $(printf '%s\n' "$dependencies" | awk '
-            /=>/ { print $1; next }
-            /^[[:space:]]*\// { print $1; next }
-            /linux-vdso/ { print $1 }
-        '); do
-            dependency=${dependency##*/}
+        objdump_output=$("$objdump_command" -p "$binary" 2>/dev/null) || continue
+        dependencies=$(printf '%s\n' "$objdump_output" | awk '$1 == "NEEDED" { print $2 }')
+        for dependency in $dependencies; do
             case "$dependency" in
-                linux-vdso.so.*|ld-linux*.so.*|ld-musl-*.so.*|libc.so.*|libc.musl-*.so.*|\
+                ld-linux*.so.*|ld-musl-*.so.*|libc.so.*|libc.musl-*.so.*|\
                 libm.so.*|libpthread.so.*|libdl.so.*|librt.so.*|libutil.so.*|\
                 libresolv.so.*)
                     ;;
