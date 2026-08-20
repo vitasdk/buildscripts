@@ -245,20 +245,23 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         ${UPDATE_DISCONNECTED_SUPPORT}
         )
 
-    ExternalProject_add(expat${suffix}
-        URL ${EXPAT_URL}
-        URL_HASH ${EXPAT_HASH}
-        DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-        CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
-        --build=${build_native}
-        --host=${toolchain_host}
-        --prefix=${toolchain_deps_dir}
-        --libdir=${toolchain_deps_dir}/lib
-        --disable-shared
-        --enable-static
-        BUILD_COMMAND ${compiler_flags} ${wrapper_command} $(MAKE)
-        )
+    if(NOT VITASDK_TARGET_ONLY)
+        # Only gdb reads XML target descriptions; a producer has no gdb.
+        ExternalProject_add(expat${suffix}
+            URL ${EXPAT_URL}
+            URL_HASH ${EXPAT_HASH}
+            DOWNLOAD_DIR ${DOWNLOAD_DIR}
+            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+            CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+            --build=${build_native}
+            --host=${toolchain_host}
+            --prefix=${toolchain_deps_dir}
+            --libdir=${toolchain_deps_dir}/lib
+            --disable-shared
+            --enable-static
+            BUILD_COMMAND ${compiler_flags} ${wrapper_command} $(MAKE)
+            )
+    endif()
 
     ExternalProject_Add(vita-toolchain${suffix}
         DEPENDS libelf${suffix} zlib${suffix} libzip${suffix} libyaml${suffix}
@@ -316,50 +319,54 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir} INFO_DEPS= DVIS= pdfs= htmls=
         )
 
-    ExternalProject_Add(gdb${suffix}
-        DEPENDS zlib${suffix} gmp${suffix} mpfr${suffix} expat${suffix}
-        URL ${GDB_URL}
-        URL_HASH ${GDB_HASH}
-        DOWNLOAD_DIR ${DOWNLOAD_DIR}
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-        PATCH_COMMAND ${CMAKE_COMMAND}
-            -DSOURCE_DIR=<SOURCE_DIR>
-            "-DPATCH_SERIES=${gdb_patch_series_arg}"
-            -P ${PROJECT_SOURCE_DIR}/cmake/ApplyPatches.cmake
-        COMMAND ${CMAKE_COMMAND} -E copy
-            ${PROJECT_SOURCE_DIR}/config.guess
-            ${PROJECT_SOURCE_DIR}/config.sub
-            <SOURCE_DIR>/
-        CONFIGURE_COMMAND CFLAGS=-std=gnu11
-        ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
-        --build=${build_native}
-        --host=${toolchain_host}
-        --target=${target_arch}
-        # Set prefix to "/" here to be able to install twice
-        --prefix=/
-        --with-sysroot=${toolchain_install_dir}
-        --without-system-zlib
-        --without-system-readline
-        --disable-tui
-        --without-zstd
-        --without-python
-        --without-guile
-        --without-lzma
-        --without-babeltrace
-        --without-xxhash
-        --without-debuginfod
-        --with-gmp=${toolchain_deps_dir}
-        --with-mpfr=${toolchain_deps_dir}
-        --with-expat
-        --with-libexpat-prefix=${toolchain_deps_dir}
-        --with-libexpat-type=static
-        # GDB provides stub-termcap when tgetent is unavailable. Propagate both
-        # cache answers to the GDB and bundled Readline sub-configures so they
-        # cannot auto-link the runner's libtinfo/ncurses.
-        "host_configargs=ac_cv_search_tgetent=no bash_cv_termcap_lib=libc"
-        BUILD_COMMAND $(MAKE) INFO_DEPS= DVIS= pdfs= htmls=
-        INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir} INFO_DEPS= DVIS= pdfs= htmls=
-        )
+    if(NOT VITASDK_TARGET_ONLY)
+        # gdb is a host binary through and through: it never takes part in
+        # producing target code, and every host builds its own.
+        ExternalProject_Add(gdb${suffix}
+            DEPENDS zlib${suffix} gmp${suffix} mpfr${suffix} expat${suffix}
+            URL ${GDB_URL}
+            URL_HASH ${GDB_HASH}
+            DOWNLOAD_DIR ${DOWNLOAD_DIR}
+            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+            PATCH_COMMAND ${CMAKE_COMMAND}
+                -DSOURCE_DIR=<SOURCE_DIR>
+                "-DPATCH_SERIES=${gdb_patch_series_arg}"
+                -P ${PROJECT_SOURCE_DIR}/cmake/ApplyPatches.cmake
+            COMMAND ${CMAKE_COMMAND} -E copy
+                ${PROJECT_SOURCE_DIR}/config.guess
+                ${PROJECT_SOURCE_DIR}/config.sub
+                <SOURCE_DIR>/
+            CONFIGURE_COMMAND CFLAGS=-std=gnu11
+            ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+            --build=${build_native}
+            --host=${toolchain_host}
+            --target=${target_arch}
+            # Set prefix to "/" here to be able to install twice
+            --prefix=/
+            --with-sysroot=${toolchain_install_dir}
+            --without-system-zlib
+            --without-system-readline
+            --disable-tui
+            --without-zstd
+            --without-python
+            --without-guile
+            --without-lzma
+            --without-babeltrace
+            --without-xxhash
+            --without-debuginfod
+            --with-gmp=${toolchain_deps_dir}
+            --with-mpfr=${toolchain_deps_dir}
+            --with-expat
+            --with-libexpat-prefix=${toolchain_deps_dir}
+            --with-libexpat-type=static
+            # GDB provides stub-termcap when tgetent is unavailable. Propagate both
+            # cache answers to the GDB and bundled Readline sub-configures so they
+            # cannot auto-link the runner's libtinfo/ncurses.
+            "host_configargs=ac_cv_search_tgetent=no bash_cv_termcap_lib=libc"
+            BUILD_COMMAND $(MAKE) INFO_DEPS= DVIS= pdfs= htmls=
+            INSTALL_COMMAND $(MAKE) install DESTDIR=${toolchain_install_dir} INFO_DEPS= DVIS= pdfs= htmls=
+            )
+    endif()
 
     # Install binutils, gdb and vita-toolchain on CMAKE_INSTALL_PREFIX when not crosscompiling
     if(NOT toolchain_file AND "${host_native}" STREQUAL "${build_native}")
@@ -370,12 +377,15 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
             COMMENT "Installing binutils to ${CMAKE_INSTALL_PREFIX}"
             )
 
-        ExternalProject_Add_Step(gdb${suffix}
-            install_sdk
-            DEPENDEES install
-            COMMAND $(MAKE) -C <BINARY_DIR> install DESTDIR=${CMAKE_INSTALL_PREFIX}
-            COMMENT "Installing gdb to ${CMAKE_INSTALL_PREFIX}"
-            )
+        if(NOT VITASDK_TARGET_ONLY)
+
+            ExternalProject_Add_Step(gdb${suffix}
+                install_sdk
+                DEPENDEES install
+                COMMAND $(MAKE) -C <BINARY_DIR> install DESTDIR=${CMAKE_INSTALL_PREFIX}
+                COMMENT "Installing gdb to ${CMAKE_INSTALL_PREFIX}"
+                )
+        endif()
 
         ExternalProject_Add_Step(vita-toolchain${suffix}
             install_sdk

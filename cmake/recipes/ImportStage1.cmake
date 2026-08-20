@@ -23,11 +23,11 @@ set(stage1_import_stamp ${CMAKE_BINARY_DIR}/stage1-import.stamp)
 
 add_custom_command(OUTPUT ${stage1_import_stamp}
     COMMAND ${CMAKE_COMMAND}
-        -DSTAGE1_DIR=${VITASDK_STAGE1_DIR}
-        -DPREFIX=${CMAKE_INSTALL_PREFIX}
+        -DSOURCE=${VITASDK_STAGE1_DIR}
+        -DDESTINATION=${CMAKE_INSTALL_PREFIX}
         -DTARGET_TRIPLE=${target_arch}
         -DGCC_VERSION=${GCC_VERSION}
-        -P ${PROJECT_SOURCE_DIR}/cmake/ImportSysroot.cmake
+        -P ${PROJECT_SOURCE_DIR}/cmake/CopySysroot.cmake
     COMMAND ${CMAKE_COMMAND} -E touch ${stage1_import_stamp}
     COMMENT "Importing stage-1 sysroot from ${VITASDK_STAGE1_DIR}"
     VERBATIM)

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 include("${CMAKE_CURRENT_LIST_DIR}/../../cmake/SysrootManifest.cmake")
 
-set(import_script "${CMAKE_CURRENT_LIST_DIR}/../../cmake/ImportSysroot.cmake")
+set(copy_script "${CMAKE_CURRENT_LIST_DIR}/../../cmake/CopySysroot.cmake")
 string(RANDOM LENGTH 12 fixture_id)
 if(DEFINED ENV{TMPDIR} AND NOT "$ENV{TMPDIR}" STREQUAL "")
     set(temp_root "$ENV{TMPDIR}")
@@ -53,11 +53,12 @@ function(write_stage1_tree)
     file(WRITE "${stage1}/share/vita-headers/db.yml" "nid database")
     file(WRITE "${stage1}/share/gcc-${triple}/samples/CMakeLists.txt" "samples")
     file(WRITE "${stage1}/bin/${triple}-gcc" "host binary")
+    file(WRITE "${stage1}/version_info.txt" "provenance")
 endfunction()
 
 write_stage1_tree()
 file(REMOVE_RECURSE "${prefix}")
-vitasdk_import_sysroot("${stage1}" "${prefix}" "${triple}" "${gcc_version}")
+vitasdk_copy_sysroot("${stage1}" "${prefix}" "${triple}" "${gcc_version}")
 
 assert_present("${triple}/lib/libc.a")
 assert_present("${triple}/lib/libstdc++.a")
@@ -68,6 +69,7 @@ foreach(crt_file crtbegin.o crtend.o crti.o crtn.o crtfastmath.o)
     assert_present("lib/gcc/${triple}/${gcc_version}/${crt_file}")
 endforeach()
 assert_present("share/vita-headers/db.yml")
+assert_present("version_info.txt")
 assert_present("share/gcc-${triple}/samples/CMakeLists.txt")
 
 # The host half of the SDK is built by the importing host, never imported.
@@ -89,11 +91,11 @@ file(REMOVE "${stage1}/lib/gcc/${triple}/${gcc_version}/libgcc.a")
 file(REMOVE_RECURSE "${prefix}")
 execute_process(
     COMMAND ${CMAKE_COMMAND}
-        -DSTAGE1_DIR=${stage1}
-        -DPREFIX=${prefix}
+        -DSOURCE=${stage1}
+        -DDESTINATION=${prefix}
         -DTARGET_TRIPLE=${triple}
         -DGCC_VERSION=${gcc_version}
-        -P "${import_script}"
+        -P "${copy_script}"
     RESULT_VARIABLE import_result
     OUTPUT_QUIET
     ERROR_VARIABLE import_error)
@@ -104,5 +106,27 @@ if(NOT import_error MATCHES "libgcc.a")
     message(FATAL_ERROR "the import failure must name the missing file, got: ${import_error}")
 endif()
 
+# The producer exports with the same manifest the consumer imports with, so
+# a round trip has to be a fixed point: what a consumer receives is exactly
+# what it would hand on.
+write_stage1_tree()
+file(REMOVE_RECURSE "${prefix}")
+set(relay "${SCRATCH_DIR}/relay")
+file(REMOVE_RECURSE "${relay}")
+vitasdk_copy_sysroot("${stage1}" "${relay}" "${triple}" "${gcc_version}")
+vitasdk_copy_sysroot("${relay}" "${prefix}" "${triple}" "${gcc_version}")
+file(GLOB_RECURSE relayed RELATIVE "${relay}" "${relay}/*")
+file(GLOB_RECURSE received RELATIVE "${prefix}" "${prefix}/*")
+list(SORT relayed)
+list(SORT received)
+if(NOT relayed STREQUAL received)
+    message(FATAL_ERROR
+        "a round trip through the manifest is not a fixed point:\n"
+        "  exported: ${relayed}\n  received: ${received}")
+endif()
+if(NOT "lib/gcc/${triple}/${gcc_version}/libgcc.a" IN_LIST received)
+    message(FATAL_ERROR "the round trip lost the target objects")
+endif()
+
 file(REMOVE_RECURSE "${SCRATCH_DIR}")
-message(STATUS "Stage-1 sysroot manifest checks passed")
+message(STATUS "Sysroot manifest checks passed")

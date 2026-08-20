@@ -27,12 +27,13 @@ jobs:
         done
 
   # ---------------------------------------------------------------------
-  # Stage 1: the only job that compiles target code. It builds the whole
-  # SDK natively on Linux x86_64, and its tarball carries the target half
-  # -- sysroot, newlib, the stubs, libgcc and the target runtimes -- that
-  # every other host imports instead of building.
+  # Stage 1: the only job that compiles target code, and it compiles
+  # nothing else. Out comes the target half -- sysroot, newlib, the stubs,
+  # libgcc and the target runtimes -- which every host imports. It is not
+  # an SDK for anyone, not even for this runner: Linux x86_64 gets its own
+  # SDK from stage 2, like every other host.
   # ---------------------------------------------------------------------
-  stage1-linux:
+  stage1:
     runs-on: ubuntu-24.04
     env:
       CCACHE_DIR: ~/.ccache
@@ -60,10 +61,10 @@ jobs:
       uses: actions/cache@v6
       with:
         path: ~/.ccache
-        key: stage1-linux-ccache-${{ github.ref }}-${{ github.sha }}
+        key: stage1-ccache-${{ github.ref }}-${{ github.sha }}
         restore-keys: |
-          stage1-linux-ccache-${{ github.ref }}-
-          stage1-linux-ccache-
+          stage1-ccache-${{ github.ref }}-
+          stage1-ccache-
     - name: downloads
       uses: actions/cache@v6
       with:
@@ -77,8 +78,8 @@ jobs:
         git config --global user.name "CI"
         mkdir -p build
         cd build
-        cmake ..
-        make -j$(nproc) tarball
+        cmake .. -DVITASDK_TARGET_ONLY=ON
+        make -j$(nproc) sysroot
     - name: ccache statistics
       if: ${{ always() }}
       run: ccache --show-stats
@@ -86,8 +87,8 @@ jobs:
       if: ${{ success() }}
       uses: actions/upload-artifact@v7
       with:
-        name: vitasdk-linux
-        path: build/*.tar.bz2
+        name: vitasdk-sysroot
+        path: build/vitasdk-sysroot-*.tar.bz2
 
   # ---------------------------------------------------------------------
   # Stage 2: cross builds that consume the stage-1 SDK. Only the host
@@ -95,31 +96,35 @@ jobs:
   # imported, so these jobs are much faster than a full build.
   # ---------------------------------------------------------------------
   stage2:
-    needs: stage1-linux
+    needs: stage1
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         include:
+          # Linux x86_64 is a consumer like the rest: the runner that built
+          # the target half has no privileged claim to an SDK.
+          - name: linux-x86_64
+            cmake_extra: ""
           - name: windows-x86_64
-            toolchain: cmake/toolchains/x86_64-w64-mingw32.cmake
+            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-w64-mingw32.cmake
             apt: g++-mingw-w64-x86-64
           - name: windows-i686
-            toolchain: cmake/toolchains/i686-w64-mingw32.cmake
+            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/i686-w64-mingw32.cmake
             apt: g++-mingw-w64-i686
           - name: linux-musl-x86_64
-            toolchain: cmake/toolchains/x86_64-linux-musl.cmake
+            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-linux-musl.cmake
             musl: x86_64-unknown-linux-musl
           - name: linux-musl-aarch64
-            toolchain: cmake/toolchains/aarch64-linux-musl.cmake
+            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/aarch64-linux-musl.cmake
             musl: aarch64-unknown-linux-musl
           - name: freebsd-x86_64
-            toolchain: cmake/toolchains/x86_64-unknown-freebsd.cmake
+            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-unknown-freebsd.cmake
             freebsd: "14.3"
             freebsd_arch: x86_64
             apt: clang lld llvm
           - name: freebsd-aarch64
-            toolchain: cmake/toolchains/aarch64-unknown-freebsd.cmake
+            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/aarch64-unknown-freebsd.cmake
             freebsd: "14.3"
             freebsd_arch: aarch64
             apt: clang lld llvm
@@ -190,12 +195,12 @@ jobs:
         key: ${{ runner.os }}-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
         restore-keys: |
           ${{ runner.os }}-downloads-
-    - name: Fetch stage-1 SDK
+    - name: Fetch the stage-1 sysroot
       uses: actions/download-artifact@v7
       with:
-        name: vitasdk-linux
+        name: vitasdk-sysroot
         path: stage1-artifact
-    - name: Unpack stage-1 SDK
+    - name: Unpack the stage-1 sysroot
       run: |
         mkdir -p stage1
         tar -xjf stage1-artifact/*.tar.bz2 -C stage1
@@ -210,9 +215,7 @@ jobs:
         unset CC CXX
         mkdir -p build
         cd build
-        cmake .. \
-          -DCMAKE_TOOLCHAIN_FILE=${{ matrix.toolchain }} \
-          -DVITASDK_STAGE1_DIR="$STAGE1_DIR"
+        cmake .. -DVITASDK_STAGE1_DIR="$STAGE1_DIR" ${{ matrix.cmake_extra }}
         make -j$(nproc) tarball
     - name: ccache statistics
       if: ${{ always() }}
@@ -239,7 +242,7 @@ jobs:
   # is depending on something that is going away.
   # ---------------------------------------------------------------------
   stage2-native:
-    needs: stage1-linux
+    needs: stage1
     strategy:
       fail-fast: false
       matrix:
@@ -280,7 +283,7 @@ jobs:
         echo "$PWD/macos-cross/bin" >> $GITHUB_PATH
     - name: Enable ccache
       run: |
-        # See the note in stage1-linux: the autotools sub-builds only pick
+        # See the note in stage1: the autotools sub-builds only pick
         # ccache up through a shim directory in PATH.
         if [ "$RUNNER_OS" = "macOS" ]; then
           shims="$(brew --prefix ccache)/libexec"
@@ -307,12 +310,12 @@ jobs:
         key: ${{ matrix.name }}-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
         restore-keys: |
           ${{ matrix.name }}-downloads-
-    - name: Fetch stage-1 SDK
+    - name: Fetch the stage-1 sysroot
       uses: actions/download-artifact@v7
       with:
-        name: vitasdk-linux
+        name: vitasdk-sysroot
         path: stage1-artifact
-    - name: Unpack stage-1 SDK
+    - name: Unpack the stage-1 sysroot
       run: |
         mkdir -p stage1
         tar -xjf stage1-artifact/*.tar.bz2 -C stage1

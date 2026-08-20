@@ -42,6 +42,22 @@ set(DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/downloads CACHE PATH "Default download path
 set(VITASDK_STAGE1_DIR "" CACHE PATH
     "Unpacked stage-1 SDK whose target half is imported instead of rebuilt")
 
+# Producer mode: build the target half and nothing else. What it emits is not
+# an SDK for any host -- it is the input every host imports.
+option(VITASDK_TARGET_ONLY
+    "Build only the target half and export it as a sysroot tarball" OFF)
+
+if(VITASDK_TARGET_ONLY AND VITASDK_STAGE1_DIR)
+    message(FATAL_ERROR
+        "VITASDK_TARGET_ONLY produces the target half and VITASDK_STAGE1_DIR "
+        "consumes one; a build is one or the other.")
+endif()
+if(VITASDK_TARGET_ONLY AND CMAKE_TOOLCHAIN_FILE)
+    message(FATAL_ERROR
+        "VITASDK_TARGET_ONLY builds target code, which is host independent "
+        "and native by definition; a toolchain file has nothing to cross.")
+endif()
+
 if(VITASDK_STAGE1_DIR)
     get_filename_component(VITASDK_STAGE1_DIR "${VITASDK_STAGE1_DIR}" ABSOLUTE)
     # What stage 2 consumes is target code, not the stage-1 host binaries, so
@@ -224,7 +240,15 @@ else()
 endif()
 # vdpm/vita-makepkg are host tools, rebuilt per host in both stages -- stage 2
 # cannot import them from stage 1's sysroot the way it does the target pieces
-# above, since stage 1's copies were built for stage 1's own host.
-include(cmake/recipes/BuildHostTools.cmake)
+# above, since stage 1's copies were built for stage 1's own host. A producer
+# ships no host binaries at all, so it builds neither.
+if(NOT VITASDK_TARGET_ONLY)
+    include(cmake/recipes/BuildHostTools.cmake)
+endif()
 include(cmake/recipes/BuildGccFinal.cmake)
-include(cmake/recipes/FinalizeSdk.cmake)
+include(cmake/recipes/Provenance.cmake)
+if(VITASDK_TARGET_ONLY)
+    include(cmake/recipes/ExportSysroot.cmake)
+else()
+    include(cmake/recipes/FinalizeSdk.cmake)
+endif()

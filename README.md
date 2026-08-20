@@ -151,12 +151,15 @@ fully supported on every OS) or split into two stages. The split follows one
 line: stage 1 compiles every artifact that is target code, and every other
 host compiles only its own binaries.
 
-* **Stage 1 — native Linux x86_64.** `cmake .. && make tarball`. Builds
-  everything, including the native `arm-vita-eabi` compiler, the target
-  sysroot (newlib, pthread-embedded, vita-headers) and the target runtimes
-  (libgcc, libstdc++, libgomp). The resulting tarball is both a complete
-  Linux SDK and the input for stage 2.
-* **Stage 2 — every other host.** Unpack a stage-1 SDK and point
+* **Stage 1 — native Linux x86_64.** `cmake .. -DVITASDK_TARGET_ONLY=ON &&
+  make sysroot`. Builds the target half and stops: the sysroot (newlib,
+  pthread-embedded, vita-headers), the stubs and the target runtimes
+  (libgcc, libstdc++, libgomp). No gdb, no package tools, no SDK
+  validation — what it emits is not an SDK for any host, it is what every
+  host imports. The compiler and binutils it had to build to get there stay
+  behind in the build prefix.
+* **Stage 2 — every host, Linux x86_64 included.** Unpack a stage-1 sysroot
+  and point
   `VITASDK_STAGE1_DIR` at it. A cross host adds its toolchain file:
 
   ```sh
@@ -166,8 +169,8 @@ host compiles only its own binaries.
   make tarball
   ```
 
-  A host that builds natively (arm64 Linux, macOS) drops the toolchain file
-  and keeps the option:
+  A host that builds on its own machine (Linux x86_64, arm64 Linux, macOS)
+  drops the toolchain file and keeps the option:
 
   ```sh
   cmake .. -DVITASDK_STAGE1_DIR=/path/to/unpacked/vitasdk
