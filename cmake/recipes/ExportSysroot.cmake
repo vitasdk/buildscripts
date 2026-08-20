@@ -14,7 +14,12 @@
 
 include_guard(GLOBAL)
 
-set(sysroot_staging ${CMAKE_BINARY_DIR}/sysroot/vitasdk)
+# The tarball is created from inside this directory so it holds a single
+# vitasdk/ root and no build paths. WORKING_DIRECTORY does not create it, and
+# a directory that does not exist yet fails the whole command.
+set(sysroot_root ${CMAKE_BINARY_DIR}/sysroot)
+file(MAKE_DIRECTORY ${sysroot_root})
+set(sysroot_staging ${sysroot_root}/vitasdk)
 set(sysroot_tarball "vitasdk-sysroot-${build_date}.tar.bz2")
 
 add_custom_target(sysroot
@@ -37,7 +42,7 @@ add_custom_target(sysroot
         -DGCC_VERSION=${GCC_VERSION}
         -P ${CMAKE_SOURCE_DIR}/cmake/CopySysroot.cmake
     COMMAND ${CMAKE_COMMAND} -E tar "cfj" ${CMAKE_BINARY_DIR}/${sysroot_tarball} vitasdk
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/sysroot
+    WORKING_DIRECTORY ${sysroot_root}
     DEPENDS ${gcc_final_barrier} vita-headers newlib pthread-embedded samples
         ${version_info_file}
     COMMENT "Exporting the target half to ${sysroot_tarball}"
