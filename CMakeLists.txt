@@ -179,10 +179,11 @@ set(VDPM_BUNDLE_SHA256 "" CACHE STRING
 set(VDPM_MESON_EXECUTABLE "" CACHE FILEPATH
     "Optional Meson executable forwarded to the vdpm component")
 
-# Command used on vita-header build step
-set(vita_libs_gen_command "${toolchain_build_install_dir}/bin/vita-libs-gen")
-# Path where the temporary native binutils/gcc are being installed
-set(binutils_prefix "${toolchain_build_install_dir}/bin/${target_arch}")
+# The compiler and binutils that build target code live in the SDK prefix:
+# there is one of each now, and it is the one being shipped. The throwaway
+# toolchain directory that used to hold a second copy is gone with gcc-base.
+set(vita_libs_gen_command "${CMAKE_INSTALL_PREFIX}/bin/vita-libs-gen")
+set(binutils_prefix "${CMAKE_INSTALL_PREFIX}/bin/${target_arch}")
 
 # Tools for cross compilation (no need to override PATH with this)
 list(APPEND toolchain_tools
@@ -219,7 +220,6 @@ if(VITASDK_STAGE1_DIR)
     include(cmake/recipes/ImportStage1.cmake)
 else()
     include(cmake/recipes/GccCommonArgs.cmake)
-    include(cmake/recipes/BuildGccBase.cmake)
     include(cmake/recipes/BuildSdkComponents.cmake)
 endif()
 # vdpm/vita-makepkg are host tools, rebuilt per host in both stages -- stage 2

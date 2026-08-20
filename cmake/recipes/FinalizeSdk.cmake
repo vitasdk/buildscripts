@@ -60,7 +60,7 @@ set(finalize_sdk_dependencies
     samples
     vdpm
     vita-makepkg
-    gcc-final
+    ${gcc_final_barrier}
     ${version_info_file})
 if(BUILD_PACMAN_CLIENT)
     list(APPEND finalize_sdk_dependencies package-client-configuration)

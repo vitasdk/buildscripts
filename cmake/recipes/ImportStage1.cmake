@@ -7,10 +7,9 @@
 # native SDK (VITASDK_STAGE1_DIR) instead of rebuilding it.
 #
 # The targets defined here carry the same names as the ExternalProjects they
-# replace (newlib, pthread-embedded, vita-headers, samples, gcc-complete) so
-# that BuildGccFinal.cmake and FinalizeSdk.cmake keep their DEPENDS lists
-# untouched. Each stage-1 payload is copied exactly once and every stub
-# depends on that single copy step.
+# replace (newlib, pthread-embedded, vita-headers, samples) so that
+# FinalizeSdk.cmake keeps its DEPENDS list untouched. Each stage-1 payload is
+# copied exactly once and every stub depends on that single copy step.
 #
 # What gcc-final builds in stage 2: the compiler proper and nothing else
 # (all-gcc). Every target artifact -- newlib, the stubs, libstdc++, libgomp,
@@ -37,7 +36,7 @@ add_custom_target(stage1-import DEPENDS ${stage1_import_stamp})
 
 # Stubs matching the native-build ExternalProject names. gcc-final and the
 # finalize barrier depend on these by name.
-foreach(stage1_stub newlib pthread-embedded vita-headers samples gcc-complete)
+foreach(stage1_stub newlib pthread-embedded vita-headers samples)
     add_custom_target(${stage1_stub})
     add_dependencies(${stage1_stub} stage1-import)
 endforeach()

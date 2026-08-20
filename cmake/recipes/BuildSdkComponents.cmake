@@ -18,12 +18,6 @@ ExternalProject_add(vita-headers
     COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include ${CMAKE_INSTALL_PREFIX}/${target_arch}/include
     # Copy the vita.header_warn.cmake to the installation directory
     COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/vita.header_warn.cmake ${CMAKE_INSTALL_PREFIX}/${target_arch}/vita.header_warn.cmake
-    # Copy the generated .a files to the toolchain directory (required for libgomp target)
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${toolchain_build_install_dir}/${target_arch}/lib
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_INSTALL_PREFIX}/${target_arch}/lib ${toolchain_build_install_dir}/${target_arch}/lib
-    # Install a copy of the headers in the toolchain directory (required for pthread-embedded target)
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${toolchain_build_install_dir}/${target_arch}/include
-    COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include ${toolchain_build_install_dir}/${target_arch}/include
     # Copy the yml database to the installation directory
     COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/db ${CMAKE_INSTALL_PREFIX}/share/vita-headers/db
     # Save the commit id for tracking purposes
@@ -32,7 +26,7 @@ ExternalProject_add(vita-headers
     )
 
 ExternalProject_Add(newlib
-    DEPENDS binutils_${target_suffix} gcc-base vita-headers
+    DEPENDS binutils_${target_suffix} vita-headers
     GIT_REPOSITORY ${NEWLIB_REPOSITORY}
     GIT_TAG ${NEWLIB_TAG}
     # Pass the compiler_target_tools here so newlib picks up the fresh gcc-base compiler
@@ -55,15 +49,13 @@ ExternalProject_Add(newlib
     --enable-newlib-mb
     BUILD_COMMAND ${compiler_flags} ${toolchain_tools} ${wrapper_command} $(MAKE)
     INSTALL_COMMAND $(MAKE) install DESTDIR=${CMAKE_INSTALL_PREFIX}
-    # Install a copy of newlib in the toolchain directory (required for pthread-embedded target)
-    COMMAND $(MAKE) install DESTDIR=${toolchain_build_install_dir}
     # Save the commit id for tracking purposes
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/newlib-version.txt
     ${UPDATE_DISCONNECTED_SUPPORT}
     )
 
 ExternalProject_Add(pthread-embedded
-    DEPENDS binutils_${target_suffix} gcc-base newlib vita-headers
+    DEPENDS binutils_${target_suffix} newlib vita-headers
     GIT_REPOSITORY ${PTHREAD_REPOSITORY}
     GIT_TAG ${PTHREAD_TAG}
     # TODO: this project should have a proper makefile to support out-of-source builds
@@ -72,8 +64,6 @@ ExternalProject_Add(pthread-embedded
     BUILD_COMMAND ${compiler_flags} ${wrapper_command} $(MAKE)
     -C <SOURCE_DIR>/platform/vita ${pthread_tools} PREFIX=${CMAKE_INSTALL_PREFIX}
     INSTALL_COMMAND $(MAKE) -C <SOURCE_DIR>/platform/vita PREFIX=${CMAKE_INSTALL_PREFIX}/${target_arch} install
-    # Install into the toolchain directory (required for libgomp target)
-    COMMAND $(MAKE) install -C <SOURCE_DIR>/platform/vita PREFIX=${toolchain_build_install_dir}/${target_arch} install
     # Save the commit id for tracking purposes
     COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> rev-parse HEAD > ${CMAKE_BINARY_DIR}/pthread-embedded-version.txt
     ${UPDATE_DISCONNECTED_SUPPORT}

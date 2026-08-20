@@ -201,7 +201,13 @@ Available host toolchain files under `cmake/toolchains/`:
 | `x86_64-apple-darwin.cmake` | macOS x86_64 | requires osxcross; see file header |
 | `aarch64-apple-darwin.cmake` | macOS arm64 | requires osxcross; see file header |
 
-Native builds without `VITASDK_STAGE1_DIR` (Linux, macOS, msys2) behave
-exactly as before: no stage-1 artifact is required to build from source on
-your own OS. `VITASDK_STAGE1_DIR` is an optional shortcut, not a
-requirement.
+Building for your own OS (Linux, macOS, msys2) needs no stage-1 artifact and
+behaves as it always has: `cmake .. && make tarball` produces a complete SDK
+from source. What changed is that gcc is built once instead of twice — the
+same tree yields the compiler and, after newlib and pthread-embedded are
+built with it, the target libraries.
+
+Cross building, on the other hand, now requires a stage-1 SDK. Target code
+is compiled once and imported; a cross build that rebuilt it would be
+compiling the same objects a second time on a machine that has no business
+doing it. Configure without `VITASDK_STAGE1_DIR` and the build says so.
