@@ -58,8 +58,8 @@ if [[ $host == *-w64-mingw32 ]]; then
 else
 	required+=(
 		bin/vdpm
-		bin/pacman
-		bin/pacman-conf
+		libexec/vdpm/pacman
+		libexec/vdpm/pacman-conf
 		bin/vdpm-channel
 		bin/include/refresh-repositories.sh
 	)

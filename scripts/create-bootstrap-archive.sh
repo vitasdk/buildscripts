@@ -27,7 +27,7 @@ case $host in
 			share/vdpm/refresh-repositories.ps1)
 		;;
 	*)
-		required+=(bin/vdpm bin/arm-vita-eabi-gcc bin/pacman bin/vdpm-channel \
+		required+=(bin/vdpm bin/arm-vita-eabi-gcc libexec/vdpm/pacman bin/vdpm-channel \
 			bin/include/refresh-repositories.sh)
 		;;
 esac

@@ -13,20 +13,26 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir -p "$sdk_root/bin/include" "$sdk_root/arm-vita-eabi/lib" \
+mkdir -p "$sdk_root/bin/include" "$sdk_root/libexec/vdpm" "$sdk_root/arm-vita-eabi/lib" \
 	"$sdk_root/share/vdpm/licenses" "$sdk_root/etc"
 cat > "$sdk_root/bin/arm-vita-eabi-gcc" <<'EOF'
 #!/usr/bin/env sh
 exit 0
 EOF
-for client in pacman pacman-conf vdpm vdpm-channel; do
+for client in vdpm vdpm-channel; do
 	cat > "$sdk_root/bin/$client" <<'EOF'
 #!/usr/bin/env sh
 exit 0
 EOF
 done
-chmod +x "$sdk_root/bin/arm-vita-eabi-gcc" "$sdk_root/bin/pacman" \
-	"$sdk_root/bin/pacman-conf" "$sdk_root/bin/vdpm" "$sdk_root/bin/vdpm-channel"
+for client in pacman pacman-conf; do
+	cat > "$sdk_root/libexec/vdpm/$client" <<'EOF'
+#!/usr/bin/env sh
+exit 0
+EOF
+done
+chmod +x "$sdk_root/bin/arm-vita-eabi-gcc" "$sdk_root/libexec/vdpm/pacman" \
+	"$sdk_root/libexec/vdpm/pacman-conf" "$sdk_root/bin/vdpm" "$sdk_root/bin/vdpm-channel"
 printf 'refresh\n' > "$sdk_root/bin/include/refresh-repositories.sh"
 printf 'archive\n' > "$sdk_root/arm-vita-eabi/lib/libfixture.a"
 printf 'source=fixture\n' > "$sdk_root/version_info.txt"
@@ -56,7 +62,7 @@ done
 core_entries=$(bsdtar -tf "$temporary_root/one/$core_name")
 client_entries=$(bsdtar -tf "$temporary_root/one/$client_name")
 
-for path in bin/vdpm bin/vdpm-channel bin/pacman bin/pacman-conf \
+for path in bin/vdpm bin/vdpm-channel libexec/vdpm/pacman libexec/vdpm/pacman-conf \
 		bin/include/refresh-repositories.sh share/vdpm/release-info.txt; do
 	grep -qx "$path" <<< "$client_entries" || {
 		printf 'the client package does not own %s\n' "$path" >&2

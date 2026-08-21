@@ -38,8 +38,7 @@ else
 	client_paths=(
 		bin/vdpm
 		bin/vdpm-channel
-		bin/pacman
-		bin/pacman-conf
+		libexec/vdpm
 		bin/include
 		share/vdpm
 	)
