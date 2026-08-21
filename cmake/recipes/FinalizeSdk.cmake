@@ -61,6 +61,19 @@ if(NOT VITASDK_STAGE1_DIR)
             -P ${CMAKE_SOURCE_DIR}/cmake/strip_target_objects.cmake)
 endif()
 
+# The audit reads the SDK's own binaries, so it needs an objdump that
+# understands them. A cross build has the host-prefixed one in PATH; a native
+# build may only have the plain name -- Alpine, for one, ships no
+# aarch64-linux-musl-objdump. Prefer the prefixed name, fall back to the
+# system's, and say so rather than failing at the last step of a long build.
+find_program(VITASDK_HOST_OBJDUMP NAMES ${host_native}-objdump objdump)
+if(NOT VITASDK_HOST_OBJDUMP)
+    message(FATAL_ERROR
+        "no objdump for the host dependency audit: looked for "
+        "${host_native}-objdump and objdump")
+endif()
+message(STATUS "Host dependency audit reads with ${VITASDK_HOST_OBJDUMP}")
+
 # Finalize only after every component has installed into the SDK. This is the
 # single barrier for cleanup, stripping, provenance and structural checks.
 add_custom_target(finalize-sdk
@@ -80,6 +93,11 @@ add_custom_target(finalize-sdk
         -DBINDIR=${CMAKE_INSTALL_PREFIX}/lib/gcc/${target_arch}/${GCC_VERSION}
         -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake
     ${target_object_strip_commands}
+    COMMAND ${CMAKE_COMMAND}
+        -DSDK_DIR=${CMAKE_INSTALL_PREFIX}
+        -DTARGET_TRIPLE=${target_arch}
+        -DGCC_VERSION=${GCC_VERSION}
+        -P ${CMAKE_SOURCE_DIR}/cmake/PublishBfdPlugins.cmake
     COMMAND ${CMAKE_COMMAND} -E remove_directory
         ${CMAKE_INSTALL_PREFIX}/share/man
     COMMAND ${CMAKE_COMMAND} -E remove_directory
@@ -101,7 +119,7 @@ add_custom_target(finalize-sdk
     COMMAND ${CMAKE_COMMAND} -E env
         VITASDK=${CMAKE_INSTALL_PREFIX}
         VITASDK_HOST_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
-        VITASDK_OBJDUMP=${host_native}-objdump
+        VITASDK_OBJDUMP=${VITASDK_HOST_OBJDUMP}
         ${CMAKE_SOURCE_DIR}/scripts/audit-host-deps.sh
     DEPENDS ${finalize_sdk_dependencies}
     COMMENT "Finalizing and validating VitaSDK"
@@ -120,7 +138,7 @@ add_custom_target(audit-host-dependencies
     COMMAND ${CMAKE_COMMAND} -E env
         VITASDK=${CMAKE_INSTALL_PREFIX}
         VITASDK_HOST_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
-        VITASDK_OBJDUMP=${host_native}-objdump
+        VITASDK_OBJDUMP=${VITASDK_HOST_OBJDUMP}
         ${CMAKE_SOURCE_DIR}/scripts/audit-host-deps.sh
     DEPENDS finalize-sdk
     VERBATIM
