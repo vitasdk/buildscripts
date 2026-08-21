@@ -43,6 +43,16 @@ for tool in gcc:clang g++:clang++ cc:clang c++:clang++; do
     real=${tool##*:}
     cat > "$bindir/${triplet}-${name}" <<WRAP
 #!/bin/sh
+# clang hands the languages it cannot compile -Ada among them- to the target's
+# gcc, and the target's gcc is this wrapper: the two call each other until the
+# machine runs out of memory. Refusing the re-entry makes such a probe fail the
+# way a missing compiler does, which is what this is.
+if [ "\${VITASDK_FREEBSD_CROSS-}" = "${triplet}" ]; then
+    echo "\$0: no compiler for this language" >&2
+    exit 1
+fi
+VITASDK_FREEBSD_CROSS=${triplet}
+export VITASDK_FREEBSD_CROSS
 exec ${real} --target=${triplet} --sysroot=${sysroot} -fuse-ld=lld \
     -Wno-unused-command-line-argument "\$@"
 WRAP
