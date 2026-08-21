@@ -66,14 +66,17 @@ endif()
 add_custom_target(finalize-sdk
     COMMAND ${CMAKE_COMMAND}
         -DHOST_SYSTEM_NAME=${CMAKE_HOST_SYSTEM_NAME}
+        -DCMAKE_STRIP=${CMAKE_STRIP}
         -DBINDIR=${CMAKE_INSTALL_PREFIX}/bin
         -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake
     COMMAND ${CMAKE_COMMAND}
         -DHOST_SYSTEM_NAME=${CMAKE_HOST_SYSTEM_NAME}
+        -DCMAKE_STRIP=${CMAKE_STRIP}
         -DBINDIR=${CMAKE_INSTALL_PREFIX}/${target_arch}/bin
         -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake
     COMMAND ${CMAKE_COMMAND}
         -DHOST_SYSTEM_NAME=${CMAKE_HOST_SYSTEM_NAME}
+        -DCMAKE_STRIP=${CMAKE_STRIP}
         -DBINDIR=${CMAKE_INSTALL_PREFIX}/lib/gcc/${target_arch}/${GCC_VERSION}
         -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake
     ${target_object_strip_commands}

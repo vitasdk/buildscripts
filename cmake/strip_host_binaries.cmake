@@ -14,8 +14,11 @@ else()
     file(GLOB_RECURSE binaries "${BINDIR}/*exe")
 endif()
 
-# set default strip command
-if(NOT "${CMAKE_STRIP}")
+# The build machine's strip only knows the build machine's architecture, so a
+# cross-built SDK has to be stripped with its own host's tool. The caller passes
+# it; a quoted NOT tests the path as a boolean and is always true, which is why
+# whatever was passed used to be thrown away here.
+if(NOT CMAKE_STRIP)
     set(CMAKE_STRIP "strip")
 endif()
 
