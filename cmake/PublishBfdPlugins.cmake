@@ -43,3 +43,14 @@ foreach(plugin ${plugins})
     file(COPY "${plugin}" DESTINATION "${SDK_DIR}/lib/bfd-plugins")
     message(STATUS "Published ${plugin_name} to lib/bfd-plugins")
 endforeach()
+
+# mingw builds an import library beside the DLL. Nothing links against a
+# plugin -- it is opened by name at run time -- so it is dead weight, and it
+# sits in the target library tree where ValidateStaticSdk.cmake forbids import
+# archives. Drop it rather than write it an exception.
+file(GLOB import_libraries "${gcc_lib_dir}/liblto_plugin*.dll.a")
+foreach(import_library ${import_libraries})
+    file(REMOVE "${import_library}")
+    get_filename_component(import_name "${import_library}" NAME)
+    message(STATUS "Removed ${import_name}, an import library for a plugin")
+endforeach()
