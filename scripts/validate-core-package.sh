@@ -106,7 +106,7 @@ if [[ $pkgname == vdpm ]]; then
 			}
 		done
 	else
-		for runtime_file in bin/vdpm bin/pacman bin/vdpm-channel; do
+		for runtime_file in bin/vdpm libexec/vdpm/pacman bin/vdpm-channel; do
 			grep -Fqx "$runtime_file" <<< "$archive_entries" || {
 				printf 'client package does not contain %s\n' "$runtime_file" >&2
 				exit 1

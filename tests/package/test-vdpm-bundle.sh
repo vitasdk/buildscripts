@@ -55,9 +55,12 @@ fi
 
 unix_host=x86_64-linux-gnu
 unix_root="$temporary_directory/unix-input/vdpm-test-$unix_host"
-mkdir -p "$unix_root/bin/include" "$unix_root/share/vdpm/licenses"
-for relative_path in vdpm pacman pacman-conf vdpm-channel; do
+mkdir -p "$unix_root/bin/include" "$unix_root/libexec/vdpm" "$unix_root/share/vdpm/licenses"
+for relative_path in vdpm vdpm-channel; do
 	printf '%s\n' "$relative_path" > "$unix_root/bin/$relative_path"
+done
+for relative_path in pacman pacman-conf; do
+	printf '%s\n' "$relative_path" > "$unix_root/libexec/vdpm/$relative_path"
 done
 printf 'refresh\n' > "$unix_root/bin/include/refresh-repositories.sh"
 printf 'notices\n' > "$unix_root/share/vdpm/THIRD_PARTY_NOTICES.md"
@@ -78,7 +81,7 @@ unix_sdk="$temporary_directory/unix-sdk"
 "$repository_root/scripts/install-vdpm-bundle.sh" \
 	"$unix_bundle" "$unix_digest" "$unix_sdk" "$unix_host"
 test -f "$unix_sdk/bin/vdpm"
-test -f "$unix_sdk/bin/pacman"
+test -f "$unix_sdk/libexec/vdpm/pacman"
 test -f "$unix_sdk/bin/vdpm-channel"
 test -f "$unix_sdk/bin/include/refresh-repositories.sh"
 
