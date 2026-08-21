@@ -13,7 +13,7 @@ function(vitasdk_get_host_static_flags system_name out_c out_cxx out_link)
         # runs unmodified on Alpine and on any glibc distribution.
         #
         # This reaches every link that goes straight to the compiler, which is
-        # all of them but binutils'; for those see
+        # all of them but binutils' and gdb's; for those see
         # vitasdk_get_libtool_static_flag below.
         set(c_flags -static-libgcc)
         set(cxx_flags -static -static-libgcc -static-libstdc++)
@@ -33,10 +33,10 @@ function(vitasdk_get_host_static_flags system_name out_c out_cxx out_link)
     set(${out_link} "${link_flags}" PARENT_SCOPE)
 endfunction()
 
-# Binutils links its programs through libtool, and libtool in link mode drops a
-# plain -static whenever the compiler has a PIC flag -- every gcc on Linux has
-# one -- so those programs came out needing libc.so while the host claimed to be
-# static.  --static the compiler reads as -static and libtool's case does not
+# Binutils and gdb link their programs through libtool, and libtool in link mode
+# drops a plain -static whenever the compiler has a PIC flag -- every gcc on
+# Linux has one -- so those programs came out needing libc.so while the host
+# claimed to be static.  --static the compiler reads as -static and libtool's case does not
 # match, so it arrives intact.  (-all-static is the flag libtool honours, but the
 # compiler rejects it and configure dies on its own link test; -static-pie clears
 # libtool and then fails because the musl toolchain is not default-PIE.)

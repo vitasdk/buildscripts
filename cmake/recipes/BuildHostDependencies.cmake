@@ -337,7 +337,7 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
                 ${PROJECT_SOURCE_DIR}/config.guess
                 ${PROJECT_SOURCE_DIR}/config.sub
                 <SOURCE_DIR>/
-            CONFIGURE_COMMAND CFLAGS=-std=gnu11
+            CONFIGURE_COMMAND CFLAGS=-std=gnu11 ${libtool_static_env}
             ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
             --build=${build_native}
             --host=${toolchain_host}
