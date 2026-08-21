@@ -17,31 +17,26 @@ assert_flags(Linux
     "-static-libgcc"
     "-static-libgcc;-static-libstdc++"
     "-static-libgcc;-static-libstdc++")
+# Windows takes its static link through the libtool-safe flag below: a plain
+# -static in these would tell libtool not to build gcc's LTO plugin DLL.
 assert_flags(Windows
     "-static-libgcc"
-    "-static;-static-libgcc;-static-libstdc++"
-    "-static;-static-libgcc;-static-libstdc++")
+    "-static-libgcc;-static-libstdc++"
+    "-static-libgcc;-static-libstdc++")
 assert_flags(Darwin "" "" "")
 
-function(assert_libtool_flag expected)
-    vitasdk_get_libtool_static_flag(actual)
+function(assert_libtool_flag system_name expected)
+    vitasdk_get_libtool_static_flag("${system_name}" actual)
     if(NOT "${actual}" STREQUAL "${expected}")
         message(FATAL_ERROR
-            "libtool static flag: expected '${expected}', got '${actual}'")
+            "${system_name} libtool static flag: expected '${expected}', "
+            "got '${actual}'")
     endif()
 endfunction()
 
-assert_libtool_flag("")
+assert_libtool_flag(Linux "")
+assert_libtool_flag(Darwin "")
+assert_libtool_flag(Windows "--static")
 
-# musl hosts request a fully static link (see cmake/toolchains/*-linux-musl.cmake)
-set(VITASDK_FULLY_STATIC ON)
-assert_flags(Linux
-    "-static-libgcc"
-    "-static;-static-libgcc;-static-libstdc++"
-    "-static;-static-libgcc;-static-libstdc++")
-# The double dash is load-bearing: libtool drops a plain -static in link mode
-# and binutils ships programs needing libc.so. Do not tidy it to one dash.
-assert_libtool_flag("--static")
-unset(VITASDK_FULLY_STATIC)
 
 message(STATUS "Static host-link policy checks passed")

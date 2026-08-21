@@ -124,7 +124,7 @@ vitasdk_append_flags(CMAKE_C_FLAGS ${host_static_c_flags})
 vitasdk_append_flags(CMAKE_CXX_FLAGS ${host_static_cxx_flags})
 vitasdk_append_flags(CMAKE_EXE_LINKER_FLAGS ${host_static_link_flags})
 # Prepended to the configure of every project whose programs libtool links.
-vitasdk_get_libtool_static_flag(host_libtool_static_flag)
+vitasdk_get_libtool_static_flag("${CMAKE_SYSTEM_NAME}" host_libtool_static_flag)
 set(libtool_static_env)
 if(host_libtool_static_flag)
     set(libtool_static_env "LDFLAGS=${host_libtool_static_flag}")

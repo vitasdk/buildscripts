@@ -8,24 +8,18 @@ function(vitasdk_get_host_static_flags system_name out_c out_cxx out_link)
     set(cxx_flags)
     set(link_flags)
 
-    if(system_name STREQUAL "Linux" AND VITASDK_FULLY_STATIC)
-        # musl hosts: link the whole binary statically so the resulting SDK
-        # runs unmodified on Alpine and on any glibc distribution.
-        #
-        # This reaches every link that goes straight to the compiler, which is
-        # all of them but binutils' and gdb's; for those see
-        # vitasdk_get_libtool_static_flag below.
-        set(c_flags -static-libgcc)
-        set(cxx_flags -static -static-libgcc -static-libstdc++)
-        set(link_flags -static -static-libgcc -static-libstdc++)
-    elseif(system_name STREQUAL "Linux")
+    if(system_name STREQUAL "Linux")
         set(c_flags -static-libgcc)
         set(cxx_flags -static-libgcc -static-libstdc++)
         set(link_flags -static-libgcc -static-libstdc++)
     elseif(system_name STREQUAL "Windows")
+        # No plain -static here. In library mode libtool reads it as "do not
+        # build the shared flavour", which silently cost this host GCC's LTO
+        # plugin -- a DLL that Windows can load perfectly well. The host
+        # programs get it through vitasdk_get_libtool_static_flag instead.
         set(c_flags -static-libgcc)
-        set(cxx_flags -static -static-libgcc -static-libstdc++)
-        set(link_flags -static -static-libgcc -static-libstdc++)
+        set(cxx_flags -static-libgcc -static-libstdc++)
+        set(link_flags -static-libgcc -static-libstdc++)
     endif()
 
     set(${out_c} "${c_flags}" PARENT_SCOPE)
@@ -33,21 +27,19 @@ function(vitasdk_get_host_static_flags system_name out_c out_cxx out_link)
     set(${out_link} "${link_flags}" PARENT_SCOPE)
 endfunction()
 
-# Binutils and gdb link their programs through libtool, and libtool in link mode
-# drops a plain -static whenever the compiler has a PIC flag -- every gcc on
-# Linux has one -- so those programs came out needing libc.so while the host
-# claimed to be static.  --static the compiler reads as -static and libtool's case does not
-# match, so it arrives intact.  (-all-static is the flag libtool honours, but the
-# compiler rejects it and configure dies on its own link test; -static-pie clears
-# libtool and then fails because the musl toolchain is not default-PIE.)
+# Windows ships host programs that depend on nothing but the system DLLs, which
+# takes a -static.  It cannot go in the flags above: binutils and gdb link their
+# programs through libtool, and libtool in library mode reads -static as "do not
+# build the shared flavour", which is how this host quietly lost GCC's LTO
+# plugin -- a DLL that Windows loads perfectly well.  Spelled --static it
+# reaches the compiler all the same, since gcc reads it as -static, while
+# libtool's case statement does not match it, so gcc's build still produces the
+# plugin.
 #
-# Only for projects whose programs libtool links: passed everywhere it would
-# also reach gcc's lto-plugin, which is a shared library and cannot be linked
-# statically.  That plugin stays unloadable on a fully static host either way --
-# musl answers dlopen with "Dynamic loading not supported" -- but it must still
-# build.
-function(vitasdk_get_libtool_static_flag out_flag)
-    if(VITASDK_FULLY_STATIC)
+# Given only to the projects whose programs libtool links, which is binutils and
+# gdb.  gcc links its own programs directly and takes the flags above.
+function(vitasdk_get_libtool_static_flag system_name out_flag)
+    if(system_name STREQUAL "Windows")
         set(${out_flag} "--static" PARENT_SCOPE)
     else()
         set(${out_flag} "" PARENT_SCOPE)
