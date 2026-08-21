@@ -201,13 +201,19 @@ Available host toolchain files under `cmake/toolchains/`:
 | --- | --- | --- |
 | `x86_64-w64-mingw32.cmake` | Windows x86_64 | mingw-w64 |
 | `i686-w64-mingw32.cmake` | Windows i686 | mingw-w64 |
-| `x86_64-linux-musl.cmake` | Linux x86_64 (musl) | fully static; runs on Alpine and glibc distros |
-| `aarch64-linux-musl.cmake` | Linux aarch64 (musl) | fully static |
 | `aarch64-linux-gnu.cmake` | Linux aarch64 (glibc) | alternative to a native arm64 build |
 | `x86_64-unknown-freebsd.cmake` | FreeBSD x86_64 | clang + base.txz sysroot, see `scripts/setup-freebsd-cross.sh` |
 | `aarch64-unknown-freebsd.cmake` | FreeBSD aarch64 | clang + base.txz sysroot, see `scripts/setup-freebsd-cross.sh` |
 | `x86_64-apple-darwin.cmake` | macOS x86_64 | requires osxcross; see file header |
 | `aarch64-apple-darwin.cmake` | macOS arm64 | requires osxcross; see file header |
+
+The musl hosts have no toolchain file: they are built inside an Alpine
+container, where they are native builds rather than crosses. They were crosses
+against a static musl toolchain once, and being fully static cost them GCC's
+LTO plugin -- a plugin is loaded at run time, and a static musl binary cannot
+load anything. Built where they run they keep it, and `-flto` behaves as it
+does everywhere else. What they no longer do is run on glibc: for a glibc
+machine, use the `linux-x86_64` or `linux-arm64` SDK.
 
 Building for your own OS (Linux, macOS, msys2) needs no stage-1 artifact and
 behaves as it always has: `cmake .. && make tarball` produces a complete SDK

@@ -38,7 +38,13 @@ speaks() {
     needle=$2
     shift 2
     output=$("$@" 2>&1)
-    if printf '%s' "$output" | grep -q "$needle"; then
+    # 127 is the shell failing to run it at all -- a binary for another libc
+    # reads as "not found", and that message carries the program's own name,
+    # which would otherwise match the needle and pass.
+    if [ $? -eq 127 ]; then
+        echo "  FAIL  $label: cannot execute on this host"
+        failures=$((failures + 1))
+    elif printf '%s' "$output" | grep -q "$needle"; then
         echo "  ok    $label"
     else
         echo "  FAIL  $label: $(printf '%s' "$output" | head -2 | tr '\n' ' ')"
