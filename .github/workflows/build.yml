@@ -376,12 +376,13 @@ jobs:
         # recorded rather than reconstructed.
         if [ -n "${{ matrix.freebsd }}" ]; then
           ( while true; do
-              printf 'SAMPLE %s mem_avail=%sM disk_avail=%sM load=%s procs=%s\n' \
+              printf 'SAMPLE %s mem_avail=%sM disk_avail=%sM load=%s procs=%s top=%s\n' \
                 "$(date -u +%H:%M:%S)" \
                 "$(free -m | awk '/^Mem:/{print $7}')" \
                 "$(df -m / | awk 'NR==2{print $4}')" \
                 "$(cut -d' ' -f1-3 /proc/loadavg)" \
-                "$(ps -e --no-headers | wc -l)"
+                "$(ps -e --no-headers | wc -l)" \
+                "$(ps -eo comm= | sort | uniq -c | sort -rn | head -3 | awk '{printf "%s:%s ", $2, $1}')"
               sleep 10
             done ) &
           sampler=$!
