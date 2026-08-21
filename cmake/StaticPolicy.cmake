@@ -11,9 +11,19 @@ function(vitasdk_get_host_static_flags system_name out_c out_cxx out_link)
     if(system_name STREQUAL "Linux" AND VITASDK_FULLY_STATIC)
         # musl hosts: link the whole binary statically so the resulting SDK
         # runs unmodified on Alpine and on any glibc distribution.
+        #
+        # Spelled --static, which the compiler takes as -static and libtool
+        # does not take at all.  In link mode libtool drops a plain -static
+        # whenever the compiler has a PIC flag, which every gcc on Linux has,
+        # so binutils linked its programs against musl dynamically no matter
+        # what this file asked for.  -all-static is the flag libtool honours,
+        # but the compiler rejects it and every configure test dies; -static-pie
+        # needs a -fPIE rebuild of everything.  This spelling reaches the
+        # compiler through both paths untouched, and audit-host-deps.sh is
+        # what notices should a libtool ever learn it.
         set(c_flags -static-libgcc)
-        set(cxx_flags -static -static-libgcc -static-libstdc++)
-        set(link_flags -static -static-libgcc -static-libstdc++)
+        set(cxx_flags --static -static-libgcc -static-libstdc++)
+        set(link_flags --static -static-libgcc -static-libstdc++)
     elseif(system_name STREQUAL "Linux")
         set(c_flags -static-libgcc)
         set(cxx_flags -static-libgcc -static-libstdc++)
