@@ -60,7 +60,9 @@ jobs:
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        apt-get install -y $DEBIAN_DEPS python3 curl bzip2 xz-utils
+        apt-get install -y $DEBIAN_DEPS python3 python3-pip curl bzip2 xz-utils
+        # focal's cmake is 3.16 and the build needs 3.19 features.
+        pip3 install --quiet cmake==3.31.6
     - name: Enable ccache
       run: |
         # gcc, binutils, gdb and newlib are autotools: they honour no CMake
@@ -156,7 +158,9 @@ jobs:
         if [ "$RUNNER_OS" = "macOS" ]; then
           brew install autoconf automake libtool texinfo ccache
         else
-          apt-get install -y $DEBIAN_DEPS python3 curl bzip2 xz-utils
+          apt-get install -y $DEBIAN_DEPS python3 python3-pip curl bzip2 xz-utils
+          # focal's cmake is 3.16 and the build needs 3.19 features.
+          pip3 install --quiet cmake==3.31.6
         fi
     - name: Enable ccache
       run: |
