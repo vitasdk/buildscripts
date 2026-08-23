@@ -55,6 +55,8 @@ jobs:
       run: |
         apt-get update
         apt-get install -y git ca-certificates
+        # The mounted workspace belongs to the runner uid, not the container's root.
+        git config --global --add safe.directory '*'
     - uses: actions/checkout@v7
     - name: Install dependencies
       env:
@@ -150,6 +152,8 @@ jobs:
       run: |
         apt-get update
         apt-get install -y git ca-certificates
+        # The mounted workspace belongs to the runner uid, not the container's root.
+        git config --global --add safe.directory '*'
     - uses: actions/checkout@v7
     - name: Install dependencies
       env:
@@ -326,6 +330,8 @@ jobs:
       run: |
         apt-get update
         apt-get install -y git ca-certificates
+        # The mounted workspace belongs to the runner uid, not the container's root.
+        git config --global --add safe.directory '*'
     - uses: actions/checkout@v7
     - name: Install dependencies
       env:
