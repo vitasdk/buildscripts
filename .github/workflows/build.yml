@@ -41,24 +41,33 @@ jobs:
   # ---------------------------------------------------------------------
   stage1:
     runs-on: ubuntu-24.04
+    # The Linux SDK legs build inside the glibc-2.31 base the published cores use.
+    container: ubuntu:20.04
     env:
       CCACHE_MAXSIZE: 2G
       CCACHE_COMPRESS: "1"
       CCACHE_COMPRESSLEVEL: "6"
     steps:
-    - uses: actions/checkout@v7
-    - uses: actions/setup-python@v7
-    - name: Install dependencies
+    - name: Install git for the checkout
+      # Without git in the container, checkout falls back to a tarball with no .git.
+      env:
+        DEBIAN_FRONTEND: noninteractive
       run: |
-        sudo apt-get update
-        sudo apt-get install -y $DEBIAN_DEPS
+        apt-get update
+        apt-get install -y git ca-certificates
+    - uses: actions/checkout@v7
+    - name: Install dependencies
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        apt-get install -y $DEBIAN_DEPS python3 curl bzip2 xz-utils
     - name: Enable ccache
       run: |
         # gcc, binutils, gdb and newlib are autotools: they honour no CMake
         # variable, and a shim directory in PATH is the only way they pick
         # ccache up. Listing it leaves the covered compilers in the log.
         if [ -x /usr/sbin/update-ccache-symlinks ]; then
-          sudo /usr/sbin/update-ccache-symlinks
+          /usr/sbin/update-ccache-symlinks
         fi
         ls /usr/lib/ccache
         echo /usr/lib/ccache >> $GITHUB_PATH
@@ -115,28 +124,39 @@ jobs:
         include:
           - runner: ubuntu-24.04
             name: linux-x86_64
+            container: ubuntu:20.04
             ccache_dir: ~/.ccache
           - runner: ubuntu-24.04-arm
             name: linux-arm64
+            container: ubuntu:20.04
             ccache_dir: ~/.ccache
           - runner: macos-14
             name: macos-arm64
             ccache_dir: ~/Library/Caches/ccache
     runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.container }}
     env:
       CCACHE_MAXSIZE: 2G
       CCACHE_COMPRESS: "1"
       CCACHE_COMPRESSLEVEL: "6"
     steps:
+    - name: Install git for the checkout
+      if: runner.os == 'Linux'
+      # Without git in the container, checkout falls back to a tarball with no .git.
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        apt-get update
+        apt-get install -y git ca-certificates
     - uses: actions/checkout@v7
-    - uses: actions/setup-python@v7
     - name: Install dependencies
+      env:
+        DEBIAN_FRONTEND: noninteractive
       run: |
         if [ "$RUNNER_OS" = "macOS" ]; then
           brew install autoconf automake libtool texinfo ccache
         else
-          sudo apt-get update
-          sudo apt-get install -y $DEBIAN_DEPS
+          apt-get install -y $DEBIAN_DEPS python3 curl bzip2 xz-utils
         fi
     - name: Enable ccache
       run: |
@@ -145,7 +165,7 @@ jobs:
           echo "CCACHE_DIR=$HOME/Library/Caches/ccache" >> $GITHUB_ENV
         else
           if [ -x /usr/sbin/update-ccache-symlinks ]; then
-            sudo /usr/sbin/update-ccache-symlinks
+            /usr/sbin/update-ccache-symlinks
           fi
           shims=/usr/lib/ccache
           echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
@@ -295,12 +315,18 @@ jobs:
       CCACHE_COMPRESS: "1"
       CCACHE_COMPRESSLEVEL: "6"
     steps:
+    - name: Install git for the checkout
+      # Without git in the container, checkout falls back to a tarball with no .git.
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        apt-get update
+        apt-get install -y git ca-certificates
     - uses: actions/checkout@v7
     - name: Install dependencies
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        apt-get update
         # BUILD_PACMAN_CLIENT=ON builds vdpm's Pacman client with Meson;
         # focal's cmake and meson predate what it needs, so pip supplies them.
         apt-get install -y $DEBIAN_DEPS ninja-build libarchive-tools \
