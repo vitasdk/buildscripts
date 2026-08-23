@@ -6,6 +6,12 @@ on:
   repository_dispatch:
     types: [run_build]
 
+# A push to a branch with an open pull request fires both triggers; one
+# group per head commit keeps a single run of the pair alive.
+concurrency:
+  group: build-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
 env:
   DEBIAN_DEPS: cmake cmake-data git build-essential autoconf automake libtool texinfo bison flex pkg-config ccache
 
