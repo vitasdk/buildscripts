@@ -85,6 +85,8 @@ jobs:
       run: |
         git config --global user.email "builds@ci.invalid"
         git config --global user.name "CI"
+        # focal images carry no default locale and GCC's tarball needs one.
+        export LANG=C.UTF-8
         mkdir -p build
         cd build
         cmake .. -DVITASDK_TARGET_ONLY=ON
@@ -181,6 +183,8 @@ jobs:
       run: |
         git config --global user.email "builds@ci.invalid"
         git config --global user.name "CI"
+        # focal images carry no default locale and GCC's tarball needs one.
+        export LANG=C.UTF-8
         mkdir -p build
         cd build
         cmake .. -DVITASDK_STAGE1_DIR="$STAGE1_DIR"
@@ -284,22 +288,28 @@ jobs:
   pacman-client-package:
     needs: stage1
     runs-on: ubuntu-24.04
+    # Runs inside the same glibc-2.31 base the published cores build in.
+    container: ubuntu:20.04
     env:
       CCACHE_MAXSIZE: 2G
       CCACHE_COMPRESS: "1"
       CCACHE_COMPRESSLEVEL: "6"
     steps:
     - uses: actions/checkout@v7
-    - uses: actions/setup-python@v7
     - name: Install dependencies
+      env:
+        DEBIAN_FRONTEND: noninteractive
       run: |
-        sudo apt-get update
-        # BUILD_PACMAN_CLIENT=ON builds vdpm's Pacman client with Meson.
-        sudo apt-get install -y $DEBIAN_DEPS meson ninja-build libarchive-tools
+        apt-get update
+        # BUILD_PACMAN_CLIENT=ON builds vdpm's Pacman client with Meson;
+        # focal's cmake and meson predate what it needs, so pip supplies them.
+        apt-get install -y $DEBIAN_DEPS ninja-build libarchive-tools \
+          python3 python3-pip curl ca-certificates bzip2 xz-utils
+        pip3 install --quiet cmake==3.31.6 meson==1.11.0
     - name: Enable ccache
       run: |
         if [ -x /usr/sbin/update-ccache-symlinks ]; then
-          sudo /usr/sbin/update-ccache-symlinks
+          /usr/sbin/update-ccache-symlinks
         fi
         ls /usr/lib/ccache
         echo /usr/lib/ccache >> $GITHUB_PATH
@@ -332,24 +342,24 @@ jobs:
         test -n "$STAGE1_DIR"
         echo "STAGE1_DIR=$STAGE1_DIR" >> $GITHUB_ENV
     - name: Download the vdpm host bundle
-      env:
-        GH_TOKEN: ${{ github.token }}
       run: |
         # The packaging scripts read metadata the bundle installs, so the
         # published configuration needs the real bundle, like autobuilds.
         tag=$(sed -n 's/^set(VDPM_TAG \([^ ]*\) .*/\1/p' cmake/Components.cmake)
+        archive="vdpm-${tag#v}-x86_64-linux-gnu.tar.bz2"
+        base="https://github.com/vitasdk/vdpm/releases/download/$tag"
         mkdir vdpm-release
-        gh release download "$tag" --repo vitasdk/vdpm \
-          --pattern "vdpm-*-x86_64-linux-gnu.tar.bz2" \
-          --pattern "vdpm-*-x86_64-linux-gnu.tar.bz2.sha256" \
-          --dir vdpm-release
+        curl -fsSL --retry 3 -o "vdpm-release/$archive" "$base/$archive"
+        curl -fsSL --retry 3 -o "vdpm-release/$archive.sha256" "$base/$archive.sha256"
         (cd vdpm-release && sha256sum -c ./*.sha256)
-        echo "VDPM_BUNDLE=$PWD/$(ls vdpm-release/*.tar.bz2)" >> $GITHUB_ENV
+        echo "VDPM_BUNDLE=$PWD/vdpm-release/$archive" >> $GITHUB_ENV
         echo "VDPM_BUNDLE_SHA256=$(awk '{print $1}' vdpm-release/*.sha256)" >> $GITHUB_ENV
     - name: Build with the package client enabled
       run: |
         git config --global user.email "builds@ci.invalid"
         git config --global user.name "CI"
+        # focal images carry no default locale and GCC's tarball needs one.
+        export LANG=C.UTF-8
         mkdir -p build
         cd build
         cmake .. -DVITASDK_STAGE1_DIR="$STAGE1_DIR" \
