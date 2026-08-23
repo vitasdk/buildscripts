@@ -360,6 +360,8 @@ jobs:
           scripts/validate-core-package.sh "$pkg"
         done
     - name: Run the package test suite
+      env:
+        VITASDK_STAGE1_DIR: ${{ env.STAGE1_DIR }}
       run: |
         for test in tests/package/test-*.sh; do
           echo "== $test"
