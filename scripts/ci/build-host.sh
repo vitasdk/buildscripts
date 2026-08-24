@@ -137,6 +137,9 @@ build_and_stage() {
 		-S "$repo_root" -B build ${extra_args[@]+"${extra_args[@]}"}
 		-DVITASDK_SOURCE_REVISION="$revision"
 		-DVITASDK_SOURCE_DATE_EPOCH="$source_date_epoch"
+		# The lock names the host; artifacts published under any other name
+		# would not match what the caller asked to be built.
+		-DVITASDK_HOST_NAME="$host"
 	)
 	[[ -n ${stage1_dir:-} ]] && cmake_args+=(-DVITASDK_STAGE1_DIR="$stage1_dir")
 	local -a targets=(tarball)
@@ -203,6 +206,7 @@ stage_and_write_provenance() {
 # bootstrap smoke test runs inside the same container that built it.
 build_musl_host() {
 	local -a docker_env=(
+		-e VITASDK_HOST_NAME="$host"
 		-e VITASDK_SOURCE_REVISION="$revision"
 		-e VITASDK_SOURCE_DATE_EPOCH="$source_date_epoch"
 		-e CCACHE_DIR=/src/.ccache
@@ -237,7 +241,7 @@ build_musl_host() {
 			test -n "$STAGE1_DIR"
 			mkdir -p /src/build
 			cd /src/build
-			configure_args="-DVITASDK_STAGE1_DIR=$STAGE1_DIR -DVITASDK_SOURCE_REVISION=$VITASDK_SOURCE_REVISION -DVITASDK_SOURCE_DATE_EPOCH=$VITASDK_SOURCE_DATE_EPOCH"
+			configure_args="-DVITASDK_STAGE1_DIR=$STAGE1_DIR -DVITASDK_SOURCE_REVISION=$VITASDK_SOURCE_REVISION -DVITASDK_SOURCE_DATE_EPOCH=$VITASDK_SOURCE_DATE_EPOCH -DVITASDK_HOST_NAME=$VITASDK_HOST_NAME"
 			targets="tarball"
 			if [ -n "${VITASDK_PACKAGED_HOST:-}" ]; then
 				configure_args="$configure_args -DBUILD_PACMAN_CLIENT=ON -DVITASDK_PACKAGE_VERSION=$VITASDK_PACKAGE_VERSION -DVDPM_BUNDLE=$VDPM_BUNDLE -DVDPM_BUNDLE_SHA256=$VDPM_BUNDLE_SHA256"

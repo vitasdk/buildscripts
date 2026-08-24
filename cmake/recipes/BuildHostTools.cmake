@@ -55,7 +55,7 @@ if(vdpm_use_release_bundle)
             ${VDPM_BUNDLE}
             ${VDPM_BUNDLE_SHA256}
             ${CMAKE_INSTALL_PREFIX}
-            ${host_native}
+            ${host_published}
         VERBATIM)
 else()
     ExternalProject_Add(vdpm

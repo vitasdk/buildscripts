@@ -22,7 +22,7 @@ if(BUILD_PACMAN_CLIENT)
     add_custom_target(package-client-configuration
         COMMAND ${CMAKE_COMMAND}
             -DOUTPUT=${CMAKE_INSTALL_PREFIX}/etc/pacman.conf
-            -DHOST_ARCHITECTURE=${host_native}
+            -DHOST_ARCHITECTURE=${host_published}
             -P ${PROJECT_SOURCE_DIR}/cmake/WritePacmanConfig.cmake
         DEPENDS vdpm
         VERBATIM)
@@ -159,20 +159,20 @@ add_custom_target(check-static-policy
     VERBATIM
     )
 
-add_custom_command(OUTPUT "vitasdk-${host_native}-${build_date}.tar.bz2"
-    COMMAND ${CMAKE_COMMAND} -E tar "cfvj" "vitasdk-${host_native}-${build_date}.tar.bz2" "${CMAKE_INSTALL_PREFIX}"
+add_custom_command(OUTPUT "vitasdk-${host_published}-${build_date}.tar.bz2"
+    COMMAND ${CMAKE_COMMAND} -E tar "cfvj" "vitasdk-${host_published}-${build_date}.tar.bz2" "${CMAKE_INSTALL_PREFIX}"
     DEPENDS finalize-sdk
-    COMMENT "Creating vitasdk-${host_native}-${build_date}.tar.bz2"
+    COMMENT "Creating vitasdk-${host_published}-${build_date}.tar.bz2"
     )
 
 # Create a sdk tarball
-add_custom_target(tarball DEPENDS "vitasdk-${host_native}-${build_date}.tar.bz2")
+add_custom_target(tarball DEPENDS "vitasdk-${host_published}-${build_date}.tar.bz2")
 
 if(BUILD_PACMAN_CLIENT)
     set(VITASDK_BOOTSTRAP_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bootstraps" CACHE PATH
         "Output directory for verified VitaSDK bootstrap archives")
     set(bootstrap_archive
-        "${VITASDK_BOOTSTRAP_OUTPUT_DIR}/vitasdk-bootstrap-${host_native}.tar.bz2")
+        "${VITASDK_BOOTSTRAP_OUTPUT_DIR}/vitasdk-bootstrap-${host_published}.tar.bz2")
     add_custom_command(OUTPUT ${bootstrap_archive}
         BYPRODUCTS ${bootstrap_archive}.sha256
         COMMAND ${CMAKE_COMMAND} -E make_directory ${VITASDK_BOOTSTRAP_OUTPUT_DIR}
@@ -181,7 +181,7 @@ if(BUILD_PACMAN_CLIENT)
         COMMAND ${PROJECT_SOURCE_DIR}/scripts/create-bootstrap-archive.sh
             ${CMAKE_INSTALL_PREFIX}
             ${VITASDK_BOOTSTRAP_OUTPUT_DIR}
-            ${host_native}
+            ${host_published}
             ${VITASDK_SOURCE_DATE_EPOCH}
         DEPENDS finalize-sdk
             ${PROJECT_SOURCE_DIR}/scripts/create-bootstrap-archive.sh
@@ -193,12 +193,12 @@ if(BUILD_PACMAN_CLIENT)
     set(VITASDK_PACKAGE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/packages" CACHE PATH
         "Output directory for the vitasdk-core package")
     set(core_package
-        "${VITASDK_PACKAGE_OUTPUT_DIR}/vitasdk-core-${VITASDK_PACKAGE_VERSION}-1-${host_native}.pkg.tar.xz")
+        "${VITASDK_PACKAGE_OUTPUT_DIR}/vitasdk-core-${VITASDK_PACKAGE_VERSION}-1-${host_published}.pkg.tar.xz")
 
     # A core release is two packages: the toolchain, and the client that
     # installs it. Both are outputs, and both have to be gone before a rerun.
     file(GLOB stale_client_packages
-        "${VITASDK_PACKAGE_OUTPUT_DIR}/vdpm-*-1-${host_native}.pkg.tar.xz")
+        "${VITASDK_PACKAGE_OUTPUT_DIR}/vdpm-*-1-${host_published}.pkg.tar.xz")
 
     add_custom_command(OUTPUT ${core_package}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${VITASDK_PACKAGE_OUTPUT_DIR}
@@ -208,7 +208,7 @@ if(BUILD_PACMAN_CLIENT)
             ${CMAKE_SOURCE_DIR}/scripts/create-core-package.sh
             ${CMAKE_INSTALL_PREFIX}
             ${VITASDK_PACKAGE_OUTPUT_DIR}
-            ${host_native}
+            ${host_published}
             ${VITASDK_PACKAGE_VERSION}
             ${VITASDK_SOURCE_REVISION}
         DEPENDS finalize-sdk
