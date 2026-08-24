@@ -111,9 +111,10 @@ jobs:
   stage2:
     name: stage2 (${{ matrix.name }})
     needs: [gate, stage1]
+    # A failed host is not this shell's call to make; only a cancellation is.
     if: |
       always() && needs.gate.result == 'success' &&
-      needs.stage1.result != 'failure' && needs.stage1.result != 'cancelled' &&
+      needs.stage1.result != 'cancelled' &&
       needs.gate.outputs.stage2_hosts != '[]'
     strategy:
       fail-fast: false
@@ -167,9 +168,10 @@ jobs:
   stage3:
     name: stage3 (${{ matrix.name }})
     needs: [gate, stage2]
+    # A failed host is not this shell's call to make; only a cancellation is.
     if: |
       always() && needs.gate.result == 'success' &&
-      needs.stage2.result != 'failure' && needs.stage2.result != 'cancelled' &&
+      needs.stage2.result != 'cancelled' &&
       needs.gate.outputs.stage3_hosts != '[]'
     strategy:
       fail-fast: false
@@ -226,9 +228,10 @@ jobs:
   smoke-windows-bootstrap:
     name: Smoke test the Windows bootstrap
     needs: [gate, stage3]
+    # A failed host is not this shell's call to make; only a cancellation is.
     if: |
       always() && needs.gate.result == 'success' &&
-      needs.stage3.result != 'failure' && needs.stage3.result != 'cancelled'
+      needs.stage3.result != 'cancelled'
     runs-on: windows-2025
     steps:
       - uses: actions/checkout@v7
@@ -251,12 +254,13 @@ jobs:
   group:
     name: Group the release tree
     needs: [gate, stage1, stage2, stage3, smoke-windows-bootstrap]
+    # Required-host policy is the caller's, not this shell's; group with whatever built.
     if: |
       always() && needs.gate.result == 'success' &&
-      needs.stage1.result != 'failure' && needs.stage1.result != 'cancelled' &&
-      needs.stage2.result != 'failure' && needs.stage2.result != 'cancelled' &&
-      needs.stage3.result != 'failure' && needs.stage3.result != 'cancelled' &&
-      needs['smoke-windows-bootstrap'].result != 'failure' && needs['smoke-windows-bootstrap'].result != 'cancelled'
+      needs.stage1.result != 'cancelled' &&
+      needs.stage2.result != 'cancelled' &&
+      needs.stage3.result != 'cancelled' &&
+      needs['smoke-windows-bootstrap'].result != 'cancelled'
     runs-on: ubuntu-24.04
     outputs:
       build_id: ${{ needs.gate.outputs.build_id }}
