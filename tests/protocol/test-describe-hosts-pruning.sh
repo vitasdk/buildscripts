@@ -107,4 +107,48 @@ grep -qi 'does-not-exist' <<< "$output" || {
 	exit 1
 }
 
+# A duplicate (name, stage) pair is refused at the source, not left for the
+# lock consumer to trip over.
+git checkout -q "$synthetic_rev"
+python3 -c '
+import json
+data = json.load(open("cmake/hosts.json"))
+data["hosts"].append(dict(data["hosts"][3]))
+json.dump(data, open("cmake/hosts.json", "w"))
+'
+git commit -aq -m 'test: duplicate host pair'
+duplicate_rev=$(git rev-parse HEAD)
+
+if output=$(describe --profile vita --revision "$duplicate_rev" 2>&1); then
+	printf 'describe accepted a duplicate (name, stage) pair\n' >&2
+	exit 1
+fi
+grep -qi 'more than once' <<< "$output" || {
+	printf 'describe did not report the duplicate pair: %s\n' "$output" >&2
+	exit 1
+}
+
+# A packaged stage-3 host with no build_host at all fails at lock time.
+git checkout -q "$synthetic_rev"
+python3 -c '
+import json
+data = json.load(open("cmake/hosts.json"))
+data["hosts"].append({
+    "name": "orphan-cross", "stage": 3, "runner": "r7", "container": None,
+    "packaged": True,
+})
+json.dump(data, open("cmake/hosts.json", "w"))
+'
+git commit -aq -m 'test: packaged stage-3 host without build_host'
+orphan_rev=$(git rev-parse HEAD)
+
+if output=$(describe --profile vita --revision "$orphan_rev" 2>&1); then
+	printf 'describe accepted a packaged stage-3 host with no build_host\n' >&2
+	exit 1
+fi
+grep -qi 'declares no build_host' <<< "$output" || {
+	printf 'describe did not name the missing build_host: %s\n' "$output" >&2
+	exit 1
+}
+
 printf 'describe host-pruning contract tests passed\n'
