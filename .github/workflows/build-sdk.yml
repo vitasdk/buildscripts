@@ -28,9 +28,6 @@ on:
 env:
   BUILDSCRIPTS_REPO: vitasdk/buildscripts
 
-concurrency:
-  group: build-sdk-${{ github.workflow }}-${{ github.run_id }}
-
 jobs:
   # Checks out the calling ref's own parser, never the lock's revision.
   gate:
