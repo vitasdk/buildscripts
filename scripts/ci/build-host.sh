@@ -14,6 +14,8 @@ build_id=""
 version=""
 revision=""
 profile=""
+packaged=""
+build_host=""
 
 while [[ $# -gt 0 ]]; do
 	case $1 in
@@ -49,13 +51,21 @@ while [[ $# -gt 0 ]]; do
 		profile=$2
 		shift 2
 		;;
+	--packaged)
+		packaged=$2
+		shift 2
+		;;
+	--build-host)
+		build_host=$2
+		shift 2
+		;;
 	*)
 		printf 'unknown argument: %s\n' "$1" >&2
 		exit 2
 		;;
 	esac
 done
-for required in host stage artifacts_dir out_dir build_id version revision profile; do
+for required in host stage artifacts_dir out_dir build_id version revision profile packaged; do
 	[[ -n ${!required} ]] || {
 		printf -- '--%s is required\n' "${required//_/-}" >&2
 		exit 2
@@ -77,14 +87,8 @@ export LANG=C.UTF-8
 git config --global user.email "builds@ci.invalid"
 git config --global user.name "buildscripts CI"
 
-# Hosts that publish an installable core package (spec: "Supported host build
-# transaction"); every other buildable host still gets a plain SDK tarball.
-is_required_host() {
-	case $1 in
-	x86_64-linux-gnu | aarch64-linux-gnu | arm64-apple-darwin | x86_64-w64-mingw32) return 0 ;;
-	*) return 1 ;;
-	esac
-}
+# The matrix's packaged flag, not the host name, gates core-package treatment.
+is_packaged_host() { [[ $packaged == true ]]; }
 
 vdpm_tag() {
 	sed -n 's/^set(VDPM_TAG \([^ )]*\).*/\1/p' "$repo_root/cmake/Components.cmake"
@@ -136,7 +140,7 @@ build_and_stage() {
 	local -a targets=(tarball)
 
 	local vdpm_bundle="" vdpm_bundle_sha256=""
-	if is_required_host "$host"; then
+	if is_packaged_host; then
 		download_vdpm_bundle "$host" "$PWD/vdpm-release"
 		cmake_args+=(
 			-DBUILD_PACMAN_CLIENT=ON
@@ -151,15 +155,15 @@ build_and_stage() {
 	cmake --build build --target "${targets[@]}" --parallel "$(ci_nproc)"
 
 	# Only a native build can run its own output.
-	if [[ -z ${build_sdk_host:-} ]]; then
+	if [[ -z $build_host ]]; then
 		cmake --build build --target check-toolchain-contract
-		if is_required_host "$host"; then
+		if is_packaged_host; then
 			smoke_test_bootstrap "build/bootstraps/vitasdk-bootstrap-$host.tar.bz2"
 		fi
 	fi
 
 	local -a produced=(build/vitasdk-*.tar.bz2)
-	if is_required_host "$host"; then
+	if is_packaged_host; then
 		produced+=(build/packages/*.pkg.tar.xz build/bootstraps/vitasdk-bootstrap-*.tar.bz2 build/bootstraps/vitasdk-bootstrap-*.tar.bz2.sha256)
 	fi
 	local -a names=()
@@ -256,7 +260,6 @@ if [[ $host == *-linux-musl ]]; then
 fi
 
 extra_cmake_args=()
-build_sdk_host=""
 case $host in
 x86_64-linux-gnu | aarch64-linux-gnu | arm64-apple-darwin)
 	install_dependencies
@@ -264,33 +267,28 @@ x86_64-linux-gnu | aarch64-linux-gnu | arm64-apple-darwin)
 x86_64-w64-mingw32)
 	install_dependencies
 	extra_cmake_args+=(-DCMAKE_TOOLCHAIN_FILE="$repo_root/cmake/toolchains/x86_64-w64-mingw32.cmake")
-	build_sdk_host=x86_64-linux-gnu
 	;;
 i686-w64-mingw32)
 	install_dependencies
 	extra_cmake_args+=(-DCMAKE_TOOLCHAIN_FILE="$repo_root/cmake/toolchains/i686-w64-mingw32.cmake")
-	build_sdk_host=x86_64-linux-gnu
 	;;
 x86_64-unknown-freebsd)
 	install_dependencies
 	scripts/setup-freebsd-cross.sh 14.3 "$PWD/freebsd-cross" x86_64
 	export PATH="$PWD/freebsd-cross/bin:$PATH"
 	extra_cmake_args+=(-DCMAKE_TOOLCHAIN_FILE="$repo_root/cmake/toolchains/x86_64-unknown-freebsd.cmake")
-	build_sdk_host=x86_64-linux-gnu
 	;;
 aarch64-unknown-freebsd)
 	install_dependencies
 	scripts/setup-freebsd-cross.sh 14.3 "$PWD/freebsd-cross" aarch64
 	export PATH="$PWD/freebsd-cross/bin:$PATH"
 	extra_cmake_args+=(-DCMAKE_TOOLCHAIN_FILE="$repo_root/cmake/toolchains/aarch64-unknown-freebsd.cmake")
-	build_sdk_host=x86_64-linux-gnu
 	;;
 x86_64-apple-darwin)
 	install_dependencies
 	scripts/setup-macos-cross.sh "$PWD/macos-cross"
 	export PATH="$PWD/macos-cross/bin:$PATH"
 	extra_cmake_args+=(-DCMAKE_TOOLCHAIN_FILE="$repo_root/cmake/toolchains/x86_64-apple-darwin.cmake")
-	build_sdk_host=arm64-apple-darwin
 	;;
 *)
 	printf 'no build recipe for host: %s\n' "$host" >&2
@@ -309,14 +307,15 @@ if [[ $stage == 2 ]]; then
 	stage1_dir=$(ci_find_sdk_root "$PWD/stage1")
 else
 	# Always stage 2 (a full SDK, with arm-vita-eabi-gcc for -dumpspecs),
-	# even for a host name that also has a stage-1 entry.
-	[[ -n $build_sdk_host ]] || {
+	# even for a host name that also has a stage-1 entry. build_host comes
+	# from the lock (cmake/hosts.json), not a hardcoded per-host table.
+	[[ -n $build_host ]] || {
 		printf 'stage 3 host %s has no build-machine mapping\n' "$host" >&2
 		exit 1
 	}
-	build_sdk_source_dir=$(ci_find_stage_artifact "$artifacts_dir" 2 "$build_sdk_host") ||
+	build_sdk_source_dir=$(ci_find_stage_artifact "$artifacts_dir" 2 "$build_host") ||
 		{
-			printf 'no build-machine SDK found for %s (needs %s)\n' "$host" "$build_sdk_host" >&2
+			printf 'no build-machine SDK found for %s (needs %s)\n' "$host" "$build_host" >&2
 			exit 1
 		}
 	ci_unpack_sdk_artifact "$build_sdk_source_dir" "$PWD/build-sdk"
