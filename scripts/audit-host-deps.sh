@@ -6,11 +6,15 @@ set -eu
 host_system=${VITASDK_HOST_SYSTEM_NAME:-$(uname -s)}
 objdump_command=${VITASDK_OBJDUMP:-objdump}
 
+# Every offender, not the first: each one costs a full build to discover, and
+# a host that drags in one library from the machine usually drags in several.
+unexpected_count=0
+
 fail_dependency() {
     binary=$1
     dependency=$2
     echo "unexpected dynamic host dependency: $binary -> $dependency" >&2
-    exit 1
+    unexpected_count=$((unexpected_count + 1))
 }
 
 # One reader for every ELF host; what differs between them is only which
@@ -152,5 +156,10 @@ case "$host_system" in
         exit 2
         ;;
 esac
+
+if [ "$unexpected_count" -ne 0 ]; then
+    echo "$unexpected_count unexpected host dependencies" >&2
+    exit 1
+fi
 
 echo "Host dependency audit passed"

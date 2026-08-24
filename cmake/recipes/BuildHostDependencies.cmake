@@ -358,6 +358,10 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
             --without-lzma
             --without-babeltrace
             --without-xxhash
+            # Every other component here disables it. Left on, gdb links the
+            # host's libintl -- on Intel macOS that is Homebrew's, which the
+            # dependency audit refuses and a user's machine would not have.
+            --disable-nls
             --without-debuginfod
             --with-gmp=${toolchain_deps_dir}
             --with-mpfr=${toolchain_deps_dir}
