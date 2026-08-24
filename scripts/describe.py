@@ -102,6 +102,12 @@ def parse_hosts(text):
                 raise DescribeError(f"{HOSTS_PATH} entry missing '{key}': {host}")
         # Older revisions predate the packaged marker; treat it as unpublished.
         host.setdefault("packaged", False)
+    seen = set()
+    for host in hosts:
+        key = (host["name"], host["stage"])
+        if key in seen:
+            raise DescribeError(f"{HOSTS_PATH} lists {key} more than once")
+        seen.add(key)
     return hosts
 
 
@@ -115,7 +121,10 @@ def prune_hosts(hosts):
             continue
         build_host = host.get("build_host")
         if not build_host:
-            continue
+            raise DescribeError(
+                f"{HOSTS_PATH}: packaged stage-3 host {host['name']} "
+                "declares no build_host"
+            )
         key = (build_host, 2)
         if key not in by_key:
             raise DescribeError(
