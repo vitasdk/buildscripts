@@ -184,6 +184,10 @@ function(toolchain_deps toolchain_deps_dir toolchain_install_dir toolchain_suffi
         --enable-cxx
         --disable-shared
         --enable-static
+        # gmp's x86_64 assembly reaches its lookup tables from the text
+        # segment, which Apple's linker refuses inside a position-independent
+        # executable; every host that links this statically wants it anyway.
+        --with-pic
         BUILD_COMMAND ${compiler_flags} ${wrapper_command} $(MAKE)
         )
 

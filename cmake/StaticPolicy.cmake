@@ -20,13 +20,6 @@ function(vitasdk_get_host_static_flags system_name out_c out_cxx out_link)
         set(c_flags -static-libgcc)
         set(cxx_flags -static-libgcc -static-libstdc++)
         set(link_flags -static-libgcc -static-libstdc++)
-    elseif(system_name STREQUAL "Darwin")
-        # ld64 looks for a dylib in every search path before it considers a
-        # static library in any of them, so the dependencies built here --
-        # static only -- lose to a Homebrew copy of the same name. That only
-        # bites on Intel, where Homebrew's /usr/local is an implicit search
-        # path; searching each directory for either kind settles it.
-        set(link_flags -Wl,-search_paths_first)
     endif()
 
     set(${out_c} "${c_flags}" PARENT_SCOPE)
