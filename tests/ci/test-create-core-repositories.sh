@@ -120,6 +120,22 @@ EOF
 			exit 1
 		fi
 
+		# Each .db has to register the exact set of packages published for
+		# its architecture -- name and version included, straight from a real
+		# pacman database, not the self-reported echo in release.json. A
+		# missing registration or a phantom one (registered but no file on
+		# disk) shows up as a diff line and, with -e active, fails the test.
+		for architecture in x86_64-linux-gnu aarch64-linux-gnu; do
+			find /work -maxdepth 1 -name "*-$architecture.pkg.tar.xz" -printf "%f\n" |
+				LC_ALL=C sort > "/work/actual-packages-$architecture"
+			while IFS= read -r description; do
+				bsdtar -xOf "/work/repository-one/$architecture.db" "$description" |
+					awk "previous == \"%FILENAME%\" { print; exit } { previous = \$0 }"
+			done < <(bsdtar -tf "/work/repository-one/$architecture.db" | grep "/desc\$") |
+				LC_ALL=C sort > "/work/database-packages-$architecture"
+			diff -u "/work/actual-packages-$architecture" "/work/database-packages-$architecture"
+		done
+
 		# release.json exists, is covered by SHA256SUMS like every other
 		# published file, and echoes what each host reported.
 		test -f /work/repository-one/release.json
