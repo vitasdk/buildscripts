@@ -155,6 +155,7 @@ build_and_stage() {
 
 	cmake "${cmake_args[@]}"
 	cmake --build build --target "${targets[@]}" --parallel "$(ci_nproc)"
+	report_ccache_statistics
 
 	# Only a native build can run its own output.
 	if [[ -z $build_host ]]; then
@@ -192,14 +193,19 @@ build_and_stage() {
 
 # musl hosts are native builds inside Alpine (see build.yml stage2-musl).
 build_musl_host() {
+	# CCACHE_DIR lives under the workspace, which is already the bind mount,
+	# so the container reaches the same cache the runner restored.
 	docker run --rm \
 		-v "$PWD":/src -w /src \
 		-e VITASDK_SOURCE_REVISION="$revision" \
 		-e VITASDK_SOURCE_DATE_EPOCH="$source_date_epoch" \
+		-e CCACHE_DIR=/src/.ccache \
+		-e CCACHE_MAXSIZE -e CCACHE_COMPRESS -e CCACHE_COMPRESSLEVEL \
 		alpine:3.20 sh -eux -c '
 			apk add --no-cache bash build-base cmake git autoconf automake \
 				libtool texinfo bison flex pkgconf curl xz python3 bzip2 \
-				tar linux-headers
+				tar linux-headers ccache
+			export PATH="/usr/lib/ccache/bin:$PATH"
 			git config --global --add safe.directory "*"
 			git config --global user.email "builds@ci.invalid"
 			git config --global user.name "buildscripts CI"
@@ -212,6 +218,7 @@ build_musl_host() {
 				-DVITASDK_SOURCE_DATE_EPOCH="$VITASDK_SOURCE_DATE_EPOCH"
 			make -j"$(getconf _NPROCESSORS_ONLN)" tarball
 			make check-toolchain-contract
+			ccache --show-stats || true
 		'
 	local -a produced=(build/vitasdk-*.tar.bz2)
 	local -a names=()
@@ -229,7 +236,7 @@ install_dependencies() {
 	[[ $(id -u) == 0 ]] || sudo_cmd=(sudo)
 	case "$(uname -s)" in
 	Darwin)
-		brew install autoconf automake libtool texinfo
+		brew install autoconf automake libtool texinfo ccache
 		;;
 	Linux)
 		local -a extra=()
@@ -242,22 +249,48 @@ install_dependencies() {
 		"${sudo_cmd[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
 			cmake cmake-data git build-essential autoconf automake libtool \
 			texinfo bison flex pkg-config python3 python3-pip curl bzip2 xz-utils \
-			libarchive-tools \
+			libarchive-tools ccache \
 			"${extra[@]}"
 		pip3 install --quiet cmake==3.31.6
 		;;
 	esac
 }
 
+# gcc, binutils, gdb and newlib are autotools: they honour no CMake variable,
+# and a shim directory in PATH is the only way they pick ccache up.
+enable_ccache() {
+	local shims sudo_cmd=()
+	[[ $(id -u) == 0 ]] || sudo_cmd=(sudo)
+	if [[ $(uname -s) == Darwin ]]; then
+		shims="$(brew --prefix ccache)/libexec"
+	else
+		[[ -x /usr/sbin/update-ccache-symlinks ]] &&
+			"${sudo_cmd[@]}" /usr/sbin/update-ccache-symlinks
+		shims=/usr/lib/ccache
+	fi
+	[[ -d $shims ]] || {
+		printf 'no ccache shim directory at %s; building without it\n' "$shims" >&2
+		return 0
+	}
+	export PATH="$shims:$PATH"
+	ccache --zero-stats >/dev/null 2>&1 || true
+}
+
+report_ccache_statistics() {
+	command -v ccache >/dev/null 2>&1 && ccache --show-stats || true
+}
+
 if [[ $stage == 1 ]]; then
 	# Dispatch is on stage, not host name: the lock may reuse a name here
 	# (e.g. x86_64-linux-gnu) that also appears at stage 2.
 	install_dependencies
+	enable_ccache
 	cmake -S "$repo_root" -B build \
 		-DVITASDK_TARGET_ONLY=ON \
 		-DVITASDK_SOURCE_REVISION="$revision" \
 		-DVITASDK_SOURCE_DATE_EPOCH="$source_date_epoch"
 	cmake --build build --target sysroot --parallel "$(ci_nproc)"
+	report_ccache_statistics
 	cp build/vitasdk-sysroot-*.tar.bz2 "$out_dir/"
 	ci_write_provenance "$out_dir" "$host" "$build_id" "$(basename build/vitasdk-sysroot-*.tar.bz2)"
 	exit 0
@@ -316,6 +349,10 @@ x86_64-apple-darwin)
 	exit 1
 	;;
 esac
+
+# After the case block: every branch of it has installed ccache by now, and
+# the shims must precede the cross toolchains those branches put on PATH.
+enable_ccache
 
 if [[ $stage == 2 ]]; then
 	# Whichever host name produced stage 1 -- see the dispatch note above.
