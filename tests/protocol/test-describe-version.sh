@@ -45,9 +45,15 @@ range_count=$(git rev-list --first-parent --count "${introduced}~1..$head_rev")
 	exit 1
 }
 
+chain=()
+while read -r rev; do
+	chain+=("$rev")
+done < <(git rev-list --first-parent "${introduced}~1..$head_rev")
+
 previous_version=
 previous_rev=
-while read -r rev; do
+for (( i = ${#chain[@]} - 1; i >= 0; i-- )); do
+	rev=${chain[i]}
 	version=$(describe --profile vita --revision "$rev" | field version)
 	if [[ -n $previous_version ]]; then
 		[[ $(vercmp "$previous_version" "$version") == -1 ]] || {
@@ -58,7 +64,7 @@ while read -r rev; do
 	fi
 	previous_version=$version
 	previous_rev=$rev
-done < <(git rev-list --first-parent "${introduced}~1..$head_rev" | tac)
+done
 
 # A committed VERSION file bypasses the nightly monotonicity gate entirely.
 clone="$temporary_root/clone"
