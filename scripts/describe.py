@@ -19,9 +19,7 @@ PROFILES_PATH = "cmake/Profiles.cmake"
 HOSTS_PATH = "cmake/hosts.json"
 STABLE_VERSION_PATH = "VERSION"
 
-# The pin names this revision must define. Deliberately a floor, not the
-# whole set: parse_components() picks up every *_TAG/*_HASH pin it finds,
-# this only guards against one silently going missing.
+# A floor, not the whole set: parse_components() also picks up any extra pin.
 REQUIRED_SOURCES = [
     "gcc", "zlib", "libelf", "libyaml", "gmp", "mpfr", "mpc", "isl", "expat",
     "binutils", "gdb", "libzip", "newlib", "samples", "headers", "toolchain",

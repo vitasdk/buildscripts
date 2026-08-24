@@ -17,8 +17,7 @@ check() {
 	}
 }
 
-# Cross-checked against a real pacman vercmp (archlinux docker image, v7.1.0):
-# every case below, and 400 additional randomized pairs, matched exactly.
+# Cross-checked against a real pacman vercmp (archlinux, v7.1.0) plus 400 random pairs.
 check 1.0a 1.0b -1
 check 1.0b 1.0beta -1
 check 1.0beta 1.0 -1
@@ -37,8 +36,7 @@ check 1.0 1.0-1 0
 check 2026.08.0 2026.08.1 -1
 check 2026.08.0 2026.08.0 0
 
-# The migration this refactor depends on: date-led nightly versions must
-# outrank every run-number-derived version already published.
+# The migration this refactor depends on: date-led must outrank run-number-derived.
 check 0.588.1 0.20260822.249 -1
 check 0.588.999 0.20260822.1 -1
 
