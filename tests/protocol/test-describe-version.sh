@@ -30,17 +30,13 @@ version_b=$(describe --profile vita --revision "$head_rev" | field version)
 	exit 1
 }
 
-# The published nightly channel currently carries run-number-derived
-# versions like 0.588.1; the date-led scheme must outrank all of them.
+# The date-led scheme must outrank published run-number versions like 0.588.1.
 [[ $(vercmp 0.588.1 "$version_a") == -1 ]] || {
 	printf 'vercmp(0.588.1, %s) did not treat the new version as an upgrade\n' "$version_a" >&2
 	exit 1
 }
 
-# vercmp-monotonic over a real range of consecutive development-branch
-# commits. describe needs cmake/Profiles.cmake and cmake/hosts.json to run
-# at all, so the walkable range starts where this protocol was introduced,
-# not at the root of history; it only grows from here.
+# The walkable range starts where describe's own files were introduced, not history's root.
 introduced=$(git log --first-parent --format=%H --diff-filter=A -- cmake/Profiles.cmake | tail -1)
 range_count=$(git rev-list --first-parent --count "${introduced}~1..$head_rev")
 (( range_count >= 2 )) || {
@@ -64,8 +60,7 @@ while read -r rev; do
 	previous_rev=$rev
 done < <(git rev-list --first-parent "${introduced}~1..$head_rev" | tac)
 
-# A committed VERSION file declares a stable version and bypasses the
-# nightly monotonicity gate entirely.
+# A committed VERSION file bypasses the nightly monotonicity gate entirely.
 clone="$temporary_root/clone"
 git clone --quiet "$repository_root" "$clone"
 git -C "$clone" config user.email describe-tests@ci.invalid

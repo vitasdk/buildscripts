@@ -39,8 +39,7 @@ grep -qi 'first parent' <<< "$output" || {
 	exit 1
 }
 
-# --previous-version: fails when the candidate does not exceed it, passes
-# when it does. Roll back to a clean, non-skewed commit first.
+# Roll back to a clean, non-skewed commit before testing --previous-version.
 git reset --hard --quiet HEAD^
 clean_rev=$(git rev-parse HEAD)
 version=$(describe --profile vita --revision "$clean_rev" | field version)
