@@ -97,9 +97,11 @@ def parse_hosts(text):
     if not isinstance(hosts, list) or not hosts:
         raise DescribeError(f"{HOSTS_PATH} declares no hosts")
     for host in hosts:
-        for key in ("name", "stage", "runner", "container", "packaged"):
+        for key in ("name", "stage", "runner", "container"):
             if not isinstance(host, dict) or key not in host:
                 raise DescribeError(f"{HOSTS_PATH} entry missing '{key}': {host}")
+        # Older revisions predate the packaged marker; treat it as unpublished.
+        host.setdefault("packaged", False)
     return hosts
 
 
