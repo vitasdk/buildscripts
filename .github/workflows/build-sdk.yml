@@ -246,17 +246,12 @@ jobs:
           repository: ${{ env.BUILDSCRIPTS_REPO }}
           ref: ${{ needs.gate.outputs.buildscripts_revision }}
           fetch-depth: 0
+      # One pattern-less download: single pattern matches extract flat, and
+      # two flat extractions into one directory overwrite each other's
+      # provenance.json. Every artifact of this run is a stage artifact, and
+      # more than one always exists, so this always nests per artifact name.
       - uses: actions/download-artifact@v7
         with:
-          pattern: stage1-*
-          path: artifacts
-      - uses: actions/download-artifact@v7
-        with:
-          pattern: stage2-*
-          path: artifacts
-      - uses: actions/download-artifact@v7
-        with:
-          pattern: stage3-*
           path: artifacts
       - name: Group the release tree
         shell: bash
