@@ -87,6 +87,21 @@ export LANG=C.UTF-8
 git config --global user.email "builds@ci.invalid"
 git config --global user.name "buildscripts CI"
 
+# An autotools component says why it refused in its config.log and nowhere
+# else: the message that reaches the build log is whatever generic string the
+# failing check happens to carry.
+dump_configure_logs() {
+	local status=$? log
+	(( status == 0 )) && return 0
+	while IFS= read -r log; do
+		printf '::group::%s\n' "$log"
+		tail -n 120 "$log"
+		printf '::endgroup::\n'
+	done < <(find build -name config.log -newermt '-2 hours' 2>/dev/null | head -5)
+	return "$status"
+}
+trap dump_configure_logs EXIT
+
 # The matrix's packaged flag, not the host name, gates core-package treatment.
 is_packaged_host() { [[ $packaged == true ]]; }
 
