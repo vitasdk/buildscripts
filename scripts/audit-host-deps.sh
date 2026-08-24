@@ -13,26 +13,65 @@ fail_dependency() {
     exit 1
 }
 
-audit_linux() {
-    find "$VITASDK" -type f -print | while IFS= read -r binary; do
-        dependencies=$(ldd "$binary" 2>/dev/null || true)
-        [ -n "$dependencies" ] || continue
+# One reader for every ELF host; what differs between them is only which
+# sonames belong to the system.  linux_system_dependency and its FreeBSD
+# counterpart answer that, and audit_elf is told which to ask.
+linux_system_dependency() {
+    case "$1" in
+        ld-linux*.so.*|ld-musl-*.so.*|libc.so.*|libc.musl-*.so.*|\
+        libm.so.*|libpthread.so.*|libdl.so.*|librt.so.*|libutil.so.*|\
+        libresolv.so.*)
+            return 0
+            ;;
+    esac
+    return 1
+}
 
-        for dependency in $(printf '%s\n' "$dependencies" | awk '
-            /=>/ { print $1; next }
-            /^[[:space:]]*\// { print $1; next }
-            /linux-vdso/ { print $1 }
-        '); do
-            dependency=${dependency##*/}
-            case "$dependency" in
-                linux-vdso.so.*|ld-linux*.so.*|ld-musl-*.so.*|libc.so.*|libc.musl-*.so.*|\
-                libm.so.*|libpthread.so.*|libdl.so.*|librt.so.*|libutil.so.*|\
-                libresolv.so.*)
-                    ;;
-                *)
-                    fail_dependency "$binary" "$dependency"
-                    ;;
-            esac
+# The FreeBSD base system, and nothing else.  A cross-built SDK links against
+# the C and C++ runtimes that ship with the operating system it runs on --
+# measured on a complete build: libc.so.7, libm.so.5, libgcc_s.so.1,
+# libc++.so.1, libcxxrt.so.1 -- while every private library it uses is an
+# archive.  Anything outside this list is one we shipped and should not have.
+freebsd_system_dependency() {
+    case "$1" in
+        ld-elf.so.*|libc.so.*|libm.so.*|libthr.so.*|libpthread.so.*|\
+        libdl.so.*|librt.so.*|libutil.so.*|libexecinfo.so.*|libmd.so.*|\
+        libgcc_s.so.*|libc++.so.*|libcxxrt.so.*|libstdc++.so.*|\
+        libncurses*.so.*|libtinfo*.so.*)
+            return 0
+            ;;
+    esac
+    return 1
+}
+
+audit_elf() {
+    if ! command -v "$objdump_command" >/dev/null 2>&1; then
+        echo "missing ELF dependency inspector: $objdump_command" >&2
+        exit 2
+    fi
+
+    find "$VITASDK" -type f -print | while IFS= read -r binary; do
+        # Read the dynamic section; never ask the loader. ldd answers by
+        # running the program, which cannot work here: these binaries are
+        # built for the SDK's host, not for this machine. A musl binary on a
+        # glibc runner has no interpreter to load it, and ldd reports its own
+        # failure on stdout, where a dependency list is expected --
+        #
+        #   unexpected dynamic host dependency: .../arm-vita-eabi/bin/nm -> nm:
+        #
+        # which is ldd naming the file it could not load, not a dependency.
+        # A statically linked one is worse: nothing stops it, so it simply
+        # runs. objdump is how the Windows audit below has always done it.
+        case "$(file -b "$binary" 2>/dev/null)" in
+            *ELF*executable*|*ELF*"shared object"*) ;;
+            *) continue ;;
+        esac
+
+        objdump_output=$("$objdump_command" -p "$binary" 2>/dev/null) || continue
+        dependencies=$(printf '%s\n' "$objdump_output" | awk '$1 == "NEEDED" { print $2 }')
+        for dependency in $dependencies; do
+            "$system_dependency" "$dependency" ||
+                fail_dependency "$binary" "$dependency"
         done
     done
 }
@@ -104,7 +143,8 @@ audit_windows() {
 }
 
 case "$host_system" in
-    Linux*) audit_linux ;;
+    Linux*) system_dependency=linux_system_dependency; audit_elf ;;
+    FreeBSD*) system_dependency=freebsd_system_dependency; audit_elf ;;
     Darwin*) audit_darwin ;;
     Windows*|MINGW*|MSYS*|CYGWIN*) audit_windows ;;
     *)

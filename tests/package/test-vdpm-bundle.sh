@@ -55,9 +55,12 @@ fi
 
 unix_host=x86_64-linux-gnu
 unix_root="$temporary_directory/unix-input/vdpm-test-$unix_host"
-mkdir -p "$unix_root/bin/include" "$unix_root/share/vdpm/licenses"
-for relative_path in vdpm pacman pacman-conf vdpm-channel; do
+mkdir -p "$unix_root/bin/include" "$unix_root/libexec/vdpm" "$unix_root/share/vdpm/licenses"
+for relative_path in vdpm vdpm-channel; do
 	printf '%s\n' "$relative_path" > "$unix_root/bin/$relative_path"
+done
+for relative_path in pacman pacman-conf; do
+	printf '%s\n' "$relative_path" > "$unix_root/libexec/vdpm/$relative_path"
 done
 printf 'refresh\n' > "$unix_root/bin/include/refresh-repositories.sh"
 printf 'notices\n' > "$unix_root/share/vdpm/THIRD_PARTY_NOTICES.md"
@@ -78,7 +81,7 @@ unix_sdk="$temporary_directory/unix-sdk"
 "$repository_root/scripts/install-vdpm-bundle.sh" \
 	"$unix_bundle" "$unix_digest" "$unix_sdk" "$unix_host"
 test -f "$unix_sdk/bin/vdpm"
-test -f "$unix_sdk/bin/pacman"
+test -f "$unix_sdk/libexec/vdpm/pacman"
 test -f "$unix_sdk/bin/vdpm-channel"
 test -f "$unix_sdk/bin/include/refresh-repositories.sh"
 
@@ -91,22 +94,29 @@ set(CMAKE_CXX_COMPILER /usr/bin/c++)
 set(CMAKE_C_COMPILER_FORCED TRUE)
 set(CMAKE_CXX_COMPILER_FORCED TRUE)
 set(CMAKE_RC_COMPILER /usr/bin/true)
+set(CMAKE_EXE_LINKER_FLAGS "-static")
 EOF
 configure="$temporary_directory/configure"
+# The staged build refuses a toolchain configure without a stage-1 SDK.
+stage1_args=()
+if [[ -n ${VITASDK_STAGE1_DIR:-} ]]; then
+	stage1_args=(-DVITASDK_STAGE1_DIR="$VITASDK_STAGE1_DIR")
+fi
 cmake -S "$repository_root" -B "$configure" \
 	-DCMAKE_TOOLCHAIN_FILE="$toolchain" \
+	"${stage1_args[@]}" \
 	-DBUILD_PACMAN_CLIENT=ON \
 	-DVDPM_BUNDLE="$bundle" \
 	-DVDPM_BUNDLE_SHA256="$digest" >/dev/null
-build_zlib_config="$configure/zlib_build-prefix/tmp/zlib_build-cfgcmd.txt"
 host_zlib_config="$configure/zlib_host-prefix/tmp/zlib_host-cfgcmd.txt"
-test -f "$build_zlib_config"
 test -f "$host_zlib_config"
-if grep -Fq -- '-DCMAKE_EXE_LINKER_FLAGS=-static ' "$build_zlib_config"; then
-	printf 'Windows target linker flags leaked into build-machine dependencies\n' >&2
+# A staged cross configure imports every build-machine artifact, so no
+# *_build project may exist for target flags to leak into.
+if compgen -G "$configure/*_build-prefix" >/dev/null; then
+	printf 'build-machine dependency projects reappeared in a staged cross configure\n' >&2
 	exit 1
 fi
-grep -Fq -- '-DCMAKE_EXE_LINKER_FLAGS=-static ' "$host_zlib_config"
+grep -Fq -- '-DCMAKE_EXE_LINKER_FLAGS=-static' "$host_zlib_config"
 cmake --build "$configure" --target vdpm >/dev/null
 test -f "$configure/vitasdk/bin/vdpm.exe"
 test -f "$configure/vitasdk/share/vdpm/msys/usr/bin/pacman.exe"

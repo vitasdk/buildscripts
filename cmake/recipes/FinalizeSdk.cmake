@@ -28,16 +28,6 @@ if(BUILD_PACMAN_CLIENT)
         VERBATIM)
 endif()
 
-set(version_info_file ${CMAKE_INSTALL_PREFIX}/version_info.txt)
-
-# Merge the commit ids of the collected projects into a single file
-add_custom_command(OUTPUT ${version_info_file}
-    COMMAND ${CMAKE_COMMAND} -DINPUT_DIR=${CMAKE_BINARY_DIR} -DOUTPUT_FILE=${version_info_file}
-    -P ${CMAKE_SOURCE_DIR}/cmake/create_version.cmake
-    DEPENDS vita-headers vita-toolchain_${target_suffix} newlib pthread-embedded samples
-    COMMENT "Creating version_info.txt"
-    )
-
 set(finalize_sdk_dependencies
     vita-toolchain_${target_suffix}
     binutils_${target_suffix}
@@ -48,36 +38,66 @@ set(finalize_sdk_dependencies
     samples
     vdpm
     vita-makepkg
-    gcc-final
+    ${gcc_final_barrier}
     ${version_info_file})
 if(BUILD_PACMAN_CLIENT)
     list(APPEND finalize_sdk_dependencies package-client-configuration)
 endif()
+
+# Target objects are stripped where they are produced. In stage 2 they arrive
+# already stripped from stage 1, and the objcopy that would do it belongs to
+# the stage-1 host anyway -- unusable on a host that only imports the sysroot.
+set(target_object_strip_commands)
+if(NOT VITASDK_STAGE1_DIR)
+    list(APPEND target_object_strip_commands
+        COMMAND ${CMAKE_COMMAND}
+            -DOBJCOPY_COMMAND=${binutils_prefix}-objcopy
+            "-DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/${target_arch}/lib/*.[ao]"
+            -P ${CMAKE_SOURCE_DIR}/cmake/strip_target_objects.cmake
+        COMMAND ${CMAKE_COMMAND}
+            -DOBJCOPY_COMMAND=${binutils_prefix}-objcopy
+            "-DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/lib/gcc/${target_arch}/${GCC_VERSION}/*[!d][!d][!l].[ao]"
+            -DSKIP_GCC_LTO_PLUGIN=ON
+            -P ${CMAKE_SOURCE_DIR}/cmake/strip_target_objects.cmake)
+endif()
+
+# The audit reads the SDK's own binaries, so it needs an objdump that
+# understands them. A cross build has the host-prefixed one in PATH; a native
+# build may only have the plain name -- Alpine, for one, ships no
+# aarch64-linux-musl-objdump. Prefer the prefixed name, fall back to the
+# system's, and say so rather than failing at the last step of a long build.
+find_program(VITASDK_HOST_OBJDUMP NAMES ${host_native}-objdump objdump)
+if(NOT VITASDK_HOST_OBJDUMP)
+    message(FATAL_ERROR
+        "no objdump for the host dependency audit: looked for "
+        "${host_native}-objdump and objdump")
+endif()
+message(STATUS "Host dependency audit reads with ${VITASDK_HOST_OBJDUMP}")
 
 # Finalize only after every component has installed into the SDK. This is the
 # single barrier for cleanup, stripping, provenance and structural checks.
 add_custom_target(finalize-sdk
     COMMAND ${CMAKE_COMMAND}
         -DHOST_SYSTEM_NAME=${CMAKE_HOST_SYSTEM_NAME}
+        -DCMAKE_STRIP=${CMAKE_STRIP}
         -DBINDIR=${CMAKE_INSTALL_PREFIX}/bin
         -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake
     COMMAND ${CMAKE_COMMAND}
         -DHOST_SYSTEM_NAME=${CMAKE_HOST_SYSTEM_NAME}
+        -DCMAKE_STRIP=${CMAKE_STRIP}
         -DBINDIR=${CMAKE_INSTALL_PREFIX}/${target_arch}/bin
         -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake
     COMMAND ${CMAKE_COMMAND}
         -DHOST_SYSTEM_NAME=${CMAKE_HOST_SYSTEM_NAME}
+        -DCMAKE_STRIP=${CMAKE_STRIP}
         -DBINDIR=${CMAKE_INSTALL_PREFIX}/lib/gcc/${target_arch}/${GCC_VERSION}
         -P ${CMAKE_SOURCE_DIR}/cmake/strip_host_binaries.cmake
+    ${target_object_strip_commands}
     COMMAND ${CMAKE_COMMAND}
-        -DOBJCOPY_COMMAND=${binutils_prefix}-objcopy
-        "-DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/${target_arch}/lib/*.[ao]"
-        -P ${CMAKE_SOURCE_DIR}/cmake/strip_target_objects.cmake
-    COMMAND ${CMAKE_COMMAND}
-        -DOBJCOPY_COMMAND=${binutils_prefix}-objcopy
-        "-DPATTERN_GLOB=${CMAKE_INSTALL_PREFIX}/lib/gcc/${target_arch}/${GCC_VERSION}/*[!d][!d][!l].[ao]"
-        -DSKIP_GCC_LTO_PLUGIN=ON
-        -P ${CMAKE_SOURCE_DIR}/cmake/strip_target_objects.cmake
+        -DSDK_DIR=${CMAKE_INSTALL_PREFIX}
+        -DTARGET_TRIPLE=${target_arch}
+        -DGCC_VERSION=${GCC_VERSION}
+        -P ${CMAKE_SOURCE_DIR}/cmake/PublishBfdPlugins.cmake
     COMMAND ${CMAKE_COMMAND} -E remove_directory
         ${CMAKE_INSTALL_PREFIX}/share/man
     COMMAND ${CMAKE_COMMAND} -E remove_directory
@@ -89,6 +109,7 @@ add_custom_target(finalize-sdk
         -DSDK_DIR=${CMAKE_INSTALL_PREFIX}
         -DTARGET_TRIPLE=${target_arch}
         -DHOST_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
+        -DHOST_TRIPLE=${host_native}
         -DVERSION_FILE=${version_info_file}
         -P ${CMAKE_SOURCE_DIR}/cmake/ValidateSdk.cmake
     COMMAND ${CMAKE_COMMAND}
@@ -98,7 +119,7 @@ add_custom_target(finalize-sdk
     COMMAND ${CMAKE_COMMAND} -E env
         VITASDK=${CMAKE_INSTALL_PREFIX}
         VITASDK_HOST_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
-        VITASDK_OBJDUMP=${host_native}-objdump
+        VITASDK_OBJDUMP=${VITASDK_HOST_OBJDUMP}
         ${CMAKE_SOURCE_DIR}/scripts/audit-host-deps.sh
     DEPENDS ${finalize_sdk_dependencies}
     COMMENT "Finalizing and validating VitaSDK"
@@ -117,11 +138,18 @@ add_custom_target(audit-host-dependencies
     COMMAND ${CMAKE_COMMAND} -E env
         VITASDK=${CMAKE_INSTALL_PREFIX}
         VITASDK_HOST_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
-        VITASDK_OBJDUMP=${host_native}-objdump
+        VITASDK_OBJDUMP=${VITASDK_HOST_OBJDUMP}
         ${CMAKE_SOURCE_DIR}/scripts/audit-host-deps.sh
     DEPENDS finalize-sdk
     VERBATIM
     )
+
+add_custom_target(check-sdk-partition
+    COMMAND ${CMAKE_COMMAND}
+        -P ${CMAKE_SOURCE_DIR}/tests/cmake/sysroot-manifest.cmake
+    COMMAND ${CMAKE_COMMAND}
+        -P ${CMAKE_SOURCE_DIR}/tests/cmake/host-binary-format.cmake
+    VERBATIM)
 
 add_custom_target(check-static-policy
     COMMAND ${CMAKE_COMMAND}

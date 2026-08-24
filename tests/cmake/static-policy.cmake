@@ -17,10 +17,26 @@ assert_flags(Linux
     "-static-libgcc"
     "-static-libgcc;-static-libstdc++"
     "-static-libgcc;-static-libstdc++")
+# Windows takes its static link through the libtool-safe flag below: a plain
+# -static in these would tell libtool not to build gcc's LTO plugin DLL.
 assert_flags(Windows
     "-static-libgcc"
-    "-static;-static-libgcc;-static-libstdc++"
-    "-static;-static-libgcc;-static-libstdc++")
+    "-static-libgcc;-static-libstdc++"
+    "-static-libgcc;-static-libstdc++")
 assert_flags(Darwin "" "" "")
+
+function(assert_libtool_flag system_name expected)
+    vitasdk_get_libtool_static_flag("${system_name}" actual)
+    if(NOT "${actual}" STREQUAL "${expected}")
+        message(FATAL_ERROR
+            "${system_name} libtool static flag: expected '${expected}', "
+            "got '${actual}'")
+    endif()
+endfunction()
+
+assert_libtool_flag(Linux "")
+assert_libtool_flag(Darwin "")
+assert_libtool_flag(Windows "--static")
+
 
 message(STATUS "Static host-link policy checks passed")
