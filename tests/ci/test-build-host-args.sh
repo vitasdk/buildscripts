@@ -74,7 +74,30 @@ grep -q 'needs some-other-host' <<< "$output" || {
 	exit 1
 }
 
-# 4. Flipping packaged on for a musl host fails loudly: that path builds
+# 4. A flat artifacts dir (a single pattern match extracts without the
+# artifact's directory) is accepted by the stage-1 lookup: the run must get
+# past "stage1 artifact not found" and fail later, at the unpack step.
+flat_dir="$temporary_directory/artifacts-flat"
+mkdir -p "$flat_dir"
+printf '{\n  "host": "someone",\n  "build_id": "sha256:test"\n}\n' > "$flat_dir/provenance.json"
+if output=$(run_build_host \
+	--host x86_64-linux-gnu --stage 2 \
+	--artifacts-dir "$flat_dir" --out-dir "$temporary_directory/out-flat" \
+	--build-id sha256:test --version 0.1.1 --revision "$revision" --profile vita \
+	--packaged false 2>&1); then
+	printf 'build-host.sh unexpectedly succeeded on a flat artifacts dir\n' >&2
+	exit 1
+fi
+if grep -q 'stage1 artifact not found' <<< "$output"; then
+	printf 'the flat artifacts layout was not accepted by the stage-1 lookup: %s\n' "$output" >&2
+	exit 1
+fi
+grep -q 'no .tar.bz2 archive found' <<< "$output" || {
+	printf 'expected the failure to move on to the unpack step: %s\n' "$output" >&2
+	exit 1
+}
+
+# 5. Flipping packaged on for a musl host fails loudly: that path builds
 # only the SDK tarball and must not publish a quietly incomplete host.
 if output=$(run_build_host \
 	--host x86_64-linux-musl --stage 2 \

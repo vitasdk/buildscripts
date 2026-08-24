@@ -50,6 +50,21 @@ ci_find_stage_artifact() {
 	for candidate in "$artifacts_dir"/stage"$stage"-$name_glob; do
 		[[ -d $candidate ]] && printf '%s\n' "$candidate" && return 0
 	done
+	# download-artifact extracts a single pattern match flat, without the
+	# artifact's directory; the provenance still names the host, and the
+	# caller's download pattern already fixed the stage.
+	if [[ -f $artifacts_dir/provenance.json ]]; then
+		if [[ $name_glob == '*' ]]; then
+			printf '%s\n' "$artifacts_dir"
+			return 0
+		fi
+		local host
+		host=$(sed -n 's/^  "host": "\(.*\)",\{0,1\}$/\1/p' "$artifacts_dir/provenance.json")
+		if [[ $host == "$name_glob" ]]; then
+			printf '%s\n' "$artifacts_dir"
+			return 0
+		fi
+	fi
 	return 1
 }
 
