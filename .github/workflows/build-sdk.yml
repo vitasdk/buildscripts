@@ -198,15 +198,44 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  # Fixed job, not matrixed: a real Windows bootstrap install only proves
+  # anything on a real Windows runner. scripts/ci/smoke-windows-bootstrap.ps1
+  # holds the VitaSDK-specific knowledge (host triple, install layout); it
+  # no-ops cleanly if stage3 built no Windows artifact.
+  smoke-windows-bootstrap:
+    name: Smoke test the Windows bootstrap
+    needs: [gate, stage3]
+    if: |
+      always() && needs.gate.result == 'success' &&
+      needs.stage3.result != 'failure' && needs.stage3.result != 'cancelled'
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ env.BUILDSCRIPTS_REPO }}
+          ref: ${{ needs.gate.outputs.buildscripts_revision }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: stage3-*
+          path: artifacts
+        # Tolerates a lock whose stage3 never touches Windows: the script,
+        # not this step, is what decides whether there is anything to test.
+        continue-on-error: true
+      - name: Exercise the Windows bootstrap if stage3 built one
+        shell: pwsh
+        run: ./scripts/ci/smoke-windows-bootstrap.ps1 -ArtifactsDir artifacts
+
   # Grouping's own runner/container are fixed: there is no "host" here.
   group:
     name: Group the release tree
-    needs: [gate, stage1, stage2, stage3]
+    needs: [gate, stage1, stage2, stage3, smoke-windows-bootstrap]
     if: |
       always() && needs.gate.result == 'success' &&
       needs.stage1.result != 'failure' && needs.stage1.result != 'cancelled' &&
       needs.stage2.result != 'failure' && needs.stage2.result != 'cancelled' &&
-      needs.stage3.result != 'failure' && needs.stage3.result != 'cancelled'
+      needs.stage3.result != 'failure' && needs.stage3.result != 'cancelled' &&
+      needs['smoke-windows-bootstrap'].result != 'failure' && needs['smoke-windows-bootstrap'].result != 'cancelled'
     runs-on: ubuntu-24.04
     outputs:
       build_id: ${{ needs.gate.outputs.build_id }}
