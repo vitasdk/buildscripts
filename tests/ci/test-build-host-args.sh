@@ -74,4 +74,19 @@ grep -q 'needs some-other-host' <<< "$output" || {
 	exit 1
 }
 
+# 4. Flipping packaged on for a musl host fails loudly: that path builds
+# only the SDK tarball and must not publish a quietly incomplete host.
+if output=$(run_build_host \
+	--host x86_64-linux-musl --stage 2 \
+	--artifacts-dir "$temporary_directory/artifacts-4" --out-dir "$temporary_directory/out-4" \
+	--build-id sha256:test --version 0.1.1 --revision "$revision" --profile vita \
+	--packaged true 2>&1); then
+	printf 'build-host.sh accepted a packaged musl host\n' >&2
+	exit 1
+fi
+grep -q 'packaged musl hosts are not implemented' <<< "$output" || {
+	printf 'build-host.sh did not refuse the packaged musl host: %s\n' "$output" >&2
+	exit 1
+}
+
 printf 'build-host.sh argument contract tests passed\n'

@@ -173,6 +173,18 @@ build_and_stage() {
 		cp "$file" "$out_dir/"
 		names+=("$(basename "$file")")
 	done
+	# The globs skip silently, so a packaged host that produced nothing of a
+	# family would otherwise publish a quietly incomplete provenance.
+	if is_packaged_host; then
+		local pattern
+		for pattern in 'vitasdk-core-*.pkg.tar.xz' 'vdpm-*.pkg.tar.xz' \
+			"vitasdk-bootstrap-$host.tar.bz2" "vitasdk-bootstrap-$host.tar.bz2.sha256"; do
+			printf '%s\n' "${names[@]}" | grep -x -- "${pattern//\*/.*}" >/dev/null || {
+				printf 'packaged host %s produced no %s\n' "$host" "$pattern" >&2
+				exit 1
+			}
+		done
+	fi
 	ci_write_provenance "$out_dir" "$host" "$build_id" "${names[@]}"
 }
 
@@ -249,6 +261,12 @@ if [[ $stage == 1 ]]; then
 fi
 
 if [[ $host == *-linux-musl ]]; then
+	# The musl path builds only the SDK tarball; flipping packaged on must
+	# fail here rather than publish a host with no packages or bootstrap.
+	if is_packaged_host; then
+		printf 'packaged musl hosts are not implemented\n' >&2
+		exit 1
+	fi
 	stage1_source_dir=$(ci_find_stage_artifact "$artifacts_dir" 1 '*') ||
 		{
 			printf 'stage1 artifact not found under %s\n' "$artifacts_dir" >&2
