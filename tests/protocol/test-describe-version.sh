@@ -39,10 +39,14 @@ version_b=$(describe --profile vita --revision "$head_rev" | field version)
 # The walkable range starts where describe's own files were introduced, not history's root.
 introduced=$(git log --first-parent --format=%H --diff-filter=A -- cmake/Profiles.cmake | tail -1)
 range_count=$(git rev-list --first-parent --count "${introduced}~1..$head_rev")
+# A PR merge ref's first parent is master, where describe's files do not
+# exist yet, so the walkable range collapses to the merge commit alone.
+# The guards themselves are covered by the synthetic-history test; the
+# real-history walk waits for a ref that carries it (any master push).
 (( range_count >= 2 )) || {
-	printf 'not enough describe-capable history yet to test monotonicity (%s commits)\n' \
-		"$range_count" >&2
-	exit 1
+	printf 'skipping the real-history walk: %s describe-capable commit(s) on the first-parent line\n' \
+		"$range_count"
+	exit 0
 }
 
 chain=()
