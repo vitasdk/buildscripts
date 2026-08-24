@@ -20,6 +20,14 @@ cat > "$fake_bin/uname" <<'EOF'
 echo TestOS
 EOF
 chmod +x "$fake_bin/uname"
+# A fake curl keeps test 5 off the network: it only needs to prove that a
+# packaged musl host now reaches the vdpm bundle download at all.
+cat > "$fake_bin/curl" <<'EOF'
+#!/usr/bin/env bash
+echo "curl disabled in test" >&2
+exit 1
+EOF
+chmod +x "$fake_bin/curl"
 fake_home="$temporary_directory/home"
 mkdir -p "$fake_home"
 
@@ -97,18 +105,22 @@ grep -q 'no .tar.bz2 archive found' <<< "$output" || {
 	exit 1
 }
 
-# 5. Flipping packaged on for a musl host fails loudly: that path builds
-# only the SDK tarball and must not publish a quietly incomplete host.
+# 5. A packaged musl host now attempts the same vdpm bundle download as any
+# other packaged host, instead of refusing outright: it should get past the
+# stage1 lookup and reach (fake, disabled) curl before failing.
+musl_stage1_dir="$temporary_directory/artifacts-5/stage1-x86_64-linux-gnu"
+mkdir -p "$musl_stage1_dir"
+tar -cjf "$musl_stage1_dir/stage1.tar.bz2" -T /dev/null
 if output=$(run_build_host \
 	--host x86_64-linux-musl --stage 2 \
-	--artifacts-dir "$temporary_directory/artifacts-4" --out-dir "$temporary_directory/out-4" \
+	--artifacts-dir "$temporary_directory/artifacts-5" --out-dir "$temporary_directory/out-5" \
 	--build-id sha256:test --version 0.1.1 --revision "$revision" --profile vita \
 	--packaged true 2>&1); then
-	printf 'build-host.sh accepted a packaged musl host\n' >&2
+	printf 'build-host.sh accepted a packaged musl host with curl disabled\n' >&2
 	exit 1
 fi
-grep -q 'packaged musl hosts are not implemented' <<< "$output" || {
-	printf 'build-host.sh did not refuse the packaged musl host: %s\n' "$output" >&2
+grep -q 'curl disabled in test' <<< "$output" || {
+	printf 'packaged musl host did not reach the vdpm bundle download: %s\n' "$output" >&2
 	exit 1
 }
 
