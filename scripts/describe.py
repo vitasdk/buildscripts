@@ -97,10 +97,31 @@ def parse_hosts(text):
     if not isinstance(hosts, list) or not hosts:
         raise DescribeError(f"{HOSTS_PATH} declares no hosts")
     for host in hosts:
-        for key in ("name", "stage", "runner", "container"):
+        for key in ("name", "stage", "runner", "container", "packaged"):
             if not isinstance(host, dict) or key not in host:
                 raise DescribeError(f"{HOSTS_PATH} entry missing '{key}': {host}")
     return hosts
+
+
+def prune_hosts(hosts):
+    # (name, stage) is a host entry's uniqueness key: the same name can
+    # recur across stages (e.g. the stage-1/stage-2 x86_64-linux-gnu rows).
+    by_key = {(host["name"], host["stage"]): host for host in hosts}
+    kept = {key for key, host in by_key.items() if host["stage"] == 1 or host["packaged"]}
+    for host in hosts:
+        if host["stage"] != 3 or not host["packaged"]:
+            continue
+        build_host = host.get("build_host")
+        if not build_host:
+            continue
+        key = (build_host, 2)
+        if key not in by_key:
+            raise DescribeError(
+                f"{HOSTS_PATH}: {host['name']} stage 3 references "
+                f"unknown build_host '{build_host}'"
+            )
+        kept.add(key)
+    return [host for host in hosts if (host["name"], host["stage"]) in kept]
 
 
 def parse_components(text):
@@ -183,7 +204,7 @@ def build_lock(revision, profile, previous_version):
         )
 
     sources = parse_components(read_file_at(resolved, COMPONENTS_PATH))
-    hosts = parse_hosts(read_file_at(resolved, HOSTS_PATH))
+    hosts = prune_hosts(parse_hosts(read_file_at(resolved, HOSTS_PATH)))
 
     declared = stable_version_declaration(resolved)
     if declared is not None:
