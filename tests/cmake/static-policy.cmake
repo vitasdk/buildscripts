@@ -23,7 +23,10 @@ assert_flags(Windows
     "-static-libgcc"
     "-static-libgcc;-static-libstdc++"
     "-static-libgcc;-static-libstdc++")
-assert_flags(Darwin "" "" "")
+# Darwin asks for nothing static -- its libgcc is not a separate library --
+# but it does need the linker to stop preferring a dylib from any search path
+# over the static dependencies built here.
+assert_flags(Darwin "" "" "-Wl,-search_paths_first")
 
 function(assert_libtool_flag system_name expected)
     vitasdk_get_libtool_static_flag("${system_name}" actual)
