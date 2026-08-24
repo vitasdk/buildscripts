@@ -242,6 +242,7 @@ install_dependencies() {
 		"${sudo_cmd[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
 			cmake cmake-data git build-essential autoconf automake libtool \
 			texinfo bison flex pkg-config python3 python3-pip curl bzip2 xz-utils \
+			libarchive-tools \
 			"${extra[@]}"
 		pip3 install --quiet cmake==3.31.6
 		;;
