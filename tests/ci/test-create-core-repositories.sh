@@ -13,7 +13,9 @@ pacman_image='archlinux@sha256:c1829f370be8434135f43fb3acaef1256780804ac3b2d2eec
 
 cleanup() {
 	chmod -R u+rwX "$temporary_root" 2>/dev/null || true
-	rm -rf -- "$temporary_root"
+	# On a Linux host the container's root-owned files may defeat this;
+	# leftovers in an ephemeral runner must not override the test verdict.
+	rm -rf -- "$temporary_root" 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -53,6 +55,7 @@ docker run --rm \
 	--env RELEASE_BUILDSCRIPTS_REVISION=0123456789abcdef0123456789abcdef01234567 \
 	--env RELEASE_PROFILE=vita \
 	--env RELEASE_PROVENANCE_DIRECTORY=/work/provenance \
+	--env HOST_UID="$(id -u)" --env HOST_GID="$(id -g)" \
 	"$pacman_image" \
 	bash -euc '
 		export LC_ALL=C
@@ -199,6 +202,10 @@ EOF
 			printf "grouping without a full provenance set was unexpectedly accepted\n" >&2
 			exit 1
 		fi
+
+		# Everything under /work was written as root; hand it back to the
+		# host user so the cleanup trap can actually remove it.
+		chown -R "$HOST_UID:$HOST_GID" /work
 	'
 
 printf 'VitaSDK grouped core repository contracts passed\n'
