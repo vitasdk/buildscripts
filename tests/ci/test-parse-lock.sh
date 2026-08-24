@@ -51,9 +51,9 @@ good_lock='{
   "profile": "vita",
   "version": "0.20260822.249",
   "hosts": [
-    {"name": "x86_64-linux-gnu", "stage": 1, "runner": "ubuntu-24.04", "container": "ubuntu:20.04"},
-    {"name": "x86_64-linux-gnu", "stage": 2, "runner": "ubuntu-24.04", "container": "ubuntu:20.04"},
-    {"name": "x86_64-w64-mingw32", "stage": 3, "runner": "ubuntu-24.04", "container": null}
+    {"name": "x86_64-linux-gnu", "stage": 1, "runner": "ubuntu-24.04", "container": "ubuntu:20.04", "packaged": false},
+    {"name": "x86_64-linux-gnu", "stage": 2, "runner": "ubuntu-24.04", "container": "ubuntu:20.04", "packaged": true},
+    {"name": "x86_64-w64-mingw32", "stage": 3, "runner": "ubuntu-24.04", "container": null, "packaged": true, "build_host": "x86_64-linux-gnu"}
   ]
 }'
 
@@ -73,7 +73,26 @@ assert [h['name'] for h in stage1] == ['x86_64-linux-gnu'], stage1
 assert [h['name'] for h in stage2] == ['x86_64-linux-gnu'], stage2
 assert [h['name'] for h in stage3] == ['x86_64-w64-mingw32'], stage3
 assert stage3[0]['container'] == '', stage3[0]
+# packaged and build_host propagate to matrix entries: false/'' unless the
+# lock's host entry says otherwise.
+assert stage1[0]['packaged'] is False, stage1[0]
+assert stage1[0]['build_host'] == '', stage1[0]
+assert stage2[0]['packaged'] is True, stage2[0]
+assert stage2[0]['build_host'] == '', stage2[0]
+assert stage3[0]['packaged'] is True, stage3[0]
+assert stage3[0]['build_host'] == 'x86_64-linux-gnu', stage3[0]
 " "$stage1" "$stage2" "$stage3"
+
+# 1b. A host entry predating the packaged/build_host fields still parses,
+# defaulting to unpackaged with no build machine.
+legacy_output=$(run_parse '{"schema": 1, "build_id": "x", "buildscripts_revision": "0123456789abcdef0123456789abcdef01234567", "profile": "vita", "version": "1", "hosts": [{"name": "a", "stage": 1, "runner": "r"}]}')
+legacy_stage1=$(output_value "$legacy_output" stage1_hosts)
+python3 -c "
+import json, sys
+host = json.loads(sys.argv[1])[0]
+assert host['packaged'] is False, host
+assert host['build_host'] == '', host
+" "$legacy_stage1"
 
 # 2. An unsupported schema fails loudly and does not silently misbuild.
 assert_fails '{"schema": 2, "build_id": "x", "buildscripts_revision": "0123456789abcdef0123456789abcdef01234567", "profile": "vita", "version": "1", "hosts": [{"name": "a", "stage": 1, "runner": "r"}]}' \

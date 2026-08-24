@@ -90,7 +90,8 @@ jobs:
             --build-id '${{ needs.gate.outputs.build_id }}' \
             --version '${{ needs.gate.outputs.version }}' \
             --revision '${{ needs.gate.outputs.buildscripts_revision }}' \
-            --profile '${{ needs.gate.outputs.profile }}'
+            --profile '${{ needs.gate.outputs.profile }}' \
+            --packaged '${{ matrix.packaged }}' --build-host '${{ matrix.build_host }}'
       - uses: actions/upload-artifact@v7
         with:
           name: stage1-${{ matrix.name }}
@@ -140,7 +141,8 @@ jobs:
             --build-id '${{ needs.gate.outputs.build_id }}' \
             --version '${{ needs.gate.outputs.version }}' \
             --revision '${{ needs.gate.outputs.buildscripts_revision }}' \
-            --profile '${{ needs.gate.outputs.profile }}'
+            --profile '${{ needs.gate.outputs.profile }}' \
+            --packaged '${{ matrix.packaged }}' --build-host '${{ matrix.build_host }}'
       - uses: actions/upload-artifact@v7
         with:
           name: stage2-${{ matrix.name }}
@@ -190,7 +192,8 @@ jobs:
             --build-id '${{ needs.gate.outputs.build_id }}' \
             --version '${{ needs.gate.outputs.version }}' \
             --revision '${{ needs.gate.outputs.buildscripts_revision }}' \
-            --profile '${{ needs.gate.outputs.profile }}'
+            --profile '${{ needs.gate.outputs.profile }}' \
+            --packaged '${{ matrix.packaged }}' --build-host '${{ matrix.build_host }}'
       - uses: actions/upload-artifact@v7
         with:
           name: stage3-${{ matrix.name }}

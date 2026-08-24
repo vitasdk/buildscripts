@@ -78,6 +78,8 @@ def main():
             "stage": stage,
             "runner": runner,
             "container": host.get("container") or "",
+            "packaged": bool(host.get("packaged")),
+            "build_host": host.get("build_host") or "",
         })
 
     write_output("schema", str(schema))
