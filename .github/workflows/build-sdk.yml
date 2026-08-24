@@ -254,13 +254,16 @@ jobs:
   group:
     name: Group the release tree
     needs: [gate, stage1, stage2, stage3, smoke-windows-bootstrap]
-    # Required-host policy is the caller's, not this shell's; group with whatever built.
+    # Required-host policy is the caller's, not this shell's, so a host that
+    # failed to build only removes itself. A failed smoke test is different:
+    # it says a host built something broken, and that must not reach a tree.
     if: |
       always() && needs.gate.result == 'success' &&
       needs.stage1.result != 'cancelled' &&
       needs.stage2.result != 'cancelled' &&
       needs.stage3.result != 'cancelled' &&
-      needs['smoke-windows-bootstrap'].result != 'cancelled'
+      needs['smoke-windows-bootstrap'].result != 'cancelled' &&
+      needs['smoke-windows-bootstrap'].result != 'failure'
     runs-on: ubuntu-24.04
     outputs:
       build_id: ${{ needs.gate.outputs.build_id }}
