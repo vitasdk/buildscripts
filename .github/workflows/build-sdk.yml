@@ -89,6 +89,13 @@ jobs:
           path: ${{ env.CCACHE_DIR }}
           key: stage${{ matrix.stage }}-${{ matrix.name }}-ccache-${{ needs.gate.outputs.buildscripts_revision }}
           restore-keys: stage${{ matrix.stage }}-${{ matrix.name }}-ccache-
+      # Source tarballs come from their upstream hosts, one of which returning
+      # 503 is enough to fail a leg; keyed by OS so every host of a kind shares.
+      - uses: actions/cache@v6
+        with:
+          path: ${{ github.workspace }}/build/downloads
+          key: downloads-${{ runner.os }}-${{ needs.gate.outputs.buildscripts_revision }}
+          restore-keys: downloads-${{ runner.os }}-
       - name: Build stage 1 host ${{ matrix.name }}
         shell: bash
         run: |
@@ -146,6 +153,13 @@ jobs:
           path: ${{ env.CCACHE_DIR }}
           key: stage${{ matrix.stage }}-${{ matrix.name }}-ccache-${{ needs.gate.outputs.buildscripts_revision }}
           restore-keys: stage${{ matrix.stage }}-${{ matrix.name }}-ccache-
+      # Source tarballs come from their upstream hosts, one of which returning
+      # 503 is enough to fail a leg; keyed by OS so every host of a kind shares.
+      - uses: actions/cache@v6
+        with:
+          path: ${{ github.workspace }}/build/downloads
+          key: downloads-${{ runner.os }}-${{ needs.gate.outputs.buildscripts_revision }}
+          restore-keys: downloads-${{ runner.os }}-
       - name: Build stage 2 host ${{ matrix.name }}
         shell: bash
         run: |
@@ -203,6 +217,13 @@ jobs:
           path: ${{ env.CCACHE_DIR }}
           key: stage${{ matrix.stage }}-${{ matrix.name }}-ccache-${{ needs.gate.outputs.buildscripts_revision }}
           restore-keys: stage${{ matrix.stage }}-${{ matrix.name }}-ccache-
+      # Source tarballs come from their upstream hosts, one of which returning
+      # 503 is enough to fail a leg; keyed by OS so every host of a kind shares.
+      - uses: actions/cache@v6
+        with:
+          path: ${{ github.workspace }}/build/downloads
+          key: downloads-${{ runner.os }}-${{ needs.gate.outputs.buildscripts_revision }}
+          restore-keys: downloads-${{ runner.os }}-
       - name: Build stage 3 host ${{ matrix.name }}
         shell: bash
         run: |
