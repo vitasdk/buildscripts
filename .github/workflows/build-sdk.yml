@@ -1,0 +1,265 @@
+name: Build SDK (reusable)
+
+# Generic staged executor (spec: "2. build -- the reusable workflow"). Zero
+# VitaSDK knowledge here: every matrix and command comes from the lock or
+# from the buildscripts revision it names, via scripts/ci/build-host.sh.
+
+on:
+  workflow_call:
+    inputs:
+      lock:
+        description: The JSON lock produced by `describe`
+        required: true
+        type: string
+    outputs:
+      build_id:
+        description: The lock's build_id, echoed back for convenience
+        value: ${{ jobs.group.outputs.build_id }}
+      release_tree_artifact:
+        description: Name of the uploaded grouped release tree artifact
+        value: ${{ jobs.group.outputs.release_tree_artifact }}
+  workflow_dispatch:
+    inputs:
+      lock:
+        description: The JSON lock produced by `describe` (paste verbatim)
+        required: true
+        type: string
+
+env:
+  BUILDSCRIPTS_REPO: vitasdk/buildscripts
+
+concurrency:
+  group: build-sdk-${{ github.workflow }}-${{ github.run_id }}
+
+jobs:
+  # Checks out the calling ref's own parser, never the lock's revision.
+  gate:
+    name: Validate the lock
+    runs-on: ubuntu-24.04
+    outputs:
+      schema: ${{ steps.parse.outputs.schema }}
+      build_id: ${{ steps.parse.outputs.build_id }}
+      buildscripts_revision: ${{ steps.parse.outputs.buildscripts_revision }}
+      profile: ${{ steps.parse.outputs.profile }}
+      version: ${{ steps.parse.outputs.version }}
+      stage1_hosts: ${{ steps.parse.outputs.stage1_hosts }}
+      stage2_hosts: ${{ steps.parse.outputs.stage2_hosts }}
+      stage3_hosts: ${{ steps.parse.outputs.stage3_hosts }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ env.BUILDSCRIPTS_REPO }}
+      - id: parse
+        shell: bash
+        env:
+          LOCK_JSON: ${{ inputs.lock }}
+        run: python3 scripts/ci/parse-lock.py
+
+  # Stage 1: the producer of the shared target half.
+  stage1:
+    name: stage1 (${{ matrix.name }})
+    needs: gate
+    if: needs.gate.outputs.stage1_hosts != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.gate.outputs.stage1_hosts) }}
+    runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.container }}
+    steps:
+      - name: Ensure git is available for checkout
+        if: matrix.container
+        shell: bash
+        run: |
+          command -v git >/dev/null || {
+            apt-get update -qq
+            apt-get install -y -qq git ca-certificates
+          }
+          git config --global --add safe.directory '*'
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ env.BUILDSCRIPTS_REPO }}
+          ref: ${{ needs.gate.outputs.buildscripts_revision }}
+          fetch-depth: 0
+      - name: Build stage 1 host ${{ matrix.name }}
+        shell: bash
+        run: |
+          scripts/ci/build-host.sh \
+            --host '${{ matrix.name }}' --stage '${{ matrix.stage }}' \
+            --artifacts-dir "$PWD/artifacts" --out-dir "$PWD/out" \
+            --build-id '${{ needs.gate.outputs.build_id }}' \
+            --version '${{ needs.gate.outputs.version }}' \
+            --revision '${{ needs.gate.outputs.buildscripts_revision }}' \
+            --profile '${{ needs.gate.outputs.profile }}'
+      - uses: actions/upload-artifact@v7
+        with:
+          name: stage1-${{ matrix.name }}
+          path: out/*
+          if-no-files-found: error
+          retention-days: 14
+
+  # Stage 2: the hosts that can run what they build.
+  stage2:
+    name: stage2 (${{ matrix.name }})
+    needs: [gate, stage1]
+    if: |
+      always() && needs.gate.result == 'success' &&
+      needs.stage1.result != 'failure' && needs.stage1.result != 'cancelled' &&
+      needs.gate.outputs.stage2_hosts != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.gate.outputs.stage2_hosts) }}
+    runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.container }}
+    steps:
+      - name: Ensure git is available for checkout
+        if: matrix.container
+        shell: bash
+        run: |
+          command -v git >/dev/null || {
+            apt-get update -qq
+            apt-get install -y -qq git ca-certificates
+          }
+          git config --global --add safe.directory '*'
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ env.BUILDSCRIPTS_REPO }}
+          ref: ${{ needs.gate.outputs.buildscripts_revision }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: stage1-*
+          path: artifacts
+      - name: Build stage 2 host ${{ matrix.name }}
+        shell: bash
+        run: |
+          scripts/ci/build-host.sh \
+            --host '${{ matrix.name }}' --stage '${{ matrix.stage }}' \
+            --artifacts-dir "$PWD/artifacts" --out-dir "$PWD/out" \
+            --build-id '${{ needs.gate.outputs.build_id }}' \
+            --version '${{ needs.gate.outputs.version }}' \
+            --revision '${{ needs.gate.outputs.buildscripts_revision }}' \
+            --profile '${{ needs.gate.outputs.profile }}'
+      - uses: actions/upload-artifact@v7
+        with:
+          name: stage2-${{ matrix.name }}
+          path: out/*
+          if-no-files-found: error
+          retention-days: 14
+
+  # Stage 3: the canadian crosses, each importing a complete stage-2 SDK.
+  stage3:
+    name: stage3 (${{ matrix.name }})
+    needs: [gate, stage2]
+    if: |
+      always() && needs.gate.result == 'success' &&
+      needs.stage2.result != 'failure' && needs.stage2.result != 'cancelled' &&
+      needs.gate.outputs.stage3_hosts != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.gate.outputs.stage3_hosts) }}
+    runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.container }}
+    steps:
+      - name: Ensure git is available for checkout
+        if: matrix.container
+        shell: bash
+        run: |
+          command -v git >/dev/null || {
+            apt-get update -qq
+            apt-get install -y -qq git ca-certificates
+          }
+          git config --global --add safe.directory '*'
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ env.BUILDSCRIPTS_REPO }}
+          ref: ${{ needs.gate.outputs.buildscripts_revision }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: stage2-*
+          path: artifacts
+      - name: Build stage 3 host ${{ matrix.name }}
+        shell: bash
+        run: |
+          scripts/ci/build-host.sh \
+            --host '${{ matrix.name }}' --stage '${{ matrix.stage }}' \
+            --artifacts-dir "$PWD/artifacts" --out-dir "$PWD/out" \
+            --build-id '${{ needs.gate.outputs.build_id }}' \
+            --version '${{ needs.gate.outputs.version }}' \
+            --revision '${{ needs.gate.outputs.buildscripts_revision }}' \
+            --profile '${{ needs.gate.outputs.profile }}'
+      - uses: actions/upload-artifact@v7
+        with:
+          name: stage3-${{ matrix.name }}
+          path: out/*
+          if-no-files-found: error
+          retention-days: 14
+
+  # Grouping's own runner/container are fixed: there is no "host" here.
+  group:
+    name: Group the release tree
+    needs: [gate, stage1, stage2, stage3]
+    if: |
+      always() && needs.gate.result == 'success' &&
+      needs.stage1.result != 'failure' && needs.stage1.result != 'cancelled' &&
+      needs.stage2.result != 'failure' && needs.stage2.result != 'cancelled' &&
+      needs.stage3.result != 'failure' && needs.stage3.result != 'cancelled'
+    runs-on: ubuntu-24.04
+    outputs:
+      build_id: ${{ needs.gate.outputs.build_id }}
+      release_tree_artifact: grouped-sdk-snapshot
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ env.BUILDSCRIPTS_REPO }}
+          ref: ${{ needs.gate.outputs.buildscripts_revision }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: stage1-*
+          path: artifacts
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: stage2-*
+          path: artifacts
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: stage3-*
+          path: artifacts
+      - name: Group the release tree
+        shell: bash
+        env:
+          RELEASE_SCHEMA: ${{ needs.gate.outputs.schema }}
+          RELEASE_BUILD_ID: ${{ needs.gate.outputs.build_id }}
+          RELEASE_BUILDSCRIPTS_REVISION: ${{ needs.gate.outputs.buildscripts_revision }}
+          RELEASE_PROFILE: ${{ needs.gate.outputs.profile }}
+          RELEASE_PROVENANCE_DIRECTORY: ${{ github.workspace }}/artifacts
+          SDK_ARCHIVE_DIRECTORY: ${{ github.workspace }}/artifacts
+        run: |
+          export SOURCE_DATE_EPOCH
+          SOURCE_DATE_EPOCH=$(git show -s --format=%ct HEAD)
+          docker run --rm \
+            --platform linux/amd64 \
+            --user "$(id -u):$(id -g)" \
+            --mount "type=bind,source=$PWD,target=/workspace,readonly" \
+            --mount "type=bind,source=$PWD/artifacts,target=/input,readonly" \
+            --mount "type=bind,source=$RUNNER_TEMP,target=/output" \
+            --env SOURCE_DATE_EPOCH \
+            --env RELEASE_SCHEMA --env RELEASE_BUILD_ID \
+            --env RELEASE_BUILDSCRIPTS_REVISION --env RELEASE_PROFILE \
+            --env SDK_ARCHIVE_DIRECTORY=/input \
+            --env RELEASE_PROVENANCE_DIRECTORY=/input \
+            archlinux@sha256:c1829f370be8434135f43fb3acaef1256780804ac3b2d2eec90dfb1232e1ffdf \
+            bash -euc '
+              /workspace/scripts/create-core-repositories.sh \
+                /output/repository /input/*/*.pkg.tar.xz
+            '
+      - uses: actions/upload-artifact@v7
+        with:
+          name: grouped-sdk-snapshot
+          path: ${{ runner.temp }}/repository/*
+          if-no-files-found: error
+          retention-days: 14
