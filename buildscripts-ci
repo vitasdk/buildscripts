@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+usage() {
+	printf 'usage: %s <command> [args...]\n' "$0" >&2
+	printf '       %s describe --profile <name> [--revision <rev>] [--previous-version <v>] [--output <path>]\n' "$0" >&2
+	exit 2
+}
+
+[[ $# -ge 1 ]] || usage
+
+script_directory=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+command=$1
+shift
+
+case $command in
+	describe)
+		exec python3 "$script_directory/scripts/describe.py" "$@"
+		;;
+	*)
+		printf 'unknown buildscripts-ci command: %s\n' "$command" >&2
+		usage
+		;;
+esac

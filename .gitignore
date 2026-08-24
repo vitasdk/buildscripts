@@ -2,3 +2,4 @@
 /build_mingw
 /.idea
 /build
+__pycache__/
