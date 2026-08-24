@@ -40,6 +40,12 @@ jobs:
           echo "== $test"
           "$test"
         done
+    - name: Run the reusable workflow tests
+      run: |
+        for test in tests/ci/test-*.sh; do
+          echo "== $test"
+          "$test"
+        done
 
   # ---------------------------------------------------------------------
   # Stage 1: the only job that compiles target code, and it compiles
