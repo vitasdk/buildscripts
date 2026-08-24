@@ -5,6 +5,7 @@ set -euo pipefail
 usage() {
 	printf 'usage: %s <command> [args...]\n' "$0" >&2
 	printf '       %s describe --profile <name> [--revision <rev>] [--previous-version <v>] [--output <path>]\n' "$0" >&2
+	printf '       %s verify --tree <dir>\n' "$0" >&2
 	exit 2
 }
 
@@ -17,6 +18,9 @@ shift
 case $command in
 	describe)
 		exec python3 "$script_directory/scripts/describe.py" "$@"
+		;;
+	verify)
+		exec python3 "$script_directory/scripts/verify-release-tree.py" "$@"
 		;;
 	*)
 		printf 'unknown buildscripts-ci command: %s\n' "$command" >&2
