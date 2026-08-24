@@ -130,9 +130,11 @@ smoke_test_bootstrap() {
 
 # Builds against $stage1_dir if set, then stages outputs plus provenance.
 build_and_stage() {
+	# ${arr[@]+...}: macOS's /bin/bash is 3.2, where expanding an empty
+	# array under set -u is an unbound-variable error.
 	local -a extra_args=("$@")
 	local -a cmake_args=(
-		-S "$repo_root" -B build "${extra_args[@]}"
+		-S "$repo_root" -B build ${extra_args[@]+"${extra_args[@]}"}
 		-DVITASDK_SOURCE_REVISION="$revision"
 		-DVITASDK_SOURCE_DATE_EPOCH="$source_date_epoch"
 	)
@@ -179,13 +181,13 @@ build_and_stage() {
 		local pattern
 		for pattern in 'vitasdk-core-*.pkg.tar.xz' 'vdpm-*.pkg.tar.xz' \
 			"vitasdk-bootstrap-$host.tar.bz2" "vitasdk-bootstrap-$host.tar.bz2.sha256"; do
-			printf '%s\n' "${names[@]}" | grep -x -- "${pattern//\*/.*}" >/dev/null || {
+			printf '%s\n' ${names[@]+"${names[@]}"} | grep -x -- "${pattern//\*/.*}" >/dev/null || {
 				printf 'packaged host %s produced no %s\n' "$host" "$pattern" >&2
 				exit 1
 			}
 		done
 	fi
-	ci_write_provenance "$out_dir" "$host" "$build_id" "${names[@]}"
+	ci_write_provenance "$out_dir" "$host" "$build_id" ${names[@]+"${names[@]}"}
 }
 
 # musl hosts are native builds inside Alpine (see build.yml stage2-musl).
@@ -341,4 +343,4 @@ else
 	export PATH="$stage1_dir/bin:$PATH"
 fi
 
-build_and_stage "${extra_cmake_args[@]}"
+build_and_stage ${extra_cmake_args[@]+"${extra_cmake_args[@]}"}
