@@ -165,6 +165,13 @@ build_and_stage() {
 		fi
 	fi
 
+	stage_and_write_provenance
+}
+
+# Copies the standard artifact families out of ./build into $out_dir and
+# writes provenance; shared by every host path (native, cross, and musl),
+# all of which leave their outputs under the same build/ layout.
+stage_and_write_provenance() {
 	local -a produced=(build/vitasdk-*.tar.bz2)
 	if is_packaged_host; then
 		produced+=(build/packages/*.pkg.tar.xz build/bootstraps/vitasdk-bootstrap-*.tar.bz2 build/bootstraps/vitasdk-bootstrap-*.tar.bz2.sha256)
@@ -192,19 +199,36 @@ build_and_stage() {
 }
 
 # musl hosts are native builds inside Alpine (see build.yml stage2-musl).
+# musl is native there -- unlike a canadian cross -- so a packaged host's
+# bootstrap smoke test runs inside the same container that built it.
 build_musl_host() {
+	local -a docker_env=(
+		-e VITASDK_SOURCE_REVISION="$revision"
+		-e VITASDK_SOURCE_DATE_EPOCH="$source_date_epoch"
+		-e CCACHE_DIR=/src/.ccache
+		-e CCACHE_MAXSIZE -e CCACHE_COMPRESS -e CCACHE_COMPRESSLEVEL
+	)
+	local vdpm_bundle="" vdpm_bundle_sha256=""
+	if is_packaged_host; then
+		# Downloaded here, outside the container, so it reuses the runner's
+		# network/curl instead of teaching the container image about it.
+		download_vdpm_bundle "$host" "$PWD/vdpm-release"
+		docker_env+=(
+			-e VITASDK_PACKAGED_HOST="$host"
+			-e VITASDK_PACKAGE_VERSION="$version"
+			-e VDPM_BUNDLE="/src/vdpm-release/$(basename "$vdpm_bundle")"
+			-e VDPM_BUNDLE_SHA256="$vdpm_bundle_sha256"
+		)
+	fi
 	# CCACHE_DIR lives under the workspace, which is already the bind mount,
 	# so the container reaches the same cache the runner restored.
 	docker run --rm \
 		-v "$PWD":/src -w /src \
-		-e VITASDK_SOURCE_REVISION="$revision" \
-		-e VITASDK_SOURCE_DATE_EPOCH="$source_date_epoch" \
-		-e CCACHE_DIR=/src/.ccache \
-		-e CCACHE_MAXSIZE -e CCACHE_COMPRESS -e CCACHE_COMPRESSLEVEL \
+		"${docker_env[@]}" \
 		alpine:3.20 sh -eux -c '
 			apk add --no-cache bash build-base cmake git autoconf automake \
-				libtool texinfo bison flex pkgconf curl xz python3 bzip2 \
-				tar linux-headers ccache
+				libtool libarchive-tools texinfo bison flex pkgconf curl xz \
+				python3 bzip2 tar linux-headers ccache
 			export PATH="/usr/lib/ccache/bin:$PATH"
 			git config --global --add safe.directory "*"
 			git config --global user.email "builds@ci.invalid"
@@ -213,22 +237,28 @@ build_musl_host() {
 			test -n "$STAGE1_DIR"
 			mkdir -p /src/build
 			cd /src/build
-			cmake /src -DVITASDK_STAGE1_DIR="$STAGE1_DIR" \
-				-DVITASDK_SOURCE_REVISION="$VITASDK_SOURCE_REVISION" \
-				-DVITASDK_SOURCE_DATE_EPOCH="$VITASDK_SOURCE_DATE_EPOCH"
-			make -j"$(getconf _NPROCESSORS_ONLN)" tarball
+			configure_args="-DVITASDK_STAGE1_DIR=$STAGE1_DIR -DVITASDK_SOURCE_REVISION=$VITASDK_SOURCE_REVISION -DVITASDK_SOURCE_DATE_EPOCH=$VITASDK_SOURCE_DATE_EPOCH"
+			targets="tarball"
+			if [ -n "${VITASDK_PACKAGED_HOST:-}" ]; then
+				configure_args="$configure_args -DBUILD_PACMAN_CLIENT=ON -DVITASDK_PACKAGE_VERSION=$VITASDK_PACKAGE_VERSION -DVDPM_BUNDLE=$VDPM_BUNDLE -DVDPM_BUNDLE_SHA256=$VDPM_BUNDLE_SHA256"
+				targets="$targets core-package bootstrap-archive"
+			fi
+			cmake /src $configure_args
+			make -j"$(getconf _NPROCESSORS_ONLN)" $targets
 			make check-toolchain-contract
 			ccache --show-stats || true
+			if [ -n "${VITASDK_PACKAGED_HOST:-}" ]; then
+				bootstrap_archive="bootstraps/vitasdk-bootstrap-$VITASDK_PACKAGED_HOST.tar.bz2"
+				bootstrap_digest=$(awk "{print \$1}" "$bootstrap_archive.sha256")
+				install_root=/src/build/bootstrap-installed
+				VITASDK_BOOTSTRAP_ARCHIVE="$bootstrap_archive" VITASDK_BOOTSTRAP_SHA256="$bootstrap_digest" \
+					vitasdk/share/vdpm/bootstrap-vitasdk.sh --install-dir "$install_root"
+				VITASDK="$install_root" "$install_root/bin/vdpm" --help >/dev/null
+				"$install_root/libexec/vdpm/pacman" --version >/dev/null
+				"$install_root/bin/arm-vita-eabi-gcc" --version
+			fi
 		'
-	local -a produced=(build/vitasdk-*.tar.bz2)
-	local -a names=()
-	local file
-	for file in "${produced[@]}"; do
-		[[ -f $file ]] || continue
-		cp "$file" "$out_dir/"
-		names+=("$(basename "$file")")
-	done
-	ci_write_provenance "$out_dir" "$host" "$build_id" "${names[@]}"
+	stage_and_write_provenance
 }
 
 install_dependencies() {
@@ -297,12 +327,6 @@ if [[ $stage == 1 ]]; then
 fi
 
 if [[ $host == *-linux-musl ]]; then
-	# The musl path builds only the SDK tarball; flipping packaged on must
-	# fail here rather than publish a host with no packages or bootstrap.
-	if is_packaged_host; then
-		printf 'packaged musl hosts are not implemented\n' >&2
-		exit 1
-	fi
 	stage1_source_dir=$(ci_find_stage_artifact "$artifacts_dir" 1 '*') ||
 		{
 			printf 'stage1 artifact not found under %s\n' "$artifacts_dir" >&2
