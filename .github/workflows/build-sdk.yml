@@ -27,6 +27,12 @@ on:
 
 env:
   BUILDSCRIPTS_REPO: vitasdk/buildscripts
+  # Under the workspace on purpose: the musl leg builds inside a container
+  # that already bind-mounts it, so one setting serves both.
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_MAXSIZE: 2G
+  CCACHE_COMPRESS: "1"
+  CCACHE_COMPRESSLEVEL: "6"
 
 jobs:
   # Checks out the calling ref's own parser, never the lock's revision.
@@ -78,6 +84,11 @@ jobs:
           repository: ${{ env.BUILDSCRIPTS_REPO }}
           ref: ${{ needs.gate.outputs.buildscripts_revision }}
           fetch-depth: 0
+      - uses: actions/cache@v6
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: stage${{ matrix.stage }}-${{ matrix.name }}-ccache-${{ needs.gate.outputs.buildscripts_revision }}
+          restore-keys: stage${{ matrix.stage }}-${{ matrix.name }}-ccache-
       - name: Build stage 1 host ${{ matrix.name }}
         shell: bash
         run: |
@@ -129,6 +140,11 @@ jobs:
         with:
           pattern: stage1-*
           path: artifacts
+      - uses: actions/cache@v6
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: stage${{ matrix.stage }}-${{ matrix.name }}-ccache-${{ needs.gate.outputs.buildscripts_revision }}
+          restore-keys: stage${{ matrix.stage }}-${{ matrix.name }}-ccache-
       - name: Build stage 2 host ${{ matrix.name }}
         shell: bash
         run: |
@@ -180,6 +196,11 @@ jobs:
         with:
           pattern: stage2-*
           path: artifacts
+      - uses: actions/cache@v6
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: stage${{ matrix.stage }}-${{ matrix.name }}-ccache-${{ needs.gate.outputs.buildscripts_revision }}
+          restore-keys: stage${{ matrix.stage }}-${{ matrix.name }}-ccache-
       - name: Build stage 3 host ${{ matrix.name }}
         shell: bash
         run: |
