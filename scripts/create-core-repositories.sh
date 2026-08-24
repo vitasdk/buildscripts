@@ -214,7 +214,7 @@ fi
 	while IFS= read -r asset; do
 		sha256sum -- "$asset"
 	done < <(
-		find . -maxdepth 1 -type f ! -name SHA256SUMS ! -name release.json -printf '%P\n' |
+		find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\n' |
 			LC_ALL=C sort
 	) >SHA256SUMS
 )

@@ -120,11 +120,11 @@ EOF
 			exit 1
 		fi
 
-		# release.json exists, is not covered by SHA256SUMS, and echoes what
-		# each host reported.
+		# release.json exists, is covered by SHA256SUMS like every other
+		# published file, and echoes what each host reported.
 		test -f /work/repository-one/release.json
-		if grep -q release.json /work/repository-one/SHA256SUMS; then
-			printf "release.json must not be covered by SHA256SUMS\n" >&2
+		if ! grep -q release.json /work/repository-one/SHA256SUMS; then
+			printf "release.json must be covered by SHA256SUMS\n" >&2
 			exit 1
 		fi
 		python3 -c "
