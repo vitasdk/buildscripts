@@ -22,6 +22,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v7
+      with:
+        # The protocol tests below walk real first-parent history.
+        fetch-depth: 0
     - name: Run the cmake script tests
       run: |
         for script in tests/cmake/*.cmake; do
@@ -30,6 +33,12 @@ jobs:
           esac
           echo "== $script"
           cmake -P "$script"
+        done
+    - name: Run the buildscripts-ci protocol tests
+      run: |
+        for test in tests/protocol/test-*.sh; do
+          echo "== $test"
+          "$test"
         done
 
   # ---------------------------------------------------------------------
