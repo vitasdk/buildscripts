@@ -1,15 +1,15 @@
 {
   "hosts": [
-    { "name": "x86_64-linux-gnu", "stage": 1, "runner": "ubuntu-24.04", "container": "ubuntu:20.04" },
-    { "name": "x86_64-linux-gnu", "stage": 2, "runner": "ubuntu-24.04", "container": "ubuntu:20.04" },
-    { "name": "aarch64-linux-gnu", "stage": 2, "runner": "ubuntu-24.04-arm", "container": "ubuntu:20.04" },
-    { "name": "arm64-apple-darwin", "stage": 2, "runner": "macos-14", "container": null },
-    { "name": "x86_64-linux-musl", "stage": 2, "runner": "ubuntu-24.04", "container": null },
-    { "name": "aarch64-linux-musl", "stage": 2, "runner": "ubuntu-24.04-arm", "container": null },
-    { "name": "x86_64-w64-mingw32", "stage": 3, "runner": "ubuntu-24.04", "container": null },
-    { "name": "i686-w64-mingw32", "stage": 3, "runner": "ubuntu-24.04", "container": null },
-    { "name": "x86_64-unknown-freebsd", "stage": 3, "runner": "ubuntu-24.04", "container": null },
-    { "name": "aarch64-unknown-freebsd", "stage": 3, "runner": "ubuntu-24.04", "container": null },
-    { "name": "x86_64-apple-darwin", "stage": 3, "runner": "macos-14", "container": null }
+    { "name": "x86_64-linux-gnu", "stage": 1, "runner": "ubuntu-24.04", "container": "ubuntu:20.04", "packaged": false },
+    { "name": "x86_64-linux-gnu", "stage": 2, "runner": "ubuntu-24.04", "container": "ubuntu:20.04", "packaged": true },
+    { "name": "aarch64-linux-gnu", "stage": 2, "runner": "ubuntu-24.04-arm", "container": "ubuntu:20.04", "packaged": true },
+    { "name": "arm64-apple-darwin", "stage": 2, "runner": "macos-14", "container": null, "packaged": true },
+    { "name": "x86_64-linux-musl", "stage": 2, "runner": "ubuntu-24.04", "container": null, "packaged": false },
+    { "name": "aarch64-linux-musl", "stage": 2, "runner": "ubuntu-24.04-arm", "container": null, "packaged": false },
+    { "name": "x86_64-w64-mingw32", "stage": 3, "runner": "ubuntu-24.04", "container": null, "packaged": true, "build_host": "x86_64-linux-gnu" },
+    { "name": "i686-w64-mingw32", "stage": 3, "runner": "ubuntu-24.04", "container": null, "packaged": false, "build_host": "x86_64-linux-gnu" },
+    { "name": "x86_64-unknown-freebsd", "stage": 3, "runner": "ubuntu-24.04", "container": null, "packaged": false, "build_host": "x86_64-linux-gnu" },
+    { "name": "aarch64-unknown-freebsd", "stage": 3, "runner": "ubuntu-24.04", "container": null, "packaged": false, "build_host": "x86_64-linux-gnu" },
+    { "name": "x86_64-apple-darwin", "stage": 3, "runner": "macos-14", "container": null, "packaged": false, "build_host": "arm64-apple-darwin" }
   ]
 }
