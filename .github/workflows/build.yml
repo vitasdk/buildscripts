@@ -3,8 +3,6 @@ name: Build
 on:
   push:
   pull_request:
-  repository_dispatch:
-    types: [run_build]
 
 # A push to a branch with an open pull request fires both triggers; one
 # group per head commit keeps a single run of the pair alive.
