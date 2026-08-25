@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "_comment": "Which git-pinned components the pin-bump bot moves forward, and which it leaves alone. Every component pinned by repository plus revision must appear in exactly one of the two maps: scripts/bump-pins.py refuses to run otherwise, so a new pin cannot go unnoticed in either direction.",
+  "tracked": {
+    "newlib": {"branch": "vita"},
+    "samples": {"branch": "master"},
+    "headers": {"branch": "master"},
+    "toolchain": {"branch": "master"},
+    "pthread": {"branch": "master"}
+  },
+  "untracked": {
+    "isl": "a third-party release tag; moves with the GCC dependency set, by hand",
+    "vdpm": "a released tag; the vdpm release process moves it, and the core embeds the matching bundle",
+    "vita-makepkg": "a reviewed revision; its packaging assumptions are load-bearing for the core package"
+  }
+}

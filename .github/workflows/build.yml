@@ -40,7 +40,7 @@ jobs:
           echo "== $test"
           "$test"
         done
-    - name: Run the reusable workflow tests
+    - name: Run the CI script tests
       run: |
         for test in tests/ci/test-*.sh; do
           echo "== $test"
