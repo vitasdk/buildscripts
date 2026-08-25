@@ -22,6 +22,15 @@ field() {
 
 cd "$clone"
 
+# The clone inherits whatever branch this runs from, and a release branch
+# carries a VERSION. Everything below exercises the derived path, which a
+# declared version turns off -- so the clone starts without one rather than
+# assuming the branch has none.
+if git cat-file -e HEAD:VERSION 2>/dev/null; then
+	git rm -q VERSION
+	git commit -aq -m 'test: derive versions rather than read them'
+fi
+
 # describe fails when the candidate's committer date precedes its parent's.
 parent_epoch=$(git log -1 --format=%ct HEAD)
 skewed_epoch=$(( parent_epoch - 3600 ))
