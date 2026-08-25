@@ -20,6 +20,22 @@ bump() {
 		--components "$components" --tracking "$tracking" "$@"
 }
 
+seed_pin() {
+	python3 - "$components" "$1" "$2" <<'PYEOF'
+import re, sys
+path, name, revision = sys.argv[1], sys.argv[2], sys.argv[3]
+variable = name.upper().replace("-", "_")
+text, replaced = re.subn(
+    r"(set\(\s*" + variable + r"_TAG\s+)\S+",
+    lambda match: match.group(1) + revision,
+    open(path).read(),
+    count=1,
+)
+assert replaced == 1, f"no {variable}_TAG to seed"
+open(path, "w").write(text)
+PYEOF
+}
+
 # The upstreams the bot follows, straight from the file under test: a
 # component added to the config is exercised here without editing this test.
 mapfile -t tracked < <(python3 - "$tracking" <<'PYEOF'
@@ -48,6 +64,10 @@ for entry in "${tracked[@]}"; do
 	git -C "$upstream" commit --quiet -m "first"
 	upstream_of[$name]=$upstream
 	overrides+=(--repository "$name=$upstream")
+	# The pins start where these fixtures start: the real ones name
+	# revisions no fixture can serve, and a bump is a move from something
+	# the upstream actually holds.
+	seed_pin "$name" "$(git -C "$upstream" rev-parse HEAD)"
 done
 
 pin_of() {
@@ -61,6 +81,11 @@ PYEOF
 }
 
 # Everything moves once, to exactly what the upstream branches hold.
+for entry in "${tracked[@]}"; do
+	read -r name _ <<< "$entry"
+	echo "moved" > "${upstream_of[$name]}/file"
+	git -C "${upstream_of[$name]}" commit --quiet -am "moved"
+done
 output=$(bump "${overrides[@]}")
 grep -q "bump-pins: ${#tracked[@]} pin(s) moved" <<< "$output" || {
 	printf 'the first bump did not move every tracked pin: %s\n' "$output" >&2
@@ -141,6 +166,43 @@ cmp -s "$components" "$temporary_root/before-dry" || {
 	printf 'the dry run rewrote Components.cmake\n' >&2
 	exit 1
 }
+
+# A branch that no longer contains the pin is a rollback, whatever the
+# reason -- a force-push, or a pin that lives on another branch. The bot
+# refuses and names both revisions instead of quietly going backwards.
+git -C "$moved_upstream" branch keep
+git -C "$moved_upstream" reset --quiet --hard HEAD~2
+cp "$components" "$temporary_root/before-rollback"
+if output=$(bump "${overrides[@]}" 2>&1); then
+	printf 'the bot accepted a branch that had gone backwards\n' >&2
+	exit 1
+fi
+grep -q "$moved_name" <<< "$output" || {
+	printf 'the refusal does not name the rolled back component: %s\n' "$output" >&2
+	exit 1
+}
+grep -q "$(pin_of "$moved_name")" <<< "$output" || {
+	printf 'the refusal does not name the pin it kept: %s\n' "$output" >&2
+	exit 1
+}
+cmp -s "$components" "$temporary_root/before-rollback" || {
+	printf 'a refused bump rewrote Components.cmake\n' >&2
+	exit 1
+}
+git -C "$moved_upstream" reset --quiet --hard keep
+
+# A pin git cannot resolve is git failing to answer, not an answer: it
+# must not be reported as a source going backwards.
+seed_pin "$moved_name" "not-a-revision"
+if output=$(bump "${overrides[@]}" 2>&1); then
+	printf 'the bot ran with a pin that is not a revision\n' >&2
+	exit 1
+fi
+if grep -q 'roll the source back' <<< "$output"; then
+	printf 'an unresolvable pin was reported as a rollback: %s\n' "$output" >&2
+	exit 1
+fi
+seed_pin "$moved_name" "$moved_head"
 
 # The pins the config leaves alone stay exactly as the file declares them,
 # and are never resolved: no override is given for any of them here.

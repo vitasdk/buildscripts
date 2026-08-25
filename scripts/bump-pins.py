@@ -3,10 +3,11 @@
 
 import argparse
 import json
-import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 
 COMPONENTS_PATH = "cmake/Components.cmake"
 TRACKING_PATH = "cmake/pin-tracking.json"
@@ -116,6 +117,50 @@ def resolve_branch(repository, branch):
     return result.stdout.split()[0]
 
 
+def contains(repository, pin, branch):
+    """Whether what the branch holds now was built on top of the pin.
+
+    A pin that moves to a revision not descended from it is a rollback:
+    a force-push upstream, a branch that is not where the work happens,
+    a pin taken from somewhere else. The bot refuses and a person looks.
+    """
+
+    probe = tempfile.mkdtemp(prefix="bump-pins-")
+    try:
+        subprocess.run(["git", "init", "--quiet", probe], check=True)
+        # tree:0 asks for commits and nothing else: the whole history of
+        # the largest leaf arrives in a few megabytes and a few seconds.
+        fetch = subprocess.run(
+            [
+                "git", "-C", probe, "fetch", "--quiet", "--filter=tree:0",
+                "--no-tags", repository,
+                f"+refs/heads/{branch}:refs/heads/tracked", pin,
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if fetch.returncode != 0:
+            raise BumpError(
+                f"{repository} cannot serve {pin} and {branch} together: "
+                f"{fetch.stderr.strip() or 'git fetch failed'}"
+            )
+        ancestor = subprocess.run(
+            ["git", "-C", probe, "merge-base", "--is-ancestor", pin, "refs/heads/tracked"],
+            capture_output=True,
+            text=True,
+        )
+        # 1 is the answer "no"; anything else is git saying it could not
+        # work out the question, which must not read as a rollback.
+        if ancestor.returncode not in (0, 1):
+            raise BumpError(
+                f"{repository}: cannot tell whether {branch} contains {pin}: "
+                f"{ancestor.stderr.strip() or 'git merge-base failed'}"
+            )
+        return ancestor.returncode == 0
+    finally:
+        shutil.rmtree(probe, ignore_errors=True)
+
+
 def rewrite_pin(text, variable, old, new):
     pattern = re.compile(
         r"(set\(\s*" + re.escape(variable) + r"_TAG\s+)" + re.escape(old) + r"(?=[\s)])"
@@ -160,6 +205,12 @@ def bump(components_path, tracking_path, overrides, dry_run):
         head = resolve_branch(repository, tracked[name])
         if head == component["pin"]:
             continue
+        if not contains(repository, component["pin"], tracked[name]):
+            raise BumpError(
+                f"{name}: {tracked[name]} is at {head}, which does not contain "
+                f"the pinned {component['pin']}; moving it would roll the "
+                "source back"
+            )
         text = rewrite_pin(text, component["variable"], component["pin"], head)
         moves.append(
             {
