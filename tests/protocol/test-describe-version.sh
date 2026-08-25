@@ -87,4 +87,42 @@ stable_version=$(describe --profile vita --revision "$stable_rev" | field versio
 	exit 1
 }
 
+# The series is what the publisher points at a new core. Getting it from the
+# lock is what stops a patch of 2026.08 being announced as a nightly, which
+# would drag every nightly user onto the series' older target runtime.
+stable_series=$(describe --profile vita --revision "$stable_rev" | field series)
+[[ $stable_series == 2026.08 ]] || {
+	printf 'declared version did not yield its series: got %s\n' "$stable_series" >&2
+	exit 1
+}
+
+printf '2026.08.1\n' > VERSION
+git commit -aq -m 'test: declare a patch of the same series'
+patch_series=$(describe --profile vita --revision "$(git rev-parse HEAD)" | field series)
+[[ $patch_series == 2026.08 ]] || {
+	printf 'a patch did not stay in its series: got %s\n' "$patch_series" >&2
+	exit 1
+}
+
+# A nightly has no series at all: it is a channel, not a release line.
+git rm -q VERSION
+git commit -aq -m 'test: back to a derived version'
+nightly_series=$(describe --profile vita --revision "$(git rev-parse HEAD)" | field series)
+[[ $nightly_series == None ]] || {
+	printf 'a derived version claimed a series: got %s\n' "$nightly_series" >&2
+	exit 1
+}
+
+printf 'nonsense\n' > VERSION
+git add VERSION
+git commit -aq -m 'test: declare a version with no patch level'
+if output=$(describe --profile vita --revision "$(git rev-parse HEAD)" 2>&1); then
+	printf 'describe accepted a declared version that is not <series>.<patch>\n' >&2
+	exit 1
+fi
+grep -qi 'series' <<< "$output" || {
+	printf 'describe did not say what was wrong with it: %s\n' "$output" >&2
+	exit 1
+}
+
 printf 'describe version derivation contract tests passed\n'
