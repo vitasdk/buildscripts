@@ -1,0 +1,25 @@
+name: Announce a revision to autobuilds
+
+# Discovery starts here: every commit that lands on the development branch
+# is a new build input, and autobuilds is told about it. It deduplicates by
+# build_id, so announcing a revision it already built costs one job.
+on:
+  push:
+    branches: [master]
+
+jobs:
+  announce:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Ask autobuilds to build this revision
+        env:
+          GH_TOKEN: ${{ secrets.REPO_DISPATCH_TOKEN }}
+        shell: bash
+        run: |
+          if [[ -z "$GH_TOKEN" ]]; then
+            echo "::error::REPO_DISPATCH_TOKEN secret is required for cross-repo dispatch to vitasdk/autobuilds"
+            exit 1
+          fi
+          gh api repos/vitasdk/autobuilds/dispatches \
+            -f event_type=run_build \
+            -f "client_payload[buildscripts_ref]=$GITHUB_SHA"
