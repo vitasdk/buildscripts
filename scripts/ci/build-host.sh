@@ -157,12 +157,15 @@ smoke_test_bootstrap() {
 	local -a run=(${2:-})
 	digest=$(awk '{print $1}' "$bootstrap_archive.sha256")
 	install_root="$PWD/bootstrap-installed"
+	# ${run[@]+...}: macOS's /bin/bash is 3.2, where expanding an empty array
+	# under set -u is an unbound-variable error -- and empty is the normal
+	# case here, for every host that runs its own binaries.
 	VITASDK_BOOTSTRAP_ARCHIVE="$bootstrap_archive" VITASDK_BOOTSTRAP_SHA256="$digest" \
-		"${run[@]}" build/vitasdk/share/vdpm/bootstrap-vitasdk.sh --install-dir "$install_root"
-	VITASDK="$install_root" "${run[@]}" "$install_root/bin/vdpm" --help >/dev/null
+		${run[@]+"${run[@]}"} build/vitasdk/share/vdpm/bootstrap-vitasdk.sh --install-dir "$install_root"
+	VITASDK="$install_root" ${run[@]+"${run[@]}"} "$install_root/bin/vdpm" --help >/dev/null
 	# vdpm ships pacman under libexec/vdpm, not bin/.
-	"${run[@]}" "$install_root/libexec/vdpm/pacman" --version >/dev/null
-	"${run[@]}" "$install_root/bin/arm-vita-eabi-gcc" --version
+	${run[@]+"${run[@]}"} "$install_root/libexec/vdpm/pacman" --version >/dev/null
+	${run[@]+"${run[@]}"} "$install_root/bin/arm-vita-eabi-gcc" --version
 }
 
 # Builds against $stage1_dir if set, then stages outputs plus provenance.
