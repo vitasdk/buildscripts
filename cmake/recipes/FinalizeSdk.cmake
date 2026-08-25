@@ -130,13 +130,16 @@ add_custom_target(finalize-sdk
 # this machine can still execute -- x86_64 macOS on arm64, through Rosetta --
 # sets it to the launcher that makes that true, so the contract runs against
 # the SDK that was actually built rather than being skipped.
+include(${CMAKE_CURRENT_LIST_DIR}/../HostRunner.cmake)
+
 set(VITASDK_HOST_RUNNER "" CACHE STRING
     "Launcher prefix for running this host's binaries, if one is needed")
+vitasdk_host_runner_command(vitasdk_host_runner_argv "${VITASDK_HOST_RUNNER}")
 
 add_custom_target(check-toolchain-contract
     COMMAND ${CMAKE_COMMAND} -E env
         VITASDK=${CMAKE_INSTALL_PREFIX}
-        ${VITASDK_HOST_RUNNER}
+        ${vitasdk_host_runner_argv}
         ${CMAKE_SOURCE_DIR}/tests/toolchain-contract/run.sh
     DEPENDS finalize-sdk
     VERBATIM
