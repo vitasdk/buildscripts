@@ -19,6 +19,9 @@ vercmp() {
 	python3 "$repository_root/scripts/vercmp.py" "$1" "$2"
 }
 
+# The same file describe reads to decide a version is declared.
+VERSION_PATH=VERSION
+
 cd "$repository_root"
 head_rev=$(git rev-parse HEAD)
 
@@ -39,20 +42,31 @@ version_b=$(describe --profile vita --revision "$head_rev" | field version)
 # The walkable range starts where describe's own files were introduced, not history's root.
 introduced=$(git log --first-parent --format=%H --diff-filter=A -- cmake/Profiles.cmake | tail -1)
 range_count=$(git rev-list --first-parent --count "${introduced}~1..$head_rev")
-# A PR merge ref's first parent is master, where describe's files do not
-# exist yet, so the walkable range collapses to the merge commit alone.
-# The guards themselves are covered by the synthetic-history test; the
-# real-history walk waits for a ref that carries it (any master push).
-(( range_count >= 2 )) || {
-	printf 'skipping the real-history walk: %s describe-capable commit(s) on the first-parent line\n' \
-		"$range_count"
-	exit 0
-}
+
+# Reasons the walk has nothing to walk. Neither is a failure, and neither
+# stops the checks below it: skipping used to exit, which took the stable
+# declaration with it on exactly the branches that have one.
+skip_walk=""
+if git cat-file -e "$head_rev:$VERSION_PATH" 2>/dev/null; then
+	# Every commit on a release branch answers with what VERSION says, so
+	# there is no derived version here to be monotonic. The derivation and
+	# its guards are covered by the synthetic-history test, which builds
+	# the history it needs instead of borrowing this one.
+	skip_walk="$head_rev declares a version"
+elif (( range_count < 2 )); then
+	# A PR merge ref's first parent is master, where describe's files do not
+	# exist yet, so the walkable range collapses to the merge commit alone.
+	skip_walk="$range_count describe-capable commit(s) on the first-parent line"
+fi
 
 chain=()
-while read -r rev; do
-	chain+=("$rev")
-done < <(git rev-list --first-parent "${introduced}~1..$head_rev")
+if [[ -n $skip_walk ]]; then
+	printf 'skipping the real-history walk: %s\n' "$skip_walk"
+else
+	while read -r rev; do
+		chain+=("$rev")
+	done < <(git rev-list --first-parent "${introduced}~1..$head_rev")
+fi
 
 previous_version=
 previous_rev=
