@@ -1,0 +1,54 @@
+name: Bump source pins
+
+# Upstream movement enters the build as a commit here, never as a floating
+# ref: what a nightly was built from is always readable in this history.
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Report what would move without committing it
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  bump:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check the push token is configured
+        env:
+          BUMP_TOKEN: ${{ secrets.REPO_DISPATCH_TOKEN }}
+        shell: bash
+        run: |
+          if [[ -z "$BUMP_TOKEN" ]]; then
+            echo "::error::REPO_DISPATCH_TOKEN is required: a push made with GITHUB_TOKEN fires no workflow, so the build would never be announced"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v7
+        with:
+          # Not GITHUB_TOKEN on purpose: GitHub fires no workflow for a push
+          # made with it, and this push is what triggers discovery.
+          token: ${{ secrets.REPO_DISPATCH_TOKEN }}
+
+      - name: Resolve the tracked upstream branches
+        shell: bash
+        run: |
+          python3 scripts/bump-pins.py \
+            ${{ inputs.dry_run && '--dry-run' || '' }} \
+            --message-file "$RUNNER_TEMP/commit-message"
+
+      - name: Commit and push what moved
+        if: ${{ !inputs.dry_run }}
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "no pin moved; nothing to push"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -a --file "$RUNNER_TEMP/commit-message"
+          git push origin HEAD:"$GITHUB_REF_NAME"
