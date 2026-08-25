@@ -195,6 +195,24 @@ def stable_version_declaration(revision):
     return value or None
 
 
+def release_series(declared):
+    """Which series a declared version is a release of.
+
+    A patch of 2026.08 is 2026.08.1 and the series it moves is 2026.08:
+    everything up to the last dot. A derived version has no series -- nightly
+    is a channel, not a series -- and says so with None, which is what keeps
+    a patch from being mistaken for a nightly by whoever publishes it.
+    """
+
+    if declared is None:
+        return None
+    series, dot, patch = declared.rpartition(".")
+    if not dot or not series or not patch:
+        raise DescribeError(
+            f"declared version '{declared}' is not <series>.<patch>")
+    return series
+
+
 def check_first_parent_date(revision):
     parent = first_parent(revision)
     if parent is None:
@@ -241,6 +259,10 @@ def build_lock(revision, profile, previous_version):
         "buildscripts_revision": resolved,
         "profile": profile,
         "version": version,
+        # Additive on purpose, without a schema bump: a reader that does not
+        # know the field behaves exactly as before, and bumping would make
+        # every shell already deployed reject every new lock.
+        "series": release_series(declared),
         "hosts": hosts,
         "sources": sources,
     }
