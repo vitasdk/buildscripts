@@ -64,7 +64,7 @@ else
 		bin/include/refresh-repositories.sh
 	)
 fi
-for relative_path in "${required[@]}"; do
+for relative_path in ${required[@]+"${required[@]}"}; do
 	[[ -f $root/$relative_path && ! -L $root/$relative_path ]] || {
 		printf 'vdpm bundle is missing required regular file: %s\n' "$relative_path" >&2
 		exit 1

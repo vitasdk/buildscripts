@@ -197,8 +197,8 @@ build_and_stage() {
 		targets+=(core-package bootstrap-archive)
 	fi
 
-	cmake "${cmake_args[@]}"
-	cmake --build build --target "${targets[@]}" --parallel "$(ci_nproc)"
+	cmake ${cmake_args[@]+"${cmake_args[@]}"}
+	cmake --build build --target ${targets[@]+"${targets[@]}"} --parallel "$(ci_nproc)"
 	report_ccache_statistics
 
 	# Verified wherever it can be run, which is not the same as natively.
@@ -224,7 +224,7 @@ stage_and_write_provenance() {
 	fi
 	local -a names=()
 	local file
-	for file in "${produced[@]}"; do
+	for file in ${produced[@]+"${produced[@]}"}; do
 		[[ -f $file ]] || continue
 		cp "$file" "$out_dir/"
 		names+=("$(basename "$file")")
@@ -271,7 +271,7 @@ build_musl_host() {
 	# so the container reaches the same cache the runner restored.
 	docker run --rm \
 		-v "$PWD":/src -w /src \
-		"${docker_env[@]}" \
+		${docker_env[@]+"${docker_env[@]}"} \
 		alpine:3.20 sh -eux -c '
 			apk add --no-cache bash build-base cmake git autoconf automake \
 				libtool libarchive-tools texinfo bison flex pkgconf curl xz \
@@ -322,12 +322,12 @@ install_dependencies() {
 		i686-w64-mingw32) extra=(g++-mingw-w64-i686) ;;
 		x86_64-unknown-freebsd | aarch64-unknown-freebsd) extra=(clang lld llvm) ;;
 		esac
-		"${sudo_cmd[@]}" apt-get update -qq
-		"${sudo_cmd[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+		${sudo_cmd[@]+"${sudo_cmd[@]}"} apt-get update -qq
+		${sudo_cmd[@]+"${sudo_cmd[@]}"} env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
 			cmake cmake-data git build-essential autoconf automake libtool \
 			texinfo bison flex pkg-config python3 python3-pip curl bzip2 xz-utils \
 			libarchive-tools ccache \
-			"${extra[@]}"
+			${extra[@]+"${extra[@]}"}
 		pip3 install --quiet cmake==3.31.6
 		;;
 	esac
@@ -342,7 +342,7 @@ enable_ccache() {
 		shims="$(brew --prefix ccache)/libexec"
 	else
 		[[ -x /usr/sbin/update-ccache-symlinks ]] &&
-			"${sudo_cmd[@]}" /usr/sbin/update-ccache-symlinks
+			${sudo_cmd[@]+"${sudo_cmd[@]}"} /usr/sbin/update-ccache-symlinks
 		shims=/usr/lib/ccache
 	fi
 	[[ -d $shims ]] || {
