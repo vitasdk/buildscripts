@@ -63,4 +63,27 @@ describe --profile vita --revision "$clean_rev" --previous-version "0.1.1" > /de
 	exit 1
 }
 
+# The declared path is the one a person types, so it is the one that most
+# needs the guard.
+printf '2026.08.0\n' > VERSION
+git add VERSION
+git commit -aq -m 'test: declare a stable version'
+stable_rev=$(git rev-parse HEAD)
+
+for refused in 2026.08.0 2026.09.0; do
+	if output=$(describe --profile vita --revision "$stable_rev" --previous-version "$refused" 2>&1); then
+		printf 'describe accepted declared 2026.08.0 against previous %s\n' "$refused" >&2
+		exit 1
+	fi
+	grep -qi 'previous version' <<< "$output" || {
+		printf 'describe did not name the previous-version guard: %s\n' "$output" >&2
+		exit 1
+	}
+done
+
+describe --profile vita --revision "$stable_rev" --previous-version "2026.07.9" > /dev/null || {
+	printf 'describe rejected a declared version that exceeds the previous one\n' >&2
+	exit 1
+}
+
 printf 'describe monotonicity guard contract tests passed\n'

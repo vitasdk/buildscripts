@@ -223,11 +223,17 @@ def build_lock(revision, profile, previous_version):
     else:
         check_first_parent_date(resolved)
         version = nightly_version(resolved)
-        if previous_version is not None and vercmp(version, previous_version) <= 0:
-            raise DescribeError(
-                f"candidate version {version} does not exceed "
-                f"previous version {previous_version}"
-            )
+
+    # Both paths, and the declared one most of all: a nightly version is
+    # derived and cannot go backwards by accident, but a stable one is typed
+    # by a person. The caller passes the last version of the channel it is
+    # about to publish to -- comparing across channels is meaningless, since
+    # every nightly sorts below every stable.
+    if previous_version is not None and vercmp(version, previous_version) <= 0:
+        raise DescribeError(
+            f"candidate version {version} does not exceed "
+            f"previous version {previous_version}"
+        )
 
     return {
         "schema": SCHEMA,

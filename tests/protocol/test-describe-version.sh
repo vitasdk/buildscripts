@@ -70,7 +70,7 @@ for (( i = ${#chain[@]} - 1; i >= 0; i-- )); do
 	previous_rev=$rev
 done
 
-# A committed VERSION file bypasses the nightly monotonicity gate entirely.
+# A committed VERSION file is used verbatim, not derived from the history.
 clone="$temporary_root/clone"
 git clone --quiet "$repository_root" "$clone"
 git -C "$clone" config user.email describe-tests@ci.invalid
@@ -81,7 +81,7 @@ git add VERSION
 git commit -aq -m 'test: declare a stable version'
 stable_rev=$(git rev-parse HEAD)
 
-stable_version=$(describe --profile vita --revision "$stable_rev" --previous-version 999.999.999 | field version)
+stable_version=$(describe --profile vita --revision "$stable_rev" | field version)
 [[ $stable_version == 2026.08.0 ]] || {
 	printf 'stable declaration was not used verbatim: got %s\n' "$stable_version" >&2
 	exit 1
