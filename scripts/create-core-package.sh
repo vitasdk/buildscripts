@@ -97,7 +97,7 @@ cp -a "$sdk_root/." "$core_root/"
 rm -f "$core_root/.PKGINFO" "$core_root/.BUILDINFO" "$core_root/.MTREE" \
 	"$core_root/etc/pacman.conf"
 
-for path in "${client_paths[@]}"; do
+for path in ${client_paths[@]+"${client_paths[@]}"}; do
 	[[ -e $core_root/$path ]] || {
 		printf 'the SDK does not carry %s\n' "$path" >&2
 		exit 1

@@ -31,7 +31,7 @@ case $host in
 			bin/include/refresh-repositories.sh)
 		;;
 esac
-for relative_path in "${required[@]}"; do
+for relative_path in ${required[@]+"${required[@]}"}; do
 	[[ -e $sdk_root/$relative_path ]] || {
 		printf 'bootstrap SDK is missing %s\n' "$relative_path" >&2
 		exit 1

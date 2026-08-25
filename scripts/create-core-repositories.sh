@@ -93,13 +93,13 @@ normalize_database() {
 }
 
 mapfile -t sorted_architectures < <(printf '%s\n' "${!architectures[@]}" | LC_ALL=C sort)
-for architecture in "${sorted_architectures[@]}"; do
+for architecture in ${sorted_architectures[@]+"${sorted_architectures[@]}"}; do
 	read -r -a package_filenames <<<"${architectures[$architecture]}"
 	packages=()
-	for package_filename in "${package_filenames[@]}"; do
+	for package_filename in ${package_filenames[@]+"${package_filenames[@]}"}; do
 		packages+=("$staging_directory/$package_filename")
 	done
-	repo-add "$staging_directory/$architecture.db.tar.gz" "${packages[@]}"
+	repo-add "$staging_directory/$architecture.db.tar.gz" ${packages[@]+"${packages[@]}"}
 	normalize_database "$staging_directory/$architecture.db.tar.gz" \
 		"$temporary_directory/$architecture.db"
 	normalize_database "$staging_directory/$architecture.files.tar.gz" \
@@ -177,10 +177,10 @@ if [[ -n ${RELEASE_SCHEMA:-}${RELEASE_BUILD_ID:-}${RELEASE_BUILDSCRIPTS_REVISION
 	}
 
 	host_fragments=()
-	for architecture in "${sorted_architectures[@]}"; do
+	for architecture in ${sorted_architectures[@]+"${sorted_architectures[@]}"}; do
 		host_artifacts=("$architecture.db" "$architecture.files")
 		read -r -a package_filenames <<<"${architectures[$architecture]}"
-		host_artifacts+=("${package_filenames[@]}")
+		host_artifacts+=(${package_filenames[@]+"${package_filenames[@]}"})
 		while IFS= read -r -d '' extra; do
 			host_artifacts+=("$(basename "$extra")")
 		done < <(find "$staging_directory" -maxdepth 1 -type f \
@@ -191,7 +191,7 @@ if [[ -n ${RELEASE_SCHEMA:-}${RELEASE_BUILD_ID:-}${RELEASE_BUILDSCRIPTS_REVISION
 			printf 'no provenance echo found for published host: %s\n' "$architecture" >&2
 			exit 1
 		}
-		host_fragments+=("{\"name\":\"$(json_escape "$architecture")\",\"build_id\":\"$(json_escape "$build_id")\",\"artifacts\":$(json_string_array "${host_artifacts[@]}")}")
+		host_fragments+=("{\"name\":\"$(json_escape "$architecture")\",\"build_id\":\"$(json_escape "$build_id")\",\"artifacts\":$(json_string_array ${host_artifacts[@]+"${host_artifacts[@]}"})}")
 	done
 
 	hosts_joined=$(
