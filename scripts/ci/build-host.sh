@@ -105,6 +105,25 @@ trap dump_configure_logs EXIT
 # The matrix's packaged flag, not the host name, gates core-package treatment.
 is_packaged_host() { [[ $packaged == true ]]; }
 
+# How to run this host's binaries on this machine, if at all. Prints the
+# launcher prefix and succeeds; fails when there is none.
+#
+# What this replaces was "only a native build can run its own output", which
+# is true of a canadian cross to Windows or FreeBSD and false of Apple: an
+# arm64 Mac runs x86_64 Mach-O through Rosetta, so the machine that
+# cross-builds the Intel SDK is also the one that can check it.
+host_runner() {
+	if [[ -z $build_host ]]; then
+		printf ''
+		return 0
+	fi
+	if [[ $host == x86_64-apple-darwin && $build_host == arm64-apple-darwin ]]; then
+		printf 'arch -x86_64'
+		return 0
+	fi
+	return 1
+}
+
 vdpm_tag() {
 	sed -n 's/^set(VDPM_TAG \([^ )]*\).*/\1/p' "$repo_root/cmake/Components.cmake"
 }
@@ -133,14 +152,17 @@ download_vdpm_bundle() {
 # Same-runner smoke test only; a canadian cross cannot run what it built.
 smoke_test_bootstrap() {
 	local bootstrap_archive=$1 digest install_root
+	# Empty for a host that runs here directly; a launcher for one that needs
+	# it. Unquoted on purpose, so an empty prefix contributes no argument.
+	local -a run=(${2:-})
 	digest=$(awk '{print $1}' "$bootstrap_archive.sha256")
 	install_root="$PWD/bootstrap-installed"
 	VITASDK_BOOTSTRAP_ARCHIVE="$bootstrap_archive" VITASDK_BOOTSTRAP_SHA256="$digest" \
-		build/vitasdk/share/vdpm/bootstrap-vitasdk.sh --install-dir "$install_root"
-	VITASDK="$install_root" "$install_root/bin/vdpm" --help >/dev/null
+		"${run[@]}" build/vitasdk/share/vdpm/bootstrap-vitasdk.sh --install-dir "$install_root"
+	VITASDK="$install_root" "${run[@]}" "$install_root/bin/vdpm" --help >/dev/null
 	# vdpm ships pacman under libexec/vdpm, not bin/.
-	"$install_root/libexec/vdpm/pacman" --version >/dev/null
-	"$install_root/bin/arm-vita-eabi-gcc" --version
+	"${run[@]}" "$install_root/libexec/vdpm/pacman" --version >/dev/null
+	"${run[@]}" "$install_root/bin/arm-vita-eabi-gcc" --version
 }
 
 # Builds against $stage1_dir if set, then stages outputs plus provenance.
@@ -155,6 +177,7 @@ build_and_stage() {
 		# The lock names the host; artifacts published under any other name
 		# would not match what the caller asked to be built.
 		-DVITASDK_HOST_NAME="$host"
+		-DVITASDK_HOST_RUNNER="$(host_runner || true)"
 	)
 	[[ -n ${stage1_dir:-} ]] && cmake_args+=(-DVITASDK_STAGE1_DIR="$stage1_dir")
 	local -a targets=(tarball)
@@ -175,12 +198,14 @@ build_and_stage() {
 	cmake --build build --target "${targets[@]}" --parallel "$(ci_nproc)"
 	report_ccache_statistics
 
-	# Only a native build can run its own output.
-	if [[ -z $build_host ]]; then
+	# Verified wherever it can be run, which is not the same as natively.
+	if runner=$(host_runner); then
 		cmake --build build --target check-toolchain-contract
 		if is_packaged_host; then
-			smoke_test_bootstrap "build/bootstraps/vitasdk-bootstrap-$host.tar.bz2"
+			smoke_test_bootstrap "build/bootstraps/vitasdk-bootstrap-$host.tar.bz2" "$runner"
 		fi
+	else
+		printf 'no way to run %s binaries here; contract and smoke test skipped\n' "$host"
 	fi
 
 	stage_and_write_provenance
