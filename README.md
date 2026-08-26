@@ -204,7 +204,7 @@ Available host toolchain files under `cmake/toolchains/`:
 | `aarch64-linux-gnu.cmake` | Linux aarch64 (glibc) | alternative to a native arm64 build |
 | `x86_64-unknown-freebsd.cmake` | FreeBSD x86_64 | clang + base.txz sysroot, see `scripts/setup-freebsd-cross.sh` |
 | `aarch64-unknown-freebsd.cmake` | FreeBSD aarch64 | clang + base.txz sysroot, see `scripts/setup-freebsd-cross.sh` |
-| `x86_64-apple-darwin.cmake` | macOS x86_64 | requires osxcross; see file header |
+| `x86_64-apple-darwin.cmake` | macOS x86_64 | the system Xcode with `-arch x86_64`, see `scripts/setup-macos-cross.sh`; osxcross on a Linux machine, see file header |
 | `aarch64-apple-darwin.cmake` | macOS arm64 | requires osxcross; see file header |
 
 The musl hosts have no toolchain file: they are built inside an Alpine
@@ -225,3 +225,11 @@ Cross building, on the other hand, now requires a stage-1 SDK. Target code
 is compiled once and imported; a cross build that rebuilt it would be
 compiling the same objects a second time on a machine that has no business
 doing it. Configure without `VITASDK_STAGE1_DIR` and the build says so.
+
+## Releases
+
+A snapshot is built from whatever `master` is. A release series is declared by
+a `VERSION` file at the root, which is what makes the lock carry a version and
+the series it belongs to instead of deriving one from history. Patching a
+series is a branch of its own and a fixed order of steps:
+[docs/patch-release.md](docs/patch-release.md).
