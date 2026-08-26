@@ -113,6 +113,7 @@ endif()
 
 include(Utils)
 include(GetTriplet)
+include(PublishedHostName)
 include(ExternalProject)
 
 set(vitasdk_base_c_flags "${CMAKE_C_FLAGS}")
@@ -135,14 +136,12 @@ get_host_triplet(host_native)
 get_build_triplet(build_native)
 
 # What this host is called where it is published -- in artifact names, in the
-# package architecture, in the vdpm bundle it embeds. It is the toolchain
-# triplet on every host but FreeBSD, whose cross compiler carries a release
-# number (x86_64-unknown-freebsd14-gcc) that its published name does not.
-string(REGEX REPLACE "^(.*-unknown-freebsd)[0-9]+$" "\\1"
-    host_published_default "${host_native}")
+# package architecture, in the vdpm bundle it embeds.
+vitasdk_published_host_name("${host_native}" host_published_default)
 set(VITASDK_HOST_NAME "${host_published_default}" CACHE STRING
     "Name this host publishes under, if not its toolchain triplet")
 set(host_published "${VITASDK_HOST_NAME}")
+vitasdk_check_published_host_name("${host_published}" "${host_native}")
 
 message(STATUS "Host:   ${host_native}")
 message(STATUS "Build:  ${build_native}")
