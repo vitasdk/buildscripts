@@ -102,7 +102,7 @@ jobs:
           libarchive-tools pkg-config
     # By stage, not by host name: which host produces stage 1 is the lock's
     # to say, and there is only ever one of them.
-    - uses: actions/download-artifact@v7
+    - uses: actions/download-artifact@v8
       with:
         pattern: stage1-*
         path: artifacts
