@@ -10,12 +10,9 @@ concurrency:
   group: build-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 
-env:
-  DEBIAN_DEPS: cmake cmake-data git build-essential autoconf automake libtool texinfo bison flex pkg-config ccache
-
 jobs:
-  # Structural checks that need no build: the stage-1/stage-2 partition
-  # manifest and the host binary format guard.
+  # Structural checks that need no build: the stage partition manifest, the
+  # host binary format guard, and the packaging scripts against fixtures.
   checks:
     runs-on: ubuntu-24.04
     steps:
@@ -23,6 +20,10 @@ jobs:
       with:
         # The protocol tests below walk real first-parent history.
         fetch-depth: 0
+    - name: Install what the packaging tests read archives with
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq libarchive-tools
     - name: Run the cmake script tests
       run: |
         for script in tests/cmake/*.cmake; do
@@ -44,520 +45,49 @@ jobs:
           echo "== $test"
           "$test"
         done
-
-  # ---------------------------------------------------------------------
-  # Stage 1: the only job that compiles target code, and it compiles
-  # nothing else. Out comes the target half -- sysroot, newlib, the stubs,
-  # libgcc and the target runtimes -- which every host imports. It is not
-  # an SDK for anyone, not even for this runner: Linux x86_64 gets its own
-  # SDK from stage 2, like every other host.
-  # ---------------------------------------------------------------------
-  stage1:
-    runs-on: ubuntu-24.04
-    # The Linux SDK legs build inside the glibc-2.31 base the published cores use.
-    container: ubuntu:20.04
-    env:
-      CCACHE_MAXSIZE: 2G
-      CCACHE_COMPRESS: "1"
-      CCACHE_COMPRESSLEVEL: "6"
-    steps:
-    - name: Install git for the checkout
-      # Without git in the container, checkout falls back to a tarball with no .git.
-      env:
-        DEBIAN_FRONTEND: noninteractive
-      run: |
-        apt-get update
-        apt-get install -y git ca-certificates
-        # The mounted workspace belongs to the runner uid, not the container's root.
-        git config --global --add safe.directory '*'
-    - uses: actions/checkout@v7
-    - name: Install dependencies
-      env:
-        DEBIAN_FRONTEND: noninteractive
-      run: |
-        apt-get install -y $DEBIAN_DEPS python3 python3-pip curl bzip2 xz-utils
-        # focal's cmake is 3.16 and the build needs 3.19 features.
-        pip3 install --quiet cmake==3.31.6
-    - name: Enable ccache
-      run: |
-        # gcc, binutils, gdb and newlib are autotools: they honour no CMake
-        # variable, and a shim directory in PATH is the only way they pick
-        # ccache up. Listing it leaves the covered compilers in the log.
-        if [ -x /usr/sbin/update-ccache-symlinks ]; then
-          /usr/sbin/update-ccache-symlinks
-        fi
-        ls /usr/lib/ccache
-        echo /usr/lib/ccache >> $GITHUB_PATH
-        # A job env block runs through no shell, so CCACHE_DIR=~/.ccache
-        # reached ccache as a literal tilde and it cached into a directory
-        # named "~" wherever each sub-build happened to run. Expand it here.
-        echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
-    - name: ccache
-      uses: actions/cache@v6
-      with:
-        path: ~/.ccache
-        key: stage1-ccache-${{ github.ref }}-${{ github.sha }}
-        restore-keys: |
-          stage1-ccache-${{ github.ref }}-
-          stage1-ccache-
-    - name: downloads
-      uses: actions/cache@v6
-      with:
-        path: build/downloads
-        key: ${{ runner.os }}-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
-        restore-keys: |
-          ${{ runner.os }}-downloads-
-    - name: Build
-      run: |
-        git config --global user.email "builds@ci.invalid"
-        git config --global user.name "CI"
-        # focal images carry no default locale and GCC's tarball needs one.
-        export LANG=C.UTF-8
-        mkdir -p build
-        cd build
-        cmake .. -DVITASDK_TARGET_ONLY=ON
-        make -j$(nproc) sysroot
-    - name: ccache statistics
-      if: ${{ always() }}
-      run: ccache --show-stats
-    - name: Upload artifacts
-      if: ${{ success() }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: vitasdk-sysroot
-        path: build/vitasdk-sysroot-*.tar.bz2
-
-  # ---------------------------------------------------------------------
-  # Stage 2: the hosts that can run what they build. Their freshly built
-  # xgcc executes on the machine building it, which is all gcc needs to
-  # produce its specs file -- the one thing in all-gcc that runs the
-  # compiler rather than just compiling it.
-  # ---------------------------------------------------------------------
-  stage2:
-    needs: stage1
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: ubuntu-24.04
-            name: linux-x86_64
-            container: ubuntu:20.04
-            ccache_dir: ~/.ccache
-          - runner: ubuntu-24.04-arm
-            name: linux-arm64
-            container: ubuntu:20.04
-            ccache_dir: ~/.ccache
-          - runner: macos-14
-            name: macos-arm64
-            ccache_dir: ~/Library/Caches/ccache
-    runs-on: ${{ matrix.runner }}
-    container: ${{ matrix.container }}
-    env:
-      CCACHE_MAXSIZE: 2G
-      CCACHE_COMPRESS: "1"
-      CCACHE_COMPRESSLEVEL: "6"
-    steps:
-    - name: Install git for the checkout
-      if: runner.os == 'Linux'
-      # Without git in the container, checkout falls back to a tarball with no .git.
-      env:
-        DEBIAN_FRONTEND: noninteractive
-      run: |
-        apt-get update
-        apt-get install -y git ca-certificates
-        # The mounted workspace belongs to the runner uid, not the container's root.
-        git config --global --add safe.directory '*'
-    - uses: actions/checkout@v7
-    - name: Install dependencies
-      env:
-        DEBIAN_FRONTEND: noninteractive
-      run: |
-        if [ "$RUNNER_OS" = "macOS" ]; then
-          brew install autoconf automake libtool texinfo ccache
-        else
-          apt-get install -y $DEBIAN_DEPS python3 python3-pip curl bzip2 xz-utils
-          # focal's cmake is 3.16 and the build needs 3.19 features.
-          pip3 install --quiet cmake==3.31.6
-        fi
-    - name: Enable ccache
-      run: |
-        if [ "$RUNNER_OS" = "macOS" ]; then
-          shims="$(brew --prefix ccache)/libexec"
-          echo "CCACHE_DIR=$HOME/Library/Caches/ccache" >> $GITHUB_ENV
-        else
-          if [ -x /usr/sbin/update-ccache-symlinks ]; then
-            /usr/sbin/update-ccache-symlinks
-          fi
-          shims=/usr/lib/ccache
-          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
-        fi
-        ls "$shims"
-        echo "$shims" >> $GITHUB_PATH
-    - name: ccache
-      uses: actions/cache@v6
-      with:
-        path: ${{ matrix.ccache_dir }}
-        key: stage2-${{ matrix.name }}-ccache-${{ github.ref }}-${{ github.sha }}
-        restore-keys: |
-          stage2-${{ matrix.name }}-ccache-${{ github.ref }}-
-          stage2-${{ matrix.name }}-ccache-
-    - name: downloads
-      uses: actions/cache@v6
-      with:
-        path: build/downloads
-        key: ${{ matrix.name }}-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
-        restore-keys: |
-          ${{ matrix.name }}-downloads-
-    - name: Fetch the stage-1 sysroot
-      uses: actions/download-artifact@v7
-      with:
-        name: vitasdk-sysroot
-        path: stage1-artifact
-    - name: Unpack the stage-1 sysroot
-      run: |
-        mkdir -p stage1
-        tar -xjf stage1-artifact/*.tar.bz2 -C stage1
-        STAGE1_DIR=$(dirname "$(dirname "$(dirname "$(find "$PWD/stage1" -type f -path '*/arm-vita-eabi/lib/libc.a' | head -1)")")")
-        test -n "$STAGE1_DIR"
-        echo "STAGE1_DIR=$STAGE1_DIR" >> $GITHUB_ENV
-    - name: Build
-      run: |
-        git config --global user.email "builds@ci.invalid"
-        git config --global user.name "CI"
-        # focal images carry no default locale and GCC's tarball needs one.
-        export LANG=C.UTF-8
-        mkdir -p build
-        cd build
-        cmake .. -DVITASDK_STAGE1_DIR="$STAGE1_DIR"
-        make -j$(getconf _NPROCESSORS_ONLN) tarball
-    - name: Check the toolchain contract
-      # These hosts are the runner, so the SDK can be asked to build a
-      # program. It compiles and links real code and checks the ABI both
-      # ways -- the only thing here that notices a compiler that builds but
-      # does not work.
-      run: make -C build check-toolchain-contract
-    - name: ccache statistics
-      if: ${{ always() }}
-      run: ccache --show-stats
-    - name: Upload artifacts
-      if: ${{ success() }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: vitasdk-${{ matrix.name }}
-        path: build/*.tar.bz2
-
-  # ---------------------------------------------------------------------
-  # The musl hosts, built where they run. These were canadian crosses against
-  # a static musl toolchain, which cost them GCC's LTO plugin: a fully static
-  # binary has no dlopen, so nothing could ever have loaded it. Built inside
-  # Alpine they are ordinary native builds -- LTO whole, the toolchain
-  # contract runnable, no cross toolchain to download -- and they run on musl
-  # distributions, which is what they were for. Machines with a glibc older
-  # than the runner's are not covered by these; that is the linux-x86_64
-  # SDK's job.
-  #
-  # The build runs in the container rather than the job: a JS action inside an
-  # Alpine container needs the runner's musl node, and nothing here is worth
-  # that dependency. Checkout, caches and artifacts stay on the host.
-  # ---------------------------------------------------------------------
-  stage2-musl:
-    needs: stage1
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: ubuntu-24.04
-            name: linux-musl-x86_64
-          - runner: ubuntu-24.04-arm
-            name: linux-musl-aarch64
-    runs-on: ${{ matrix.runner }}
-    steps:
-    - uses: actions/checkout@v7
-    - name: ccache
-      uses: actions/cache@v6
-      with:
-        path: ccache
-        key: stage2-${{ matrix.name }}-ccache-${{ github.ref }}-${{ github.sha }}
-        restore-keys: |
-          stage2-${{ matrix.name }}-ccache-${{ github.ref }}-
-          stage2-${{ matrix.name }}-ccache-
-    - name: downloads
-      uses: actions/cache@v6
-      with:
-        path: build/downloads
-        key: ${{ matrix.name }}-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
-        restore-keys: |
-          ${{ matrix.name }}-downloads-
-    - name: Fetch the stage-1 sysroot
-      uses: actions/download-artifact@v7
-      with:
-        name: vitasdk-sysroot
-        path: stage1-artifact
-    - name: Build inside Alpine
-      run: |
-        mkdir -p ccache build/downloads
-        docker run --rm \
-          -v "$PWD":/src -w /src \
-          -e CCACHE_DIR=/src/ccache \
-          -e CCACHE_MAXSIZE=2G -e CCACHE_COMPRESS=1 -e CCACHE_COMPRESSLEVEL=6 \
-          alpine:3.20 sh -eux -c '
-            # bash for command_wrapper.sh, linux-headers for gdb.
-            apk add --no-cache bash build-base cmake git autoconf automake \
-              libtool texinfo bison flex pkgconf ccache curl xz python3 bzip2 \
-              tar linux-headers
-            git config --global --add safe.directory /src
-            git config --global user.email "builds@ci.invalid"
-            git config --global user.name "CI"
-            export PATH=/usr/lib/ccache/bin:$PATH
-            mkdir -p stage1
-            tar -xjf stage1-artifact/*.tar.bz2 -C stage1
-            STAGE1_DIR=$(dirname "$(dirname "$(dirname "$(find /src/stage1 -type f -path "*/arm-vita-eabi/lib/libc.a" | head -1)")")")
-            test -n "$STAGE1_DIR"
-            cd build
-            cmake /src -DVITASDK_STAGE1_DIR="$STAGE1_DIR"
-            make -j$(getconf _NPROCESSORS_ONLN) tarball
-            make check-toolchain-contract
-            ccache --show-stats
-          '
-    - name: Upload artifacts
-      if: ${{ success() }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: vitasdk-${{ matrix.name }}
-        path: build/*.tar.bz2
-
-  pacman-client-package:
-    needs: stage1
-    runs-on: ubuntu-24.04
-    env:
-      CCACHE_MAXSIZE: 2G
-      CCACHE_COMPRESS: "1"
-      CCACHE_COMPRESSLEVEL: "6"
-    steps:
-    - uses: actions/checkout@v7
-    - name: Install host dependencies
-      run: |
-        sudo apt-get update
-        # The packaging tests drive docker and configure with meson on the host.
-        sudo apt-get install -y $DEBIAN_DEPS meson ninja-build libarchive-tools
-    - name: ccache
-      uses: actions/cache@v6
-      with:
-        path: ~/.ccache
-        key: pacman-client-ccache-${{ github.ref }}-${{ github.sha }}
-        restore-keys: |
-          pacman-client-ccache-${{ github.ref }}-
-          pacman-client-ccache-
-    - name: downloads
-      uses: actions/cache@v6
-      with:
-        path: build/downloads
-        key: linux-x86_64-pacman-client-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
-        restore-keys: |
-          linux-x86_64-pacman-client-downloads-
-    - name: Fetch the stage-1 sysroot
-      uses: actions/download-artifact@v7
-      with:
-        name: vitasdk-sysroot
-        path: stage1-artifact
-    - name: Unpack the stage-1 sysroot
-      run: |
-        mkdir -p stage1
-        tar -xjf stage1-artifact/*.tar.bz2 -C stage1
-        STAGE1_DIR=$(dirname "$(dirname "$(dirname "$(find "$PWD/stage1" -type f -path '*/arm-vita-eabi/lib/libc.a' | head -1)")")")
-        test -n "$STAGE1_DIR"
-        echo "STAGE1_DIR=$STAGE1_DIR" >> $GITHUB_ENV
-    - name: Download the vdpm host bundle
-      run: |
-        # The packaging scripts read metadata the bundle installs, so the
-        # published configuration needs the real bundle, like autobuilds.
-        tag=$(sed -n 's/^set(VDPM_TAG \([^ ]*\) .*/\1/p' cmake/Components.cmake)
-        archive="vdpm-${tag#v}-x86_64-linux-gnu.tar.bz2"
-        base="https://github.com/vitasdk/vdpm/releases/download/$tag"
-        mkdir vdpm-release
-        curl -fsSL --retry 3 -o "vdpm-release/$archive" "$base/$archive"
-        curl -fsSL --retry 3 -o "vdpm-release/$archive.sha256" "$base/$archive.sha256"
-        (cd vdpm-release && sha256sum -c ./*.sha256)
-        echo "VDPM_BUNDLE=$PWD/vdpm-release/$archive" >> $GITHUB_ENV
-        echo "VDPM_BUNDLE_SHA256=$(awk '{print $1}' vdpm-release/*.sha256)" >> $GITHUB_ENV
-    - name: Build and contract-check inside ubuntu:20.04
-      # The published cores build on this glibc floor; the packaging tests need
-      # the runner's docker, so only the build enters the container.
-      run: |
-        mkdir -p "$HOME/.ccache"
-        docker run --rm -v "$PWD":"$PWD" -w "$PWD" \
-          -v "$HOME/.ccache":/root/.ccache \
-          -e CCACHE_DIR=/root/.ccache \
-          -e CCACHE_MAXSIZE -e CCACHE_COMPRESS -e CCACHE_COMPRESSLEVEL \
-          -e DEBIAN_DEPS -e STAGE1_DIR -e VDPM_BUNDLE -e VDPM_BUNDLE_SHA256 \
-          -e VITASDK_SOURCE_REVISION='${{ github.event.pull_request.head.sha || github.sha }}' \
-          -e VITASDK_SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)" \
-          ubuntu:20.04 "$PWD/scripts/build-core-in-container.sh"
-    - name: Validate the core package
-      run: |
-        for pkg in build/packages/*.pkg.tar.xz; do
-          scripts/validate-core-package.sh "$pkg"
-        done
-    - name: Run the package test suite
-      env:
-        VITASDK_STAGE1_DIR: ${{ env.STAGE1_DIR }}
+    # Fixtures, not a built SDK: these drive the packaging scripts over a
+    # synthetic tree, so they belong with the checks and not behind a build.
+    - name: Run the packaging tests
       run: |
         for test in tests/package/test-*.sh; do
           echo "== $test"
           "$test"
         done
-    - name: ccache statistics
-      if: ${{ always() }}
-      run: ccache --show-stats
-    - name: Upload artifacts
-      if: ${{ success() }}
-      uses: actions/upload-artifact@v7
-      with:
-        # Distinct from stage2's vitasdk-linux-x86_64: stage3 downloads that.
-        name: vitasdk-linux-x86_64-pacman-client
-        path: |
-          build/*.tar.bz2
-          build/packages/*.pkg.tar.xz
-          build/bootstraps/*
 
-  # ---------------------------------------------------------------------
-  # Stage 3: the canadian crosses. Their gcc is built for a host that
-  # cannot run on the machine building it, and all-gcc runs the compiler
-  # exactly once -- "arm-vita-eabi-gcc -dumpspecs", to write the specs file
-  # that GCC_PASSES depends on. So each of these needs a working
-  # arm-vita-eabi-gcc for its *build* machine, and the only one that exists
-  # is the SDK stage 2 just produced for that machine's own host.
-  #
-  # That SDK is a complete one, so it serves as both: its target half is
-  # imported through VITASDK_STAGE1_DIR, and its bin/ goes on PATH.
-  # ---------------------------------------------------------------------
-  stage3:
-    needs: stage2
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: ubuntu-24.04
-            name: windows-x86_64
-            build_sdk: vitasdk-linux-x86_64
-            ccache_dir: ~/.ccache
-            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-w64-mingw32.cmake
-            apt: g++-mingw-w64-x86-64
-          - runner: ubuntu-24.04
-            name: windows-i686
-            build_sdk: vitasdk-linux-x86_64
-            ccache_dir: ~/.ccache
-            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/i686-w64-mingw32.cmake
-            apt: g++-mingw-w64-i686
-          - runner: ubuntu-24.04
-            name: freebsd-x86_64
-            build_sdk: vitasdk-linux-x86_64
-            ccache_dir: ~/.ccache
-            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-unknown-freebsd.cmake
-            freebsd: "14.3"
-            freebsd_arch: x86_64
-            apt: clang lld llvm
-          - runner: ubuntu-24.04
-            name: freebsd-aarch64
-            build_sdk: vitasdk-linux-x86_64
-            ccache_dir: ~/.ccache
-            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/aarch64-unknown-freebsd.cmake
-            freebsd: "14.3"
-            freebsd_arch: aarch64
-            apt: clang lld llvm
-          # Apple hardware builds both Apple SDKs: the licence keeps the
-          # macOS SDK there, and the arm64 SDK from stage 2 is the only
-          # arm-vita-eabi-gcc that runs on this runner.
-          - runner: macos-14
-            name: macos-x86_64
-            build_sdk: vitasdk-macos-arm64
-            ccache_dir: ~/Library/Caches/ccache
-            cmake_extra: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-apple-darwin.cmake
-    runs-on: ${{ matrix.runner }}
-    env:
-      CCACHE_MAXSIZE: 2G
-      CCACHE_COMPRESS: "1"
-      CCACHE_COMPRESSLEVEL: "6"
+  # Which hosts exist, at which stage, on which runner, and which of them are
+  # published: all of it is cmake/hosts.json, read through the same describe
+  # call autobuilds makes. This job is the only place a matrix comes from.
+  describe:
+    runs-on: ubuntu-24.04
+    outputs:
+      lock: ${{ steps.describe.outputs.lock }}
     steps:
     - uses: actions/checkout@v7
-    - uses: actions/setup-python@v7
-    - name: Install dependencies
-      run: |
-        if [ "$RUNNER_OS" = "macOS" ]; then
-          brew install autoconf automake libtool texinfo ccache
-        else
-          sudo apt-get update
-          sudo apt-get install -y $DEBIAN_DEPS ${{ matrix.apt }}
-        fi
-    - name: Install FreeBSD cross environment
-      if: ${{ matrix.freebsd }}
-      run: |
-        scripts/setup-freebsd-cross.sh ${{ matrix.freebsd }} /opt/freebsd-cross ${{ matrix.freebsd_arch }}
-        echo "/opt/freebsd-cross/bin" >> $GITHUB_PATH
-    - name: Set up the macOS x86_64 cross environment
-      if: ${{ matrix.name == 'macos-x86_64' }}
-      run: |
-        scripts/setup-macos-cross.sh "$PWD/macos-cross"
-        echo "$PWD/macos-cross/bin" >> $GITHUB_PATH
-    - name: Enable ccache
-      run: |
-        if [ "$RUNNER_OS" = "macOS" ]; then
-          shims="$(brew --prefix ccache)/libexec"
-          echo "CCACHE_DIR=$HOME/Library/Caches/ccache" >> $GITHUB_ENV
-        else
-          if [ -x /usr/sbin/update-ccache-symlinks ]; then
-            sudo /usr/sbin/update-ccache-symlinks
-          fi
-          shims=/usr/lib/ccache
-          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
-        fi
-        ls "$shims"
-        echo "$shims" >> $GITHUB_PATH
-    - name: ccache
-      uses: actions/cache@v6
       with:
-        path: ${{ matrix.ccache_dir }}
-        key: stage3-${{ matrix.name }}-ccache-${{ github.ref }}-${{ github.sha }}
-        restore-keys: |
-          stage3-${{ matrix.name }}-ccache-${{ github.ref }}-
-          stage3-${{ matrix.name }}-ccache-
-    - name: downloads
-      uses: actions/cache@v6
-      with:
-        path: build/downloads
-        key: ${{ matrix.name }}-downloads-${{ hashFiles('CMakeLists.txt', 'cmake/Components.cmake') }}
-        restore-keys: |
-          ${{ matrix.name }}-downloads-
-    - name: Fetch the build machine's SDK
-      uses: actions/download-artifact@v7
-      with:
-        name: ${{ matrix.build_sdk }}
-        path: build-sdk-artifact
-    - name: Unpack the build machine's SDK
+        # The head commit, not the merge commit: the lock names a revision
+        # the build legs check out again, and a merge commit is one that
+        # only exists for as long as the pull request does.
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        # describe derives the version from first-parent history.
+        fetch-depth: 0
+    - id: describe
+      shell: bash
       run: |
-        mkdir -p build-sdk
-        tar -xjf build-sdk-artifact/*.tar.bz2 -C build-sdk
-        STAGE1_DIR=$(dirname "$(dirname "$(dirname "$(find "$PWD/build-sdk" -type f -path '*/arm-vita-eabi/lib/libc.a' | head -1)")")")
-        test -n "$STAGE1_DIR"
-        echo "STAGE1_DIR=$STAGE1_DIR" >> $GITHUB_ENV
-        # gcc runs arm-vita-eabi-gcc -dumpspecs during all-gcc; this is the
-        # one that runs here.
-        echo "$STAGE1_DIR/bin" >> $GITHUB_PATH
-    - name: Build
-      run: |
-        git config --global user.email "builds@ci.invalid"
-        git config --global user.name "CI"
-        unset CC CXX
-        mkdir -p build
-        cd build
-        cmake .. -DVITASDK_STAGE1_DIR="$STAGE1_DIR" ${{ matrix.cmake_extra }}
-        make -j$(getconf _NPROCESSORS_ONLN) tarball
-    - name: ccache statistics
-      if: ${{ always() }}
-      run: ccache --show-stats
-    - name: Upload artifacts
-      if: ${{ success() }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: vitasdk-${{ matrix.name }}
-        path: build/*.tar.bz2
+        ./buildscripts-ci describe --profile vita --output lock.json
+        {
+          echo "lock<<LOCK_JSON_EOF"
+          cat lock.json
+          echo "LOCK_JSON_EOF"
+        } >> "$GITHUB_OUTPUT"
+
+  # The path that publishes, run on the revision under review. There was a
+  # second matrix here, hand-written, and it built the same hosts by another
+  # route: cmake straight from the job rather than through build-host.sh. It
+  # cost twice the runners and it went green for a build nobody would ever
+  # publish -- db4d1a593 merged that way with the Intel Mac host broken,
+  # because its macOS leg had never run the code that publishes one.
+  build:
+    needs: describe
+    uses: ./.github/workflows/build-sdk.yml
+    with:
+      lock: ${{ needs.describe.outputs.lock }}
