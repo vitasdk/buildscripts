@@ -1,4 +1,4 @@
-# CMake toolchain for cross compiling the SDK host binaries to x86_64 macOS
+# CMake toolchain for cross compiling the SDK host binaries to arm64 macOS
 # through osxcross (https://github.com/tpoechtrager/osxcross).
 #
 # osxcross requires a macOS SDK extracted from Xcode; Apple's license only
