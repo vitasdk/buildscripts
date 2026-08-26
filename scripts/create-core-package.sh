@@ -106,6 +106,40 @@ for path in ${client_paths[@]+"${client_paths[@]}"}; do
 	mv "$core_root/$path" "$client_root/$path"
 done
 
+# Which end of a compression pipeline actually broke.
+#
+# Under pipefail a failing status surfaces, but the text does not: whichever
+# element notices first is the one that speaks, and that is never the one that
+# died. When xz goes, bsdtar reports "Write error: Broken pipe" against
+# whatever file it happened to be reading when its output closed -- and xz
+# says nothing at all if the kernel killed it for memory, which is what -9
+# over the core payload invites. So name every element that failed, and how.
+report_pipeline() {
+	local description=$1 name status index=0 failed=0
+	shift
+	local -a names=()
+	while [[ $1 != -- ]]; do
+		names+=("$1")
+		shift
+	done
+	shift
+	for status in "$@"; do
+		name=${names[index]:-element $((index + 1))}
+		index=$((index + 1))
+		((status == 0)) && continue
+		# The last failing element's status, which is what pipefail would
+		# have surfaced: this says more than that, it does not say less.
+		failed=$status
+		if ((status > 128)); then
+			printf '%s: %s killed by signal %d\n' \
+				"$description" "$name" "$((status - 128))" >&2
+		else
+			printf '%s: %s exited %d\n' "$description" "$name" "$status" >&2
+		fi
+	done
+	return "$failed"
+}
+
 set_tree_mtime() {
 	local root=$1 timestamp
 	if touch -h -d "@$source_date_epoch" "$root/.PKGINFO" 2>/dev/null; then
@@ -171,22 +205,32 @@ EOF
 	set_tree_mtime "$root"
 	(
 		cd "$root"
+		set +e
 		list_package_files .MTREE | LC_ALL=C sort -z |
 			COPYFILE_DISABLE=1 LANG=C bsdtar -cnf - --format=mtree \
 				--no-acls --no-fflags --no-mac-metadata --no-xattrs \
 				--options='!all,use-set,type,uid,gid,mode,time,size,sha256,link' \
 				--uid 0 --gid 0 --null -T - |
 			gzip -c -f -n > .MTREE
+		statuses=(${PIPESTATUS[@]+"${PIPESTATUS[@]}"})
+		set -e
+		report_pipeline "writing .MTREE" \
+			list_package_files sort bsdtar gzip -- ${statuses[@]+"${statuses[@]}"}
 	)
 	set_tree_mtime "$root"
 
 	(
 		cd "$root"
+		set +e
 		list_package_files | LC_ALL=C sort -z |
 			COPYFILE_DISABLE=1 LANG=C bsdtar -cnf - \
 				--no-acls --no-fflags --no-mac-metadata --no-xattrs \
 				--uid 0 --gid 0 --uname root --gname root --null -T - |
 			xz -c -z -9 > "$path"
+		statuses=(${PIPESTATUS[@]+"${PIPESTATUS[@]}"})
+		set -e
+		report_pipeline "packaging ${path##*/}" \
+			list_package_files sort bsdtar xz -- ${statuses[@]+"${statuses[@]}"}
 	)
 
 	"$script_directory/validate-core-package.sh" "$path"
