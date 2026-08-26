@@ -76,6 +76,12 @@ jobs:
   # because its macOS leg had never run the code that publishes one.
   build:
     needs: describe
+    # Not on a push to master: that push is announced to autobuilds, which
+    # describes the same revision, builds the same lock through the same
+    # reusable workflow, and publishes what comes out. Building it here as
+    # well is the same ten legs twice, and the copy that says whether the
+    # revision is releasable is the one over there.
+    if: github.event_name != 'push' || github.ref != 'refs/heads/master'
     uses: ./.github/workflows/build-sdk.yml
     with:
       lock: ${{ needs.describe.outputs.lock }}
