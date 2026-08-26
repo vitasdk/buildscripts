@@ -11,8 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Structural checks that need no build: the stage partition manifest, the
-  # host binary format guard, and the packaging scripts against fixtures.
+  # Structural checks that need no build: the stage partition manifest and
+  # the host binary format guard.
   checks:
     runs-on: ubuntu-24.04
     steps:
@@ -20,10 +20,6 @@ jobs:
       with:
         # The protocol tests below walk real first-parent history.
         fetch-depth: 0
-    - name: Install what the packaging tests read archives with
-      run: |
-        sudo apt-get update -qq
-        sudo apt-get install -y -qq libarchive-tools
     - name: Run the cmake script tests
       run: |
         for script in tests/cmake/*.cmake; do
@@ -42,14 +38,6 @@ jobs:
     - name: Run the CI script tests
       run: |
         for test in tests/ci/test-*.sh; do
-          echo "== $test"
-          "$test"
-        done
-    # Fixtures, not a built SDK: these drive the packaging scripts over a
-    # synthetic tree, so they belong with the checks and not behind a build.
-    - name: Run the packaging tests
-      run: |
-        for test in tests/package/test-*.sh; do
           echo "== $test"
           "$test"
         done
@@ -91,3 +79,37 @@ jobs:
     uses: ./.github/workflows/build-sdk.yml
     with:
       lock: ${{ needs.describe.outputs.lock }}
+
+  # The packaging tests work over fixtures, except the last of them, which
+  # configures a staged cross and so needs a stage-1 SDK. It gets the one the
+  # build just made; building a second one to test packaging was what the job
+  # this replaces did.
+  package-tests:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v7
+    - name: Install what the packaging tests build and read archives with
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq cmake build-essential meson ninja-build \
+          libarchive-tools pkg-config
+    # By stage, not by host name: which host produces stage 1 is the lock's
+    # to say, and there is only ever one of them.
+    - uses: actions/download-artifact@v7
+      with:
+        pattern: stage1-*
+        path: artifacts
+    - name: Unpack the stage-1 sysroot
+      shell: bash
+      run: |
+        source scripts/ci/lib.sh
+        stage1_source=$(ci_find_stage_artifact artifacts 1 '*')
+        ci_unpack_sdk_artifact "$stage1_source" "$PWD/stage1"
+        echo "VITASDK_STAGE1_DIR=$(ci_find_sdk_root "$PWD/stage1")" >> "$GITHUB_ENV"
+    - name: Run the packaging tests
+      run: |
+        for test in tests/package/test-*.sh; do
+          echo "== $test"
+          "$test"
+        done
