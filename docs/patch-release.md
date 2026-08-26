@@ -130,5 +130,12 @@ the version is known, and closed at the other end by the pair check in step 6.
 **And one hole found while looking:** `--previous-version` skipped a committed
 `VERSION` outright, so the guard that stops a version going backwards covered
 only the derived path — the one where it cannot happen by accident — and not
-the one where a person types the number. Closed in `287d8a8f4`. Nothing passes
-`--previous-version` in production yet.
+the one where a person types the number. Closed in `287d8a8f4`.
+
+`vitasdk/autobuilds` passes it since its #39, but only for a derived version:
+the step bails out on a tree that declares one, because the previous version
+it has is the world's last candidate, and every nightly sorts below every
+stable, so the comparison would say nothing. **The number typed into `VERSION`
+is still checked by nobody.** What it would have to be compared against is the
+series' own current version — readable from the lock inside the core that
+`channels.json` points at — and nothing reads that yet.
