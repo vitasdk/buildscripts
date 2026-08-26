@@ -5,4 +5,4 @@ cmake_minimum_required(VERSION 3.16)
 
 include("${CMAKE_CURRENT_LIST_DIR}/../../cmake/HostBinaryFormat.cmake")
 
-vitasdk_check_binary_directory("${DIRECTORY}" Windows x86_64-w64-mingw32)
+vitasdk_check_binary_directory("${DIRECTORY}" "${SYSTEM}" "${TRIPLE}")
