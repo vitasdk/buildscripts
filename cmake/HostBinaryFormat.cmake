@@ -12,8 +12,9 @@
 include_guard(GLOBAL)
 
 # Decode the leading bytes of an executable, given as an uppercase hex string.
-# Sets format to ELF, PE, MachO or the empty string, and machine to the ELF
-# e_machine value (decimal) when the header carries one.
+# Sets format to ELF, PE, MachO or the empty string, and machine to whichever
+# machine number the header carries (decimal): the ELF e_machine, or the
+# Mach-O cputype. Empty when the format has no room for one.
 function(vitasdk_decode_binary_format hex out_format out_machine)
     set(format "")
     set(machine "")
@@ -38,6 +39,22 @@ function(vitasdk_decode_binary_format hex out_format out_machine)
         set(format PE)
     elseif(hex MATCHES "^(FEEDFACE|FEEDFACF|CEFAEDFE|CFFAEDFE|CAFEBABE)")
         set(format MachO)
+        string(SUBSTRING "${hex}" 0 8 magic)
+        string(LENGTH "${hex}" hex_length)
+        # A universal binary carries one cputype per slice and none of its
+        # own, so it is left unclassified rather than guessed at.
+        if(hex_length GREATER_EQUAL 16 AND NOT magic STREQUAL "CAFEBABE")
+            string(SUBSTRING "${hex}" 8 8 cpu_hex)
+            if(magic MATCHES "^(CEFAEDFE|CFFAEDFE)$")
+                # cputype is stored in the byte order the magic announced.
+                string(SUBSTRING "${cpu_hex}" 0 2 cpu_byte0)
+                string(SUBSTRING "${cpu_hex}" 2 2 cpu_byte1)
+                string(SUBSTRING "${cpu_hex}" 4 2 cpu_byte2)
+                string(SUBSTRING "${cpu_hex}" 6 2 cpu_byte3)
+                set(cpu_hex "${cpu_byte3}${cpu_byte2}${cpu_byte1}${cpu_byte0}")
+            endif()
+            math(EXPR machine "0x${cpu_hex}")
+        endif()
     endif()
 
     set(${out_format} "${format}" PARENT_SCOPE)
@@ -58,6 +75,16 @@ function(vitasdk_expected_binary_format system_name host_triple out_format out_m
         set(format PE)
     elseif(system_name STREQUAL "Darwin")
         set(format MachO)
+        # CPU_ARCH_ABI64 | CPU_TYPE_X86, and the same for CPU_TYPE_ARM. Both
+        # Macs produce Mach-O, so this is the only thing that tells the two
+        # halves of a staged Apple build apart.
+        if(host_triple MATCHES "^(x86_64|amd64)")
+            set(machine 16777223)
+        elseif(host_triple MATCHES "^i[3-6]86")
+            set(machine 7)
+        elseif(host_triple MATCHES "^(aarch64|arm64)")
+            set(machine 16777228)
+        endif()
     else()
         set(format ELF)
         if(host_triple MATCHES "^(x86_64|amd64)")
@@ -101,8 +128,8 @@ function(vitasdk_check_binary_directory directory system_name host_triple)
         if(NOT expected_machine STREQUAL "" AND NOT machine STREQUAL ""
                 AND NOT machine EQUAL expected_machine)
             message(FATAL_ERROR
-                "${entry} is built for ELF machine ${machine}, but this SDK "
-                "targets ${host_triple} (machine ${expected_machine})")
+                "${entry} is built for ${format} machine ${machine}, but this "
+                "SDK targets ${host_triple} (machine ${expected_machine})")
         endif()
     endforeach()
 endfunction()
