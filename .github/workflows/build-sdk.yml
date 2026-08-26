@@ -144,7 +144,7 @@ jobs:
           repository: ${{ env.BUILDSCRIPTS_REPO }}
           ref: ${{ needs.gate.outputs.buildscripts_revision }}
           fetch-depth: 0
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: stage1-*
           path: artifacts
@@ -208,7 +208,7 @@ jobs:
           repository: ${{ env.BUILDSCRIPTS_REPO }}
           ref: ${{ needs.gate.outputs.buildscripts_revision }}
           fetch-depth: 0
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: stage2-*
           path: artifacts
@@ -260,7 +260,7 @@ jobs:
           repository: ${{ env.BUILDSCRIPTS_REPO }}
           ref: ${{ needs.gate.outputs.buildscripts_revision }}
           fetch-depth: 0
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: stage3-*
           path: artifacts
@@ -299,7 +299,7 @@ jobs:
       # two flat extractions into one directory overwrite each other's
       # provenance.json. Every artifact of this run is a stage artifact, and
       # more than one always exists, so this always nests per artifact name.
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
       - name: Group the release tree
