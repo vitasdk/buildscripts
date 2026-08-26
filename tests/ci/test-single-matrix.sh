@@ -67,6 +67,63 @@ for runner in sorted({host["runner"] for host in hosts} - {"ubuntu-24.04"}):
         print(f"build.yml names the runner {runner!r}; cmake/hosts.json is where runners are declared")
 if "cmake/toolchains/" in text:
     print("build.yml names a cross toolchain file; build-host.sh is where a host is built")
+
+# And it must not run that one path twice. A push to master is announced to
+# autobuilds, which describes the same revision and builds the same lock, so
+# building it here too is the same legs over again.
+def evaluate(expression, context):
+    tokens = re.findall(r"'[^']*'|\|\||&&|==|!=|[A-Za-z0-9_.-]+", expression)
+    position = 0
+
+    def take():
+        nonlocal position
+        position += 1
+        return tokens[position - 1]
+
+    def primary():
+        token = take()
+        if token.startswith("'"):
+            return token[1:-1]
+        value = context
+        for part in token.split("."):
+            value = value.get(part, "") if isinstance(value, dict) else ""
+        return value
+
+    def comparison():
+        left = primary()
+        if position < len(tokens) and tokens[position] in ("==", "!="):
+            operator = take()
+            right = primary()
+            return left == right if operator == "==" else left != right
+        return left
+
+    def conjunction():
+        value = comparison()
+        while position < len(tokens) and tokens[position] == "&&":
+            take()
+            right = comparison()
+            value = right if value else value
+        return value
+
+    value = conjunction()
+    while position < len(tokens) and tokens[position] == "||":
+        take()
+        right = conjunction()
+        value = value if value else right
+    return value
+
+
+def runs_on(event_name, ref):
+    condition = str(jobs[caller].get("if", "")).strip()
+    if not condition:
+        return True
+    return bool(evaluate(condition, {"github": {"event_name": event_name, "ref": ref}}))
+
+
+if runs_on("push", "refs/heads/master"):
+    print("a push to master builds here as well as in autobuilds; that is the same lock twice")
+if not runs_on("pull_request", "refs/pull/1/merge"):
+    print("a pull request no longer builds, which is the only place this build is the signal")
 PYEOF
 )
 
