@@ -386,7 +386,7 @@ fi
 
 extra_cmake_args=()
 case $host in
-x86_64-linux-gnu | aarch64-linux-gnu | arm64-apple-darwin | x86_64-apple-darwin)
+x86_64-linux-gnu | aarch64-linux-gnu | arm64-apple-darwin)
 	install_dependencies
 	;;
 x86_64-w64-mingw32)
@@ -408,6 +408,12 @@ aarch64-unknown-freebsd)
 	scripts/setup-freebsd-cross.sh 14.3 "$PWD/freebsd-cross" aarch64
 	export PATH="$PWD/freebsd-cross/bin:$PATH"
 	extra_cmake_args+=(-DCMAKE_TOOLCHAIN_FILE="$repo_root/cmake/toolchains/aarch64-unknown-freebsd.cmake")
+	;;
+x86_64-apple-darwin)
+	install_dependencies
+	scripts/setup-macos-cross.sh "$PWD/macos-cross"
+	export PATH="$PWD/macos-cross/bin:$PATH"
+	extra_cmake_args+=(-DCMAKE_TOOLCHAIN_FILE="$repo_root/cmake/toolchains/x86_64-apple-darwin.cmake")
 	;;
 *)
 	printf 'no build recipe for host: %s\n' "$host" >&2
