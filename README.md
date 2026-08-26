@@ -200,7 +200,6 @@ Available host toolchain files under `cmake/toolchains/`:
 | File | Host | Notes |
 | --- | --- | --- |
 | `x86_64-w64-mingw32.cmake` | Windows x86_64 | mingw-w64 |
-| `i686-w64-mingw32.cmake` | Windows i686 | mingw-w64 |
 | `aarch64-linux-gnu.cmake` | Linux aarch64 (glibc) | alternative to a native arm64 build |
 | `x86_64-unknown-freebsd.cmake` | FreeBSD x86_64 | clang + base.txz sysroot, see `scripts/setup-freebsd-cross.sh` |
 | `aarch64-unknown-freebsd.cmake` | FreeBSD aarch64 | clang + base.txz sysroot, see `scripts/setup-freebsd-cross.sh` |

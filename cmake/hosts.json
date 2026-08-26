@@ -8,7 +8,6 @@
     {"name": "aarch64-linux-musl", "stage": 2, "runner": "ubuntu-24.04-arm", "container": null, "packaged": true},
     {"name": "x86_64-w64-mingw32", "stage": 3, "runner": "ubuntu-24.04", "container": null, "packaged": true, "build_host": "x86_64-linux-gnu"},
     {"name": "x86_64-apple-darwin", "stage": 3, "runner": "macos-14", "container": null, "packaged": true, "build_host": "arm64-apple-darwin"},
-    {"name": "i686-w64-mingw32", "stage": 3, "runner": "ubuntu-24.04", "container": null, "packaged": false, "build_host": "x86_64-linux-gnu"},
     {"name": "x86_64-unknown-freebsd", "stage": 3, "runner": "ubuntu-24.04", "container": null, "packaged": true, "build_host": "x86_64-linux-gnu"},
     {"name": "aarch64-unknown-freebsd", "stage": 3, "runner": "ubuntu-24.04", "container": null, "packaged": true, "build_host": "x86_64-linux-gnu"}
   ]

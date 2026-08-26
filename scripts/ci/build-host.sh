@@ -319,7 +319,6 @@ install_dependencies() {
 		local -a extra=()
 		case $host in
 		x86_64-w64-mingw32) extra=(g++-mingw-w64-x86-64) ;;
-		i686-w64-mingw32) extra=(g++-mingw-w64-i686) ;;
 		x86_64-unknown-freebsd | aarch64-unknown-freebsd) extra=(clang lld llvm) ;;
 		esac
 		${sudo_cmd[@]+"${sudo_cmd[@]}"} apt-get update -qq
@@ -392,10 +391,6 @@ x86_64-linux-gnu | aarch64-linux-gnu | arm64-apple-darwin)
 x86_64-w64-mingw32)
 	install_dependencies
 	extra_cmake_args+=(-DCMAKE_TOOLCHAIN_FILE="$repo_root/cmake/toolchains/x86_64-w64-mingw32.cmake")
-	;;
-i686-w64-mingw32)
-	install_dependencies
-	extra_cmake_args+=(-DCMAKE_TOOLCHAIN_FILE="$repo_root/cmake/toolchains/i686-w64-mingw32.cmake")
 	;;
 x86_64-unknown-freebsd)
 	install_dependencies
