@@ -44,6 +44,24 @@ expect_absent("cmake/recipes/ExportSysroot.cmake" "softfp-shim"
 expect_absent("cmake/recipes/FinalizeSdk.cmake" "softfp-shim"
     "FinalizeSdk.cmake names softfp-shim itself instead of taking the list")
 
+# The wrappers are assembled with the target compiler, so the recipe has to be
+# included after whatever builds it. It named gcc-base, which the staged
+# pipeline stopped building, and the dangling dependency went unnoticed until
+# the target was first asked for -- make reported "No rule to make target
+# 'gcc-base'" and took the whole sysroot with it.
+expect_absent("cmake/recipes/SoftfpShims.cmake" "gcc-base"
+    "the shim recipe still names gcc-base, which nothing builds")
+expect_contains("cmake/recipes/SoftfpShims.cmake" "\${gcc_final_barrier}"
+    "the shim recipe does not wait for the compiler that assembles it")
+
+file(READ "${repository_root}/CMakeLists.txt" cmakelists)
+string(FIND "${cmakelists}" "include(cmake/recipes/BuildGccFinal.cmake)" gcc_at)
+string(FIND "${cmakelists}" "include(cmake/recipes/SoftfpShims.cmake)" shim_at)
+if(shim_at LESS gcc_at)
+    message(SEND_ERROR
+        "FAIL: the shim recipe is included before the compiler it needs")
+endif()
+
 # A softfp world whose shims were never spliced is a toolchain that
 # miscompiles quietly, so the list carries them exactly when the world is one.
 expect_contains("CMakeLists.txt"

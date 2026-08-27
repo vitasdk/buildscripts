@@ -302,6 +302,12 @@ if(NOT VITASDK_TARGET_ONLY)
     include(cmake/recipes/BuildHostTools.cmake)
 endif()
 include(cmake/recipes/BuildGccFinal.cmake)
+# After the compiler: the wrappers are assembled with it. Stage 2 imports the
+# archives already spliced and builds no components, so there is nothing to
+# splice there.
+if(NOT VITASDK_STAGE1_DIR)
+    include(cmake/recipes/SoftfpShims.cmake)
+endif()
 include(cmake/recipes/Provenance.cmake)
 
 # What the target half is made of, named once because two things wait for it:
