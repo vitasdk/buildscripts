@@ -303,6 +303,27 @@ if(NOT VITASDK_TARGET_ONLY)
 endif()
 include(cmake/recipes/BuildGccFinal.cmake)
 include(cmake/recipes/Provenance.cmake)
+
+# What the target half is made of, named once because two things wait for it:
+# the export that hands stage 2 a sysroot, and the finalize barrier of a build
+# that keeps its own. One of them forgetting a piece is invisible until
+# something reads the result -- the softfp shims were spliced by finalize-sdk
+# and not by the export, so a staged build shipped stage 2 a sysroot whose
+# stub archives had never been patched, and the ABI contract test found it
+# there rather than here.
+set(target_half_dependencies
+    ${gcc_final_barrier}
+    vita-headers
+    newlib
+    pthread-embedded
+    samples
+    ${version_info_file})
+if(VITASDK_FLOAT_ABI STREQUAL "softfp" AND NOT VITASDK_STAGE1_DIR)
+    # Stage 2 imports the archives already spliced; there is nothing to splice
+    # and no softfp-shim target, since the components are not built there.
+    list(APPEND target_half_dependencies softfp-shim)
+endif()
+
 if(VITASDK_TARGET_ONLY)
     include(cmake/recipes/ExportSysroot.cmake)
 else()

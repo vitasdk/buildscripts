@@ -43,8 +43,7 @@ add_custom_target(sysroot
         -P ${CMAKE_SOURCE_DIR}/cmake/CopySysroot.cmake
     COMMAND ${CMAKE_COMMAND} -E tar "cfj" ${CMAKE_BINARY_DIR}/${sysroot_tarball} vitasdk
     WORKING_DIRECTORY ${sysroot_root}
-    DEPENDS ${gcc_final_barrier} vita-headers newlib pthread-embedded samples
-        ${version_info_file}
+    DEPENDS ${target_half_dependencies}
     COMMENT "Exporting the target half to ${sysroot_tarball}"
     VERBATIM
     )
