@@ -25,6 +25,7 @@ if(VITASDK_STAGE1_DIR)
 else()
     add_custom_command(OUTPUT ${version_info_file}
         COMMAND ${CMAKE_COMMAND} -DINPUT_DIR=${CMAKE_BINARY_DIR} -DOUTPUT_FILE=${version_info_file}
+        -DWORLD_ARCH=${world_arch} -DVITASDK_FLOAT_ABI=${VITASDK_FLOAT_ABI}
         -P ${CMAKE_SOURCE_DIR}/cmake/create_version.cmake
         DEPENDS vita-headers vita-toolchain_${target_suffix} newlib pthread-embedded samples
         COMMENT "Creating version_info.txt"

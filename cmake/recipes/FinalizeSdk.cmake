@@ -23,6 +23,7 @@ if(BUILD_PACMAN_CLIENT)
         COMMAND ${CMAKE_COMMAND}
             -DOUTPUT=${CMAKE_INSTALL_PREFIX}/etc/pacman.conf
             -DHOST_ARCHITECTURE=${host_published}
+            -DWORLD_ARCH=${world_arch}
             -P ${PROJECT_SOURCE_DIR}/cmake/WritePacmanConfig.cmake
         DEPENDS vdpm
         VERBATIM)
@@ -42,6 +43,11 @@ set(finalize_sdk_dependencies
     ${version_info_file})
 if(BUILD_PACMAN_CLIENT)
     list(APPEND finalize_sdk_dependencies package-client-configuration)
+endif()
+if(VITASDK_FLOAT_ABI STREQUAL "softfp")
+    # Splice the softfp shims into the stub archives before finalize-sdk
+    # strips them (cmake/strip_target_objects.cmake), not after.
+    list(APPEND finalize_sdk_dependencies softfp-shim)
 endif()
 
 # Target objects are stripped where they are produced. In stage 2 they arrive

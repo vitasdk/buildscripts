@@ -143,7 +143,10 @@ cp -a "$vita_makepkg/libmakepkg" "$sdk_root/bin/libmakepkg"
 cp -a "$vita_makepkg/vita-makepkg" "$sdk_root/bin/vita-makepkg"
 cp -a "$vita_makepkg/makepkg.conf.sample" "$sdk_root/bin/makepkg.conf"
 
+# Repacking only ever handles releases of the default world: softfp cores
+# are never repacked by this script.
 cmake -DOUTPUT="$sdk_root/etc/pacman.conf" -DHOST_ARCHITECTURE="$host" \
+	-DWORLD_ARCH=vita \
 	-P "$script_directory/../cmake/WritePacmanConfig.cmake"
 
 vdpm_version=$(awk -F= '$1 == "version" { print $2; exit }' \
@@ -167,6 +170,12 @@ fi
 # The component lines above this block still describe what produced the
 # binaries. These say who repacked them and with what, and name the source
 # archive by digest so the claim can be checked against what is published.
+# Archives from before the world was stamped in version_info.txt never carry
+# a "world" line; backfill it here since this script only ever repacks the
+# default world (see the pacman.conf write above).
+if ! grep -q '^world ' "$version_info"; then
+	printf 'world             vita (float-abi=hard)\n' >> "$version_info"
+fi
 {
 	printf 'repacked from     %s\n' "$(basename "$archive")"
 	printf 'source sha256     %s\n' "${archive_digest%% *}"

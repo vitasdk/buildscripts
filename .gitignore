@@ -1,5 +1,7 @@
 /build_linux
+/build_linux_softfp
 /build_mingw
 /.idea
 /build
 __pycache__/
+/softfp-shim/wrappers

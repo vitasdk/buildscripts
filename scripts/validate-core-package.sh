@@ -60,6 +60,33 @@ if [[ $pkgname == vitasdk-core ]]; then
 		printf 'core package does not contain provenance information\n' >&2
 		exit 1
 	}
+
+	# The world (vita, vita-softfp, ...) is stamped in two independent places;
+	# a mismatch means the build tagged the release for one world while
+	# actually configuring the toolchain, or makepkg, for another.
+	world_from_version=$(bsdtar -xOf "$package" version_info.txt |
+		awk '$1 == "world" { print $2; exit }')
+	[[ -n $world_from_version ]] || {
+		printf 'version_info.txt does not declare a world\n' >&2
+		exit 1
+	}
+
+	grep -qx 'bin/makepkg.conf' <<< "$archive_entries" || {
+		printf 'core package does not contain bin/makepkg.conf\n' >&2
+		exit 1
+	}
+	world_from_makepkg=$(bsdtar -xOf "$package" bin/makepkg.conf |
+		awk -F '"' '/^CARCH=/ { print $2; exit }')
+	[[ -n $world_from_makepkg ]] || {
+		printf 'bin/makepkg.conf does not declare CARCH\n' >&2
+		exit 1
+	}
+
+	[[ $world_from_version == "$world_from_makepkg" ]] || {
+		printf 'world mismatch: version_info.txt says %s, bin/makepkg.conf CARCH says %s\n' \
+			"$world_from_version" "$world_from_makepkg" >&2
+		exit 1
+	}
 else
 	grep -Eq '^bin/vdpm(\.exe)?$' <<< "$archive_entries" || {
 		printf 'client package does not contain the package client\n' >&2

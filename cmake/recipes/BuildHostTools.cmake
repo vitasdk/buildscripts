@@ -79,6 +79,10 @@ ExternalProject_Add(vita-makepkg
     INSTALL_COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/bin/
     COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/libmakepkg ${CMAKE_INSTALL_PREFIX}/bin/libmakepkg
     COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/vita-makepkg ${CMAKE_INSTALL_PREFIX}/bin/
-    COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/makepkg.conf.sample ${CMAKE_INSTALL_PREFIX}/bin/makepkg.conf
+    COMMAND ${CMAKE_COMMAND}
+        -DINPUT=<SOURCE_DIR>/makepkg.conf.sample
+        -DOUTPUT=${CMAKE_INSTALL_PREFIX}/bin/makepkg.conf
+        -DWORLD_ARCH=${world_arch}
+        -P ${PROJECT_SOURCE_DIR}/cmake/WriteMakepkgConf.cmake
     ${UPDATE_DISCONNECTED_SUPPORT}
     )

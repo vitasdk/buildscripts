@@ -71,9 +71,6 @@ for required in host stage artifacts_dir out_dir build_id version revision profi
 		exit 2
 	}
 done
-# profile is required but not yet consumed: no profile -> VITASDK_FLOAT_ABI
-# mapping exists in CMakeLists.txt yet.
-: "$profile"
 
 actual_revision=$(git -C "$repo_root" rev-parse HEAD)
 [[ $actual_revision == "$revision" ]] || {
@@ -175,6 +172,9 @@ build_and_stage() {
 	local -a extra_args=("$@")
 	local -a cmake_args=(
 		-S "$repo_root" -B build ${extra_args[@]+"${extra_args[@]}"}
+		# The lock says which world this is; the profile is how the tree is
+		# told, and it is what decides the float ABI baked into the toolchain.
+		-DVITASDK_PROFILE="$profile"
 		-DVITASDK_SOURCE_REVISION="$revision"
 		-DVITASDK_SOURCE_DATE_EPOCH="$source_date_epoch"
 		# The lock names the host; artifacts published under any other name
@@ -363,6 +363,7 @@ if [[ $stage == 1 ]]; then
 	enable_ccache
 	cmake -S "$repo_root" -B build \
 		-DVITASDK_TARGET_ONLY=ON \
+		-DVITASDK_PROFILE="$profile" \
 		-DVITASDK_SOURCE_REVISION="$revision" \
 		-DVITASDK_SOURCE_DATE_EPOCH="$source_date_epoch"
 	cmake --build build --target sysroot --parallel "$(ci_nproc)"

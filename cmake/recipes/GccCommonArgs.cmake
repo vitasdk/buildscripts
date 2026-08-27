@@ -47,7 +47,7 @@ set(common_gcc_configure_args
     --with-arch=armv7-a
     --with-tune=cortex-a9
     --with-fpu=neon
-    --with-float=hard
+    --with-float=${VITASDK_FLOAT_ABI}
     --with-mode=thumb
     "--with-pkgversion=${pkgversion}"
     )

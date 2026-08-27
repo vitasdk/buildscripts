@@ -9,9 +9,11 @@
 #error "Vita uses ARM EABI"
 #endif
 
-#ifndef __ARM_PCS_VFP
-#error "Vita uses the hard-float procedure-call standard"
-#endif
+/*
+ * The float ABI (hard vs softfp) is a build parameter, not a fixed property
+ * of this source file: run.sh detects which one this compiler defaults to
+ * and asserts the __ARM_PCS_VFP / Tag_ABI_VFP_args contract for that world.
+ */
 
 _Static_assert(sizeof(char) == 1, "unexpected char size");
 _Static_assert((char)-1 < 0, "plain char must be signed");
