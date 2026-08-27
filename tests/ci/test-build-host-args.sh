@@ -148,4 +148,25 @@ grep -qx -- '-DVITASDK_PROFILE=vita-softfp' "$recorded" || {
 }
 rm -f "$fake_bin/cmake" "$recorded"
 
+# 7. Every cmake that configures the tree is told which world it is building.
+# There are three -- stage 1, the staged path, and the musl container, which
+# builds its arguments as a string of its own -- and the profile reached two
+# of them. The third produced a stage 2 whose version_info.txt said one world
+# and whose makepkg.conf said the other, which validate-core-package.sh
+# refused after an hour of building.
+configuring=$(grep -cE '^[[:space:]]*(cmake |configure_args=|-S "\$repo_root")' \
+	"$repository_root/scripts/ci/build-host.sh" || true)
+carrying=$(grep -c 'VITASDK_PROFILE' "$repository_root/scripts/ci/build-host.sh" || true)
+if (( carrying < 4 )); then
+	printf 'not every cmake invocation carries the profile: %d mentions\n' "$carrying" >&2
+	exit 1
+fi
+
+# And the container has to be handed it, or the string above expands to
+# nothing inside it.
+grep -q -- '-e VITASDK_PROFILE=' "$repository_root/scripts/ci/build-host.sh" || {
+	printf 'the musl container is not given the profile\n' >&2
+	exit 1
+}
+
 printf 'build-host.sh argument contract tests passed\n'
