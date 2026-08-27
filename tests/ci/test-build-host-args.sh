@@ -124,4 +124,28 @@ grep -q 'curl disabled in test' <<< "$output" || {
 	exit 1
 }
 
+# 6. The profile reaches cmake. The lock is where CI says which world it is
+# building, and the profile is the only thing that carries it into the tree;
+# until this existed the flag was parsed, required, and then dropped, so a
+# softfp lock produced a hard-float toolchain that said nothing.
+recorded="$temporary_directory/cmake-args"
+cat > "$fake_bin/cmake" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "\$@" >> "$recorded"
+exit 0
+EOF
+chmod +x "$fake_bin/cmake"
+
+run_build_host \
+	--host x86_64-linux-gnu --stage 1 \
+	--artifacts-dir "$temporary_directory/artifacts-6" --out-dir "$temporary_directory/out-6" \
+	--build-id sha256:test --version 0.1.1 --revision "$revision" \
+	--profile vita-softfp --packaged false >/dev/null 2>&1 || true
+
+grep -qx -- '-DVITASDK_PROFILE=vita-softfp' "$recorded" || {
+	printf 'stage 1 did not pass the profile to cmake:\n%s\n' "$(cat "$recorded")" >&2
+	exit 1
+}
+rm -f "$fake_bin/cmake" "$recorded"
+
 printf 'build-host.sh argument contract tests passed\n'
