@@ -16,14 +16,22 @@ include("${repository_root}/cmake/Components.cmake")
 foreach(component GCC GMP MPFR MPC BINUTILS GDB)
     set(urls "${${component}_URL}")
     list(LENGTH urls count)
-    if(count LESS 2)
+    if(count LESS 3)
         message(SEND_ERROR
-            "FAIL: ${component}_URL names one host; an outage there is a failed build")
+            "FAIL: ${component}_URL names ${count} host(s); two outages in a row is a "
+            "failed build, and both happened on 27 August")
     endif()
+    # ftp.gnu.org is the one that went down, so it is the last resort and not
+    # the first thing tried.
     list(GET urls 0 first)
-    if(NOT first MATCHES "^https://ftpmirror\\.gnu\\.org/")
+    if(first MATCHES "^https://ftp\\.gnu\\.org/")
         message(SEND_ERROR
-            "FAIL: ${component}_URL does not try GNU's mirror redirector first: ${first}")
+            "FAIL: ${component}_URL tries ftp.gnu.org first")
+    endif()
+    list(GET urls -1 last)
+    if(NOT last MATCHES "^https://ftp\\.gnu\\.org/")
+        message(SEND_ERROR
+            "FAIL: ${component}_URL does not keep ftp.gnu.org as the last resort: ${last}")
     endif()
     # And the hash, without which a mirror is somebody else's word for it.
     if(NOT DEFINED ${component}_HASH)
