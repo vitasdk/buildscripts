@@ -127,7 +127,7 @@ if(NOT VITASDK_FLOAT_ABI STREQUAL "hard" AND NOT VITASDK_FLOAT_ABI STREQUAL "sof
     message(FATAL_ERROR "VITASDK_FLOAT_ABI must be 'hard' or 'softfp', got '${VITASDK_FLOAT_ABI}'")
 endif()
 if(VITASDK_FLOAT_ABI STREQUAL "softfp")
-    set(world_arch "vita-softfp")
+    set(world_arch "vita_softfp")
 else()
     set(world_arch "vita")
 endif()

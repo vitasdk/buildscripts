@@ -140,9 +140,9 @@ run_build_host \
 	--host x86_64-linux-gnu --stage 1 \
 	--artifacts-dir "$temporary_directory/artifacts-6" --out-dir "$temporary_directory/out-6" \
 	--build-id sha256:test --version 0.1.1 --revision "$revision" \
-	--profile vita-softfp --packaged false >/dev/null 2>&1 || true
+	--profile vita_softfp --packaged false >/dev/null 2>&1 || true
 
-grep -qx -- '-DVITASDK_PROFILE=vita-softfp' "$recorded" || {
+grep -qx -- '-DVITASDK_PROFILE=vita_softfp' "$recorded" || {
 	printf 'stage 1 did not pass the profile to cmake:\n%s\n' "$(cat "$recorded")" >&2
 	exit 1
 }
