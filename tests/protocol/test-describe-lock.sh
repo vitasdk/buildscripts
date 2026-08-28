@@ -33,7 +33,7 @@ second_run=$(describe --profile vita --revision "$base_rev")
 base_build_id=$(field build_id <<< "$first_run")
 
 # Changing the profile changes build_id, same revision.
-softfp_build_id=$(describe --profile vita-softfp --revision "$base_rev" | field build_id)
+softfp_build_id=$(describe --profile vita_softfp --revision "$base_rev" | field build_id)
 [[ $base_build_id != "$softfp_build_id" ]] || {
 	printf 'build_id did not change when the profile changed\n' >&2
 	exit 1

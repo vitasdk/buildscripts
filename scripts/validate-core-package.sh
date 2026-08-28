@@ -61,7 +61,7 @@ if [[ $pkgname == vitasdk-core ]]; then
 		exit 1
 	}
 
-	# The world (vita, vita-softfp, ...) is stamped in two independent places;
+	# The world (vita, vita_softfp, ...) is stamped in two independent places;
 	# a mismatch means the build tagged the release for one world while
 	# actually configuring the toolchain, or makepkg, for another.
 	world_from_version=$(bsdtar -xOf "$package" version_info.txt |
