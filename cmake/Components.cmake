@@ -4,18 +4,24 @@ include_guard(GLOBAL)
 # hashes together so version updates cannot accidentally mix artifacts.
 set(GCC_VERSION 15.2.0)
 set(GCC_HASH SHA256=438fd996826b0c82485a29da03a72d71d6e3541a83ec702df4271f6fe025d24e)
-# Everything below that GNU hosts is named twice: ftpmirror.gnu.org first,
-# which is GNU's own redirector to a nearby mirror, and ftp.gnu.org after it.
-# ExternalProject tries them in order and URL_HASH decides whether what came
-# back is the right bytes, so a mirror serving something else fails the same
-# way a corrupt download does.
+# Everything below that GNU hosts is named three times, tried in order:
+# mirrors.kernel.org, then ftpmirror.gnu.org, then ftp.gnu.org. URL_HASH
+# decides whether what came back is the right bytes, so a mirror serving
+# something else fails the way a corrupt download does.
 #
 # One host was one host too few. ftp.gnu.org refused connections for over two
 # minutes at a time through 26 and 27 August, and each time it took a whole
 # build with it -- six components come from there, and gdb is downloaded by
 # every host.
+#
+# Two was also too few, for a different reason: ftpmirror.gnu.org is a
+# redirector to whichever mirror is near, and the one it picked answered with
+# an HTTP error. A named mirror goes first because it is the same host every
+# time and can be seen to work; the redirector stays behind it as the thing
+# that keeps working when that host does not.
 
 set(GCC_URL
+    https://mirrors.kernel.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
     https://ftpmirror.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz
     https://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz)
 
@@ -34,18 +40,21 @@ set(LIBYAML_URL https://pyyaml.org/download/libyaml/yaml-${LIBYAML_VERSION}.tar.
 set(GMP_VERSION 6.3.0)
 set(GMP_HASH SHA256=ac28211a7cfb609bae2e2c8d6058d66c8fe96434f740cf6fe2e47b000d1c20cb)
 set(GMP_URL
+    https://mirrors.kernel.org/gnu/gmp/gmp-${GMP_VERSION}.tar.bz2
     https://ftpmirror.gnu.org/gnu/gmp/gmp-${GMP_VERSION}.tar.bz2
     https://ftp.gnu.org/gnu/gmp/gmp-${GMP_VERSION}.tar.bz2)
 
 set(MPFR_VERSION 4.2.2)
 set(MPFR_HASH SHA256=9ad62c7dc910303cd384ff8f1f4767a655124980bb6d8650fe62c815a231bb7b)
 set(MPFR_URL
+    https://mirrors.kernel.org/gnu/mpfr/mpfr-${MPFR_VERSION}.tar.bz2
     https://ftpmirror.gnu.org/gnu/mpfr/mpfr-${MPFR_VERSION}.tar.bz2
     https://ftp.gnu.org/gnu/mpfr/mpfr-${MPFR_VERSION}.tar.bz2)
 
 set(MPC_VERSION 1.3.1)
 set(MPC_HASH SHA256=ab642492f5cf882b74aa0cb730cd410a81edcdbec895183ce930e706c1c759b8)
 set(MPC_URL
+    https://mirrors.kernel.org/gnu/mpc/mpc-${MPC_VERSION}.tar.gz
     https://ftpmirror.gnu.org/gnu/mpc/mpc-${MPC_VERSION}.tar.gz
     https://ftp.gnu.org/gnu/mpc/mpc-${MPC_VERSION}.tar.gz)
 
@@ -61,12 +70,14 @@ set(EXPAT_URL https://github.com/libexpat/libexpat/releases/download/R_2_3_0/exp
 set(BINUTILS_VERSION 2.46.1)
 set(BINUTILS_HASH SHA256=e127a709cba24c76de8936cb7083dd768f28cd37eb010492e2f19b71eb1294e4)
 set(BINUTILS_URL
+    https://mirrors.kernel.org/gnu/binutils/binutils-${BINUTILS_VERSION}.tar.xz
     https://ftpmirror.gnu.org/gnu/binutils/binutils-${BINUTILS_VERSION}.tar.xz
     https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VERSION}.tar.xz)
 
 set(GDB_VERSION 15.2)
 set(GDB_HASH SHA256=83350ccd35b5b5a0cba6b334c41294ea968158c573940904f00b92f76345314d)
 set(GDB_URL
+    https://mirrors.kernel.org/gnu/gdb/gdb-${GDB_VERSION}.tar.xz
     https://ftpmirror.gnu.org/gnu/gdb/gdb-${GDB_VERSION}.tar.xz
     https://ftp.gnu.org/gnu/gdb/gdb-${GDB_VERSION}.tar.xz)
 
