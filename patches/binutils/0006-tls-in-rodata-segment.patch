@@ -1,0 +1,64 @@
+diff --git a/ld/scripttempl/elf.sc b/ld/scripttempl/elf.sc
+--- a/ld/scripttempl/elf.sc
++++ b/ld/scripttempl/elf.sc
+@@ -729,6 +729,27 @@
+   ${TEXT_PLT+${PLT_NEXT_DATA+${PLT} ${OTHER_PLT_SECTIONS}}}
+ EOF
+ 
++if [ -n "${TLS_IN_RODATA}" ]; then
++cat <<EOF
++  /* Thread Local Storage sections. Kept in the read-only segment (not with
++     .data below): the loader only ever reads .tdata to build each thread's
++     TLS block, it's never written in place, and this target's module
++     metadata encodes tls_start as an offset relative to the same segment
++     as the entry point/module info - keeping them together avoids ever
++     needing an offset that crosses into a different segment.
++     (READONLY) drops SHF_WRITE from these output sections (bfd/elf.c
++     only sets it when SEC_READONLY is absent) so the enclosing PT_LOAD
++     doesn't inherit a spurious write flag from otherwise-never-written
++     TLS template data. Set by TLS_IN_RODATA in the emulparams file. */
++  .tdata	${RELOCATING-0} (READONLY) :
++   {
++     ${RELOCATING+${CREATE_SHLIB-PROVIDE_HIDDEN ($(def_symbol "__tdata_start"));}}
++     *(.tdata${RELOCATING+ .tdata.* .gnu.linkonce.td.*})
++   }
++  .tbss		${RELOCATING-0} (READONLY) : { *(.tbss${RELOCATING+ .tbss.* .gnu.linkonce.tb.*})${RELOCATING+ *(.tcommon)} }
++EOF
++fi
++
+ test -n "${RELOCATING}" && cat <<EOF
+   /* Various note sections.  Placed here so that they are always included
+      in the read-only segment and not treated as orphan sections.  The
+@@ -802,7 +823,10 @@
+   .gnu_extab    ${RELOCATING-0} : ONLY_IF_RW { *(.gnu_extab) }
+   .gcc_except_table ${RELOCATING-0} : ONLY_IF_RW { *(.gcc_except_table${RELOCATING+ .gcc_except_table.*}) }
+   .exception_ranges ${RELOCATING-0} : ONLY_IF_RW { *(.exception_ranges${RELOCATING+*}) }
++EOF
+ 
++if [ -z "${TLS_IN_RODATA}" ]; then
++cat <<EOF
+   /* Thread Local Storage sections.  */
+   .tdata	${RELOCATING-0} :
+    {
+@@ -810,7 +834,10 @@
+      *(.tdata${RELOCATING+ .tdata.* .gnu.linkonce.td.*})
+    }
+   .tbss		${RELOCATING-0} : { *(.tbss${RELOCATING+ .tbss.* .gnu.linkonce.tb.*})${RELOCATING+ *(.tcommon)} }
++EOF
++fi
+ 
++cat <<EOF
+   ${RELOCATING+$(emit_init_fini_arrays)}
+ 
+   ${SMALL_DATA_CTOR-${RELOCATING+${CTOR}}}
+diff --git a/ld/emulparams/armvita.sh b/ld/emulparams/armvita.sh
+--- a/ld/emulparams/armvita.sh
++++ b/ld/emulparams/armvita.sh
+@@ -3,3 +3,7 @@
+ TEXT_START_ADDR=0x81000000
+ MAXPAGESIZE="0x10000"
+ COMMONPAGESIZE="0x10000"
++# module_info's tls_start is an offset relative to the same segment as the
++# entry point (see vita-toolchain's sce-elf.c) - keep .tdata/.tbss in the
++# read-only segment, alongside it, instead of the default writable one.
++TLS_IN_RODATA=yes
