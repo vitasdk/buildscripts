@@ -47,6 +47,7 @@ ExternalProject_Add(newlib
     # Multibyte/UTF-8: sin esto setlocale queda clavado en US-ASCII y toda la
     # familia mbrtowc/wcrtomb es inoperante (descubierto con musl libc-test)
     --enable-newlib-mb
+    --enable-newlib-reent-thread-local
     BUILD_COMMAND ${compiler_flags} ${toolchain_tools} ${wrapper_command} $(MAKE)
     INSTALL_COMMAND $(MAKE) install DESTDIR=${CMAKE_INSTALL_PREFIX}
     # Save the commit id for tracking purposes
