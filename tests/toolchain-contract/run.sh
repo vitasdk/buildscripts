@@ -140,6 +140,9 @@ echo "checking ARM unwind section generation"
         exit 1
     }
 
+echo "checking the VitaSDK ELF target note"
+python3 "${srcdir}/elf-marker.py" "${VITASDK}"
+
 echo "checking that public headers compile on their own"
 "${srcdir}/self-contained-headers.sh"
 
