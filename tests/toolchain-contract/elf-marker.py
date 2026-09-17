@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 
 
-NOTE = struct.pack('<III8sI', 8, 4, 1, b'VitaSDK\0', 1)
+NOTE = struct.pack('<III8sI', 8, 4, 1, b'vitasdk\0', 1)
 
 
 def inspect(path, marked):

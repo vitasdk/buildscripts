@@ -21,9 +21,10 @@ garbage-collected, and direct `ld` links. Compilation and `ld -r` must not add
 the note. It also checks that debug stripping preserves it and that the note
 does not overlap any loadable segment. This test requires Python 3.
 
-The note has owner `VitaSDK` (including its null terminator), type 1, and a
+The note has owner `vitasdk` (including its null terminator), type 1, and a
 four-byte descriptor with value 1. The descriptor versions the marker format,
 not the SDK release. The ELF byte order applies to its integer fields.
+The linker script emits the owner with `ASCIZ "vitasdk"`.
 
 Run it separately against an installed SDK, or point `--linker-dir` at a
 directory containing a newly built `ld` to test without replacing the SDK:
