@@ -29,7 +29,7 @@ sysroot="$destdir/sysroot"
 bindir="$destdir/bin"
 mkdir -p "$sysroot" "$bindir"
 
-base_url="https://download.freebsd.org/releases/${fbsd_arch}/${version}-RELEASE/base.txz"
+base_url="https://archive.freebsd.org/old-releases/${fbsd_arch}/${version}-RELEASE/base.txz"
 echo "Fetching $base_url"
 curl -fL "$base_url" |
     tar -xJf - -C "$sysroot" ./lib ./usr/lib ./usr/include ./usr/libdata
