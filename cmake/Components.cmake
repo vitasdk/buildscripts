@@ -85,6 +85,10 @@ set(LIBZIP_VERSION 1.11.4)
 set(LIBZIP_HASH SHA256=8a247f57d1e3e6f6d11413b12a6f28a9d388de110adc0ec608d893180ed7097b)
 set(LIBZIP_URL https://libzip.org/download/libzip-${LIBZIP_VERSION}.tar.xz)
 
+set(PKGCONF_VERSION 3.0.7)
+set(PKGCONF_HASH SHA256=c926ff491cbd9a331a589160811bd97ab1749b4d5198a519338f2cdfabe6940a)
+set(PKGCONF_URL https://github.com/pkgconf/pkgconf/releases/download/pkgconf-${PKGCONF_VERSION}/pkgconf-${PKGCONF_VERSION}.tar.xz)
+
 # Each VitaSDK component selects both its source and its revision from the
 # command line. A local clone can be named here so that a change spanning two
 # repositories can be built before either side is published.

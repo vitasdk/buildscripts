@@ -148,12 +148,12 @@ download_vdpm_bundle() {
 
 # Same-runner smoke test only; a canadian cross cannot run what it built.
 smoke_test_bootstrap() {
-	local bootstrap_archive=$1 digest install_root
+	local bootstrap_archive=$1 digest install_root probe_pc version
 	# Empty for a host that runs here directly; a launcher for one that needs
 	# it. Unquoted on purpose, so an empty prefix contributes no argument.
 	local -a run=(${2:-})
 	digest=$(awk '{print $1}' "$bootstrap_archive.sha256")
-	install_root="$PWD/bootstrap-installed"
+	install_root="$PWD/bootstrap installed"
 	# ${run[@]+...}: macOS's /bin/bash is 3.2, where expanding an empty array
 	# under set -u is an unbound-variable error -- and empty is the normal
 	# case here, for every host that runs its own binaries.
@@ -163,6 +163,31 @@ smoke_test_bootstrap() {
 	# vdpm ships pacman under libexec/vdpm, not bin/.
 	${run[@]+"${run[@]}"} "$install_root/libexec/vdpm/pacman" --version >/dev/null
 	${run[@]+"${run[@]}"} "$install_root/bin/arm-vita-eabi-gcc" --version
+	probe_pc="$install_root/arm-vita-eabi/lib/pkgconfig/vitasdk-wrapper-probe.pc"
+	mkdir -p "$(dirname "$probe_pc")"
+	cat > "$probe_pc" <<'EOF'
+prefix=${VITASDK}/arm-vita-eabi
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: vitasdk-wrapper-probe
+Description: VitaSDK pkg-config frontend smoke test
+Version: 1.0
+Libs: -L${libdir} -lprobe
+Cflags: -I${includedir}/probe
+EOF
+	version=$(VITASDK="$install_root" \
+		PKG_CONFIG_DIR=/host/pkgconfig \
+		PKG_CONFIG_PATH=/host/pkgconfig \
+		PKG_CONFIG_SYSROOT_DIR=/host \
+		PKG_CONFIG_LIBDIR=/host/pkgconfig \
+		${run[@]+"${run[@]}"} "$install_root/bin/arm-vita-eabi-pkg-config" \
+		--modversion vitasdk-wrapper-probe)
+	[[ $version == 1.0 ]] || {
+		printf 'pkg-config frontend returned version %s, expected 1.0\n' "$version" >&2
+		exit 1
+	}
 }
 
 # Builds against $stage1_dir if set, then stages outputs plus provenance.

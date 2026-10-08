@@ -56,6 +56,18 @@ if [[ $pkgname == vitasdk-core ]]; then
 		printf 'core package does not contain the Vita compiler driver\n' >&2
 		exit 1
 	}
+	if [[ $architecture == *-w64-mingw32 ]]; then
+		pkgconfig_runtime=(bin/pkgconf.exe bin/arm-vita-eabi-pkg-config.exe)
+	else
+		pkgconfig_runtime=(bin/pkgconf bin/arm-vita-eabi-pkg-config)
+	fi
+	for runtime_file in ${pkgconfig_runtime[@]+"${pkgconfig_runtime[@]}"} \
+			share/licenses/pkgconf/COPYING; do
+		grep -Fqx "$runtime_file" <<< "$archive_entries" || {
+			printf 'core package does not contain %s\n' "$runtime_file" >&2
+			exit 1
+		}
+	done
 	grep -qx 'version_info.txt' <<< "$archive_entries" || {
 		printf 'core package does not contain provenance information\n' >&2
 		exit 1
