@@ -85,6 +85,10 @@ set(LIBZIP_VERSION 1.11.4)
 set(LIBZIP_HASH SHA256=8a247f57d1e3e6f6d11413b12a6f28a9d388de110adc0ec608d893180ed7097b)
 set(LIBZIP_URL https://libzip.org/download/libzip-${LIBZIP_VERSION}.tar.xz)
 
+set(PKGCONF_VERSION 3.0.7)
+set(PKGCONF_HASH SHA256=c926ff491cbd9a331a589160811bd97ab1749b4d5198a519338f2cdfabe6940a)
+set(PKGCONF_URL https://github.com/pkgconf/pkgconf/releases/download/pkgconf-${PKGCONF_VERSION}/pkgconf-${PKGCONF_VERSION}.tar.xz)
+
 # Each VitaSDK component selects both its source and its revision from the
 # command line. A local clone can be named here so that a change spanning two
 # repositories can be built before either side is published.
@@ -94,7 +98,7 @@ set(SAMPLES_REPOSITORY https://github.com/vitasdk/samples
     CACHE STRING "samples repository URL or local path")
 set(HEADERS_REPOSITORY https://github.com/vitasdk/vita-headers
     CACHE STRING "vita-headers repository URL or local path")
-set(TOOLCHAIN_REPOSITORY https://github.com/vitasdk/vita-toolchain
+set(TOOLCHAIN_REPOSITORY https://github.com/devnoname120/vita-toolchain
     CACHE STRING "vita-toolchain repository URL or local path")
 set(PTHREAD_REPOSITORY https://github.com/vitasdk/pthread-embedded
     CACHE STRING "pthread-embedded repository URL or local path")
@@ -106,7 +110,7 @@ set(VITA_MAKEPKG_REPOSITORY https://github.com/vitasdk/vita-makepkg.git
 set(NEWLIB_TAG 2e428297c0b6aefd830c5a75a7daa7e774562a42 CACHE STRING "newlib branch, commit id or tag")
 set(SAMPLES_TAG fe8fbef570f3280586c0c20157146e3faefb2181 CACHE STRING "samples branch, commit id or tag")
 set(HEADERS_TAG e66ebe90b73d1fa4cce005a5b2072cec27322544 CACHE STRING "vita-headers branch, commit id or tag")
-set(TOOLCHAIN_TAG e8bc8f70ee5d3036f1562486cbc6065b52a8d173 CACHE STRING "vita-toolchain branch, commit id or tag")
+set(TOOLCHAIN_TAG 9e3860c1617b8f55162851ff4093d3446093d8b9 CACHE STRING "vita-toolchain branch, commit id or tag")
 set(PTHREAD_TAG 11d2e5722d98c86f33c908fc47b2cf6e55205db5 CACHE STRING "pthread-embedded branch, commit id or tag")
 set(VDPM_TAG v0.1.4 CACHE STRING "vdpm branch, commit id or tag")
 set(VITA_MAKEPKG_TAG bbd1b18731cf8b6a69a18c9acdefd79a5b8c36eb CACHE STRING "vita-makepkg branch, commit id or tag")

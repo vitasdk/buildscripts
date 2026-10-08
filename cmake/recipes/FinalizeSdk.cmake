@@ -33,6 +33,7 @@ set(finalize_sdk_dependencies
     vita-toolchain_${target_suffix}
     binutils_${target_suffix}
     gdb_${target_suffix}
+    pkgconf
     vdpm
     vita-makepkg
     ${target_half_dependencies})

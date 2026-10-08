@@ -17,17 +17,20 @@ source_date_epoch=$4
 
 required=(version_info.txt etc/pacman.conf share/vdpm/THIRD_PARTY_NOTICES.md
 	share/vdpm/licenses/vdpm-LGPL-2.1.txt
-	share/vdpm/licenses/pacman-GPL-2.0.txt)
+	share/vdpm/licenses/pacman-GPL-2.0.txt
+	share/licenses/pkgconf/COPYING)
 case $host in
 	*-w64-mingw32)
 		required+=(bin/vdpm.exe bin/arm-vita-eabi-gcc.exe \
+			bin/pkgconf.exe bin/arm-vita-eabi-pkg-config.exe \
 			share/vdpm/msys/usr/bin/pacman.exe \
 			share/vdpm/msys/usr/bin/vdpm-channel.exe \
 			share/vdpm/msys/usr/bin/msys-2.0.dll \
 			share/vdpm/refresh-repositories.ps1)
 		;;
 	*)
-		required+=(bin/vdpm bin/arm-vita-eabi-gcc libexec/vdpm/pacman bin/vdpm-channel \
+		required+=(bin/vdpm bin/arm-vita-eabi-gcc bin/pkgconf \
+			bin/arm-vita-eabi-pkg-config libexec/vdpm/pacman bin/vdpm-channel \
 			bin/include/refresh-repositories.sh)
 		;;
 esac

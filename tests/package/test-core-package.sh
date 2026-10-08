@@ -14,12 +14,12 @@ cleanup() {
 trap cleanup EXIT
 
 mkdir -p "$sdk_root/bin/include" "$sdk_root/libexec/vdpm" "$sdk_root/arm-vita-eabi/lib" \
-	"$sdk_root/share/vdpm/licenses" "$sdk_root/etc"
+	"$sdk_root/share/vdpm/licenses" "$sdk_root/share/licenses/pkgconf" "$sdk_root/etc"
 cat > "$sdk_root/bin/arm-vita-eabi-gcc" <<'EOF'
 #!/usr/bin/env sh
 exit 0
 EOF
-for client in vdpm vdpm-channel; do
+for client in vdpm vdpm-channel pkgconf arm-vita-eabi-pkg-config; do
 	cat > "$sdk_root/bin/$client" <<'EOF'
 #!/usr/bin/env sh
 exit 0
@@ -32,7 +32,8 @@ exit 0
 EOF
 done
 chmod +x "$sdk_root/bin/arm-vita-eabi-gcc" "$sdk_root/libexec/vdpm/pacman" \
-	"$sdk_root/libexec/vdpm/pacman-conf" "$sdk_root/bin/vdpm" "$sdk_root/bin/vdpm-channel"
+	"$sdk_root/libexec/vdpm/pacman-conf" "$sdk_root/bin/vdpm" "$sdk_root/bin/vdpm-channel" \
+	"$sdk_root/bin/pkgconf" "$sdk_root/bin/arm-vita-eabi-pkg-config"
 printf 'refresh\n' > "$sdk_root/bin/include/refresh-repositories.sh"
 printf 'archive\n' > "$sdk_root/arm-vita-eabi/lib/libfixture.a"
 printf 'source=fixture\nworld vita (float-abi=hard)\n' > "$sdk_root/version_info.txt"
@@ -40,6 +41,7 @@ printf 'CARCH="vita"\n' > "$sdk_root/bin/makepkg.conf"
 printf 'notices\n' > "$sdk_root/share/vdpm/THIRD_PARTY_NOTICES.md"
 printf 'vdpm license\n' > "$sdk_root/share/vdpm/licenses/vdpm-LGPL-2.1.txt"
 printf 'pacman license\n' > "$sdk_root/share/vdpm/licenses/pacman-GPL-2.0.txt"
+printf 'pkgconf license\n' > "$sdk_root/share/licenses/pkgconf/COPYING"
 printf 'version=0.1.0\nhost=x86_64-linux-gnu\n' > "$sdk_root/share/vdpm/release-info.txt"
 printf 'stale\n' > "$sdk_root/etc/pacman.conf"
 
@@ -108,14 +110,16 @@ EOF
 
 		# The dependency is what keeps the client alive across a core upgrade,
 		# so the core must refuse to install without it.
-		if install_packages /packages/vitasdk-core-*.pkg.tar.xz 2>/dev/null; then
-			echo "the core installed without its client" >&2
-			exit 1
-		fi
+			if install_packages /packages/vitasdk-core-*.pkg.tar.xz 2>/dev/null; then
+				echo "the core installed without its client" >&2
+				exit 1
+			fi
 
-		install_packages /packages/vdpm-*.pkg.tar.xz /packages/vitasdk-core-*.pkg.tar.xz
-		test -x /sdk/bin/arm-vita-eabi-gcc
-		test -x /sdk/bin/vdpm
+			install_packages /packages/vdpm-*.pkg.tar.xz /packages/vitasdk-core-*.pkg.tar.xz
+			test -x /sdk/bin/arm-vita-eabi-gcc
+			test -x /sdk/bin/pkgconf
+			test -x /sdk/bin/arm-vita-eabi-pkg-config
+			test -x /sdk/bin/vdpm
 		test -f /sdk/share/vdpm/THIRD_PARTY_NOTICES.md
 		grep -qx "source=fixture" /sdk/version_info.txt
 		test ! -e /sdk/etc/pacman.conf
@@ -131,8 +135,11 @@ EOF
 # installs into usr/bin instead.
 windows_root="$temporary_root/windows-sdk"
 mkdir -p "$windows_root/bin" "$windows_root/arm-vita-eabi/lib" \
-	"$windows_root/share/vdpm/licenses" "$windows_root/share/vdpm/msys/usr/bin"
+	"$windows_root/share/vdpm/licenses" "$windows_root/share/licenses/pkgconf" \
+	"$windows_root/share/vdpm/msys/usr/bin"
 printf 'gcc\n' > "$windows_root/bin/arm-vita-eabi-gcc.exe"
+printf 'pkgconf\n' > "$windows_root/bin/pkgconf.exe"
+printf 'wrapper\n' > "$windows_root/bin/arm-vita-eabi-pkg-config.exe"
 printf 'vdpm\n' > "$windows_root/bin/vdpm.exe"
 printf 'archive\n' > "$windows_root/arm-vita-eabi/lib/libfixture.a"
 printf 'source=fixture\nworld vita (float-abi=hard)\n' > "$windows_root/version_info.txt"
@@ -141,6 +148,7 @@ printf 'notices\n' > "$windows_root/share/vdpm/THIRD_PARTY_NOTICES.md"
 printf 'refresh\n' > "$windows_root/share/vdpm/refresh-repositories.ps1"
 printf 'vdpm license\n' > "$windows_root/share/vdpm/licenses/vdpm-LGPL-2.1.txt"
 printf 'pacman license\n' > "$windows_root/share/vdpm/licenses/pacman-GPL-2.0.txt"
+printf 'pkgconf license\n' > "$windows_root/share/licenses/pkgconf/COPYING"
 printf 'version=0.1.0\nhost=x86_64-w64-mingw32\n' > "$windows_root/share/vdpm/release-info.txt"
 for runtime in pacman.exe vdpm-channel.exe msys-2.0.dll; do
 	printf '%s\n' "$runtime" > "$windows_root/share/vdpm/msys/usr/bin/$runtime"
@@ -170,6 +178,13 @@ grep -qx 'bin/arm-vita-eabi-gcc.exe' <<< "$windows_core" || {
 	printf 'the Windows core package lost the toolchain\n' >&2
 	exit 1
 }
+for path in bin/pkgconf.exe bin/arm-vita-eabi-pkg-config.exe \
+		share/licenses/pkgconf/COPYING; do
+	grep -qx "$path" <<< "$windows_core" || {
+		printf 'the Windows core package lost %s\n' "$path" >&2
+		exit 1
+	}
+done
 
 for entries in "$windows_core" "$windows_client"; do
 	grep -q '^usr/' <<< "$entries" && {
