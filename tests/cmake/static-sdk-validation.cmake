@@ -25,6 +25,8 @@ file(MAKE_DIRECTORY "${fixture}/bin")
 foreach(tool gcc g++ ld as ar ranlib strip objcopy objdump readelf nm gdb)
     file(WRITE "${fixture}/bin/${target_triple}-${tool}.exe" "")
 endforeach()
+file(WRITE "${fixture}/bin/pkgconf.exe" "")
+file(WRITE "${fixture}/bin/${target_triple}-pkg-config.exe" "")
 execute_process(
     COMMAND "${CMAKE_COMMAND}"
         -DSDK_DIR=${fixture}
