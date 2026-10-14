@@ -1,0 +1,29 @@
+--- a/libstdc++-v3/configure.ac
++++ b/libstdc++-v3/configure.ac
+@@ -339,6 +339,11 @@
+   # on a hosted environment.
+   if test "x${with_newlib}" = "xyes"; then
+     os_include_dir="os/newlib"
++    case "${host}" in
++      arm-vita-eabi*)
++        AC_DEFINE(HAVE___CXA_THREAD_ATEXIT)
++        ;;
++    esac
+     AC_DEFINE(HAVE_HYPOT)
+ 
+     # GLIBCXX_CHECK_STDLIB_SUPPORT
+--- a/libstdc++-v3/configure
++++ b/libstdc++-v3/configure
+@@ -27343,6 +27343,12 @@
+   # on a hosted environment.
+   if test "x${with_newlib}" = "xyes"; then
+     os_include_dir="os/newlib"
++    case "${host}" in
++      arm-vita-eabi*)
++        $as_echo "#define HAVE___CXA_THREAD_ATEXIT 1" >>confdefs.h
++
++        ;;
++    esac
+     $as_echo "#define HAVE_HYPOT 1" >>confdefs.h
+ 
+ 
