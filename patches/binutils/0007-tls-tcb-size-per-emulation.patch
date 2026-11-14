@@ -1,0 +1,100 @@
+diff --git a/bfd/elf32-arm.h b/bfd/elf32-arm.h
+--- a/bfd/elf32-arm.h
++++ b/bfd/elf32-arm.h
+@@ -84,6 +84,12 @@
+   int merge_exidx_entries;
+   int cmse_implib;
+   bfd *in_implib_bfd;
++  /* Size of the reserved thread control block ahead of TP in the Local
++     Exec TLS model. 8 on every mainstream ARM EABI target (glibc/newlib's
++     usual "Variant 1" layout); some bare-metal targets place their TLS
++     block directly at the thread pointer instead and need this to be 0.
++     Per-emulation, set via ld/emulparams/<emu>.sh's TCB_SIZE. */
++  int tcb_size;
+ };
+ 
+ void bfd_elf32_arm_set_target_params
+diff --git a/bfd/elf32-arm.c b/bfd/elf32-arm.c
+--- a/bfd/elf32-arm.c
++++ b/bfd/elf32-arm.c
+@@ -3046,8 +3046,6 @@
+   bool non_a8_stub;
+ };
+ 
+-/* The size of the thread control block.  */
+-#define TCB_SIZE	8
+ 
+ /* ARM-specific information about a PLT entry, over and above the usual
+    gotplt_union.  */
+@@ -3385,6 +3383,12 @@
+   /* True if the target system uses FDPIC. */
+   int fdpic_p;
+ 
++  /* Size of the reserved TCB ahead of the thread pointer for the Local
++     Exec TLS model - see struct elf32_arm_params::tcb_size. Defaults to
++     the standard ARM EABI value of 8; set from ld via
++     bfd_elf32_arm_set_target_params. */
++  bfd_vma tcb_size;
++
+   /* Fixup section. Used for FDPIC.  */
+   asection *srofixup;
+ };
+@@ -4057,6 +4061,7 @@
+   ret->use_rel = true;
+   ret->obfd = abfd;
+   ret->fdpic_p = 0;
++  ret->tcb_size = 8;
+ 
+   if (!bfd_hash_table_init (&ret->stub_hash_table, stub_hash_newfunc,
+ 			    sizeof (struct elf32_arm_stub_hash_entry)))
+@@ -9030,6 +9035,7 @@
+   globals->fix_arm1176 = params->fix_arm1176;
+   globals->cmse_implib = params->cmse_implib;
+   globals->in_implib_bfd = params->in_implib_bfd;
++  globals->tcb_size = (bfd_vma) params->tcb_size;
+ 
+   BFD_ASSERT (is_arm_elf (output_bfd));
+   elf_arm_tdata (output_bfd)->no_enum_size_warning
+@@ -9940,12 +9946,13 @@
+ tpoff (struct bfd_link_info *info, bfd_vma address)
+ {
+   struct elf_link_hash_table *htab = elf_hash_table (info);
++  struct elf32_arm_link_hash_table *arm_htab = elf32_arm_hash_table (info);
+   bfd_vma base;
+ 
+   /* If tls_sec is NULL, we should have signalled an error already.  */
+   if (htab->tls_sec == NULL)
+     return 0;
+-  base = align_power ((bfd_vma) TCB_SIZE, htab->tls_sec->alignment_power);
++  base = align_power (arm_htab->tcb_size, htab->tls_sec->alignment_power);
+   return address - htab->tls_sec->vma + base;
+ }
+ 
+diff --git a/ld/emultempl/armelf.em b/ld/emultempl/armelf.em
+--- a/ld/emultempl/armelf.em
++++ b/ld/emultempl/armelf.em
+@@ -46,7 +46,8 @@
+   1,				/* fix_arm1176 */
+   -1,				/* merge_exidx_entries */
+   0,				/* cmse_implib */
+-  NULL				/* in_implib_bfd */
++  NULL,				/* in_implib_bfd */
++  ${TCB_SIZE-8}			/* tcb_size */
+ };
+ static char *in_implib_filename = NULL;
+ 
+diff --git a/ld/emulparams/armvita.sh b/ld/emulparams/armvita.sh
+--- a/ld/emulparams/armvita.sh
++++ b/ld/emulparams/armvita.sh
+@@ -3,6 +3,11 @@
+ TEXT_START_ADDR=0x81000000
+ MAXPAGESIZE="0x10000"
+ COMMONPAGESIZE="0x10000"
++# Vita's TPIDRURO points directly at .tdata, no reserved TCB header ahead of
++# it (confirmed on real hardware: the kernel copies the TLS template to
++# TPIDRURO+0, not the ARM EABI "Variant 1" default of TPIDRURO+8). See
++# elf32_arm_params::tcb_size in bfd/elf32-arm.h.
++TCB_SIZE=0
+ # module_info's tls_start is an offset relative to the same segment as the
+ # entry point (see vita-toolchain's sce-elf.c) - keep .tdata/.tbss in the
+ # read-only segment, alongside it, instead of the default writable one.
