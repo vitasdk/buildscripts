@@ -156,6 +156,8 @@ add_custom_target(check-sdk-partition
         -P ${CMAKE_SOURCE_DIR}/tests/cmake/sysroot-manifest.cmake
     COMMAND ${CMAKE_COMMAND}
         -P ${CMAKE_SOURCE_DIR}/tests/cmake/host-binary-format.cmake
+    COMMAND ${CMAKE_COMMAND}
+        -P ${CMAKE_SOURCE_DIR}/tests/cmake/windows-bin-contract.cmake
     VERBATIM)
 
 add_custom_target(check-static-policy

@@ -133,3 +133,46 @@ function(vitasdk_check_binary_directory directory system_name host_triple)
         endif()
     endforeach()
 endfunction()
+
+# Windows top-level bin files are native host programs except for the few
+# compatibility/data files whose names are part of the SDK contract.
+function(vitasdk_check_windows_top_level_bin directory)
+    if(NOT IS_DIRECTORY "${directory}")
+        return()
+    endif()
+
+    file(GLOB entries LIST_DIRECTORIES TRUE "${directory}/*")
+    foreach(entry IN LISTS entries)
+        if(IS_DIRECTORY "${entry}" OR IS_SYMLINK "${entry}")
+            continue()
+        endif()
+
+        get_filename_component(name "${entry}" NAME)
+        if(name STREQUAL "makepkg.conf")
+            continue()
+        endif()
+        # vita-makepkg currently requires an external MSYS2 environment.
+        if(name STREQUAL "vita-makepkg")
+            continue()
+        endif()
+        # vitasdk-update is the legacy compatibility updater; vdpm is the
+        # current native path.
+        if(name STREQUAL "vitasdk-update")
+            continue()
+        endif()
+        # This is an upstream GNU GDB POSIX helper retained unchanged for
+        # compatibility.
+        if(name STREQUAL "arm-vita-eabi-gdb-add-index")
+            continue()
+        endif()
+
+        vitasdk_binary_format("${entry}" format machine)
+        if(format STREQUAL "PE")
+            continue()
+        endif()
+
+        message(FATAL_ERROR
+            "${entry} is not a PE host executable or an allowed regular "
+            "top-level Windows SDK bin file")
+    endforeach()
+endfunction()

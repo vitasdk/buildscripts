@@ -132,8 +132,8 @@ EOF
 windows_root="$temporary_root/windows-sdk"
 mkdir -p "$windows_root/bin" "$windows_root/arm-vita-eabi/lib" \
 	"$windows_root/share/vdpm/licenses" "$windows_root/share/vdpm/msys/usr/bin"
-printf 'gcc\n' > "$windows_root/bin/arm-vita-eabi-gcc.exe"
-printf 'vdpm\n' > "$windows_root/bin/vdpm.exe"
+printf 'MZgcc\n' > "$windows_root/bin/arm-vita-eabi-gcc.exe"
+printf 'MZvdpm\n' > "$windows_root/bin/vdpm.exe"
 printf 'archive\n' > "$windows_root/arm-vita-eabi/lib/libfixture.a"
 printf 'source=fixture\nworld vita (float-abi=hard)\n' > "$windows_root/version_info.txt"
 printf 'CARCH="vita"\n' > "$windows_root/bin/makepkg.conf"
