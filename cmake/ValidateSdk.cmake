@@ -23,11 +23,13 @@ foreach(directory include lib)
     endif()
 endforeach()
 
-# Everything in a bin directory must be a binary for this host. A staged
-# build merges two machines into one tree, so this is where a producer's
-# binary that rode along on an import gets caught.
+# A staged build merges two machines into one tree, so validate both the
+# Windows top-level bin contract and the host format of every native binary.
+include("${CMAKE_CURRENT_LIST_DIR}/HostBinaryFormat.cmake")
+if(HOST_SYSTEM_NAME STREQUAL "Windows")
+    vitasdk_check_windows_top_level_bin("${SDK_DIR}/bin")
+endif()
 if(DEFINED HOST_TRIPLE AND NOT HOST_TRIPLE STREQUAL "")
-    include("${CMAKE_CURRENT_LIST_DIR}/HostBinaryFormat.cmake")
     vitasdk_check_binary_directory("${SDK_DIR}/bin" "${HOST_SYSTEM_NAME}" "${HOST_TRIPLE}")
     vitasdk_check_binary_directory("${sysroot}/bin" "${HOST_SYSTEM_NAME}" "${HOST_TRIPLE}")
 endif()
