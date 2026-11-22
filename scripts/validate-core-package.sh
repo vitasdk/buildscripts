@@ -64,8 +64,9 @@ if [[ $pkgname == vitasdk-core ]]; then
 	# The world (vita, vita_softfp, ...) is stamped in two independent places;
 	# a mismatch means the build tagged the release for one world while
 	# actually configuring the toolchain, or makepkg, for another.
+	# Consume the whole stream so bsdtar cannot fail on a closed pipe.
 	world_from_version=$(bsdtar -xOf "$package" version_info.txt |
-		awk '$1 == "world" { print $2; exit }')
+		awk '$1 == "world" && !found { print $2; found=1 }')
 	[[ -n $world_from_version ]] || {
 		printf 'version_info.txt does not declare a world\n' >&2
 		exit 1
@@ -76,7 +77,7 @@ if [[ $pkgname == vitasdk-core ]]; then
 		exit 1
 	}
 	world_from_makepkg=$(bsdtar -xOf "$package" bin/makepkg.conf |
-		awk -F '"' '/^CARCH=/ { print $2; exit }')
+		awk -F '"' '/^CARCH=/ && !found { print $2; found=1 }')
 	[[ -n $world_from_makepkg ]] || {
 		printf 'bin/makepkg.conf does not declare CARCH\n' >&2
 		exit 1
