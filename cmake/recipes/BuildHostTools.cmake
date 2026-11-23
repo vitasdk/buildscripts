@@ -11,6 +11,33 @@
 # because stage 1's vdpm/vita-makepkg were built for stage 1's own host, not
 # this one.
 
+ExternalProject_Add(pkgconf
+    URL ${PKGCONF_URL}
+    URL_HASH ${PKGCONF_HASH}
+    DOWNLOAD_DIR ${DOWNLOAD_DIR}
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    CONFIGURE_COMMAND ${compiler_flags} ${wrapper_command} <SOURCE_DIR>/configure
+        --build=${build_native}
+        --host=${host_native}
+        --prefix=/
+        --disable-shared
+        --enable-static
+        --disable-dependency-tracking
+        --with-system-libdir=/usr/lib
+        --with-system-includedir=/usr/include
+        CPPFLAGS=-DPKGCONFIG_IS_STATIC
+    BUILD_COMMAND ${compiler_flags} ${wrapper_command} $(MAKE) pkgconf${CMAKE_EXECUTABLE_SUFFIX}
+    INSTALL_COMMAND ${CMAKE_COMMAND} -E make_directory
+        ${CMAKE_INSTALL_PREFIX}/bin
+        ${CMAKE_INSTALL_PREFIX}/share/licenses/pkgconf
+    COMMAND ${CMAKE_COMMAND} -E copy
+        <BINARY_DIR>/pkgconf${CMAKE_EXECUTABLE_SUFFIX}
+        ${CMAKE_INSTALL_PREFIX}/bin/pkgconf${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND ${CMAKE_COMMAND} -E copy
+        <SOURCE_DIR>/COPYING
+        ${CMAKE_INSTALL_PREFIX}/share/licenses/pkgconf/COPYING
+    )
+
 set(vdpm_use_release_bundle OFF)
 if(BUILD_PACMAN_CLIENT AND (VDPM_BUNDLE OR VDPM_BUNDLE_SHA256))
     if(NOT VDPM_BUNDLE OR NOT VDPM_BUNDLE_SHA256)
