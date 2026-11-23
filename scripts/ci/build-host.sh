@@ -148,7 +148,7 @@ download_vdpm_bundle() {
 
 # Same-runner smoke test only; a canadian cross cannot run what it built.
 smoke_test_bootstrap() {
-	local bootstrap_archive=$1 digest install_root probe_pc version
+	local bootstrap_archive=$1 digest install_root probe_pc version cflags libs
 	# Empty for a host that runs here directly; a launcher for one that needs
 	# it. Unquoted on purpose, so an empty prefix contributes no argument.
 	local -a run=(${2:-})
@@ -177,15 +177,37 @@ Version: 1.0
 Libs: -L${libdir} -lprobe
 Cflags: -I${includedir}/probe
 EOF
-	version=$(VITASDK="$install_root" \
-		PKG_CONFIG_DIR=/host/pkgconfig \
-		PKG_CONFIG_PATH=/host/pkgconfig \
-		PKG_CONFIG_SYSROOT_DIR=/host \
-		PKG_CONFIG_LIBDIR=/host/pkgconfig \
-		${run[@]+"${run[@]}"} "$install_root/bin/arm-vita-eabi-pkg-config" \
+	local -a pkgconfig_env=(
+		"VITASDK=$install_root"
+		PKG_CONFIG_DIR=/host/pkgconfig
+		PKG_CONFIG_PATH=/host/pkgconfig
+		PKG_CONFIG_SYSROOT_DIR=/host
+		PKG_CONFIG_PRELOADED_FILES=/host/preloaded
+		PKG_CONFIG_MSVC_SYNTAX=1
+		PKG_CONFIG_SYSTEM_INCLUDE_PATH=/host/include
+		PKG_CONFIG_SYSTEM_LIBRARY_PATH=/host/lib
+		PKG_CONFIG_LIBDIR=/host/pkgconfig
+	)
+	version=$(env ${pkgconfig_env[@]+"${pkgconfig_env[@]}"} ${run[@]+"${run[@]}"} \
+		"$install_root/bin/arm-vita-eabi-pkg-config" \
 		--modversion vitasdk-wrapper-probe)
 	[[ $version == 1.0 ]] || {
 		printf 'pkg-config frontend returned version %s, expected 1.0\n' "$version" >&2
+		exit 1
+	}
+	cflags=$(env ${pkgconfig_env[@]+"${pkgconfig_env[@]}"} ${run[@]+"${run[@]}"} \
+		"$install_root/bin/arm-vita-eabi-pkg-config" \
+		--cflags vitasdk-wrapper-probe)
+	[[ $cflags == -I* && $cflags == *'/arm-vita-eabi/include/probe'* ]] || {
+		printf 'pkg-config frontend returned non-Unix cflags: %s\n' "$cflags" >&2
+		exit 1
+	}
+	libs=$(env ${pkgconfig_env[@]+"${pkgconfig_env[@]}"} ${run[@]+"${run[@]}"} \
+		"$install_root/bin/arm-vita-eabi-pkg-config" \
+		--libs vitasdk-wrapper-probe)
+	[[ $libs == -L* && $libs == *'-lprobe'* && \
+		$libs != *'/libpath:'* && $libs != *'probe.lib'* ]] || {
+		printf 'pkg-config frontend returned non-Unix libs: %s\n' "$libs" >&2
 		exit 1
 	}
 }
