@@ -39,6 +39,7 @@ ExternalProject_Add(newlib
     --prefix=/
     --with-build-sysroot=${CMAKE_INSTALL_PREFIX}/${target_arch}
     --enable-newlib-io-long-long
+    --enable-newlib-io-c99-formats
     --enable-newlib-register-fini
     --disable-newlib-supplied-syscalls
     --enable-newlib-long-time_t
