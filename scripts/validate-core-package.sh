@@ -9,6 +9,8 @@ fi
 
 package=$1
 require_package_client=${REQUIRE_PACKAGE_CLIENT:-1}
+script_directory=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+cmake_command=${CMAKE_COMMAND:-cmake}
 
 [[ -f $package ]] || {
 	printf 'core package not found: %s\n' "$package" >&2
@@ -52,6 +54,15 @@ fi
 bsdtar -xOf "$package" .MTREE | gzip -t
 
 if [[ $pkgname == vitasdk-core ]]; then
+	if [[ $architecture == *-w64-mingw32 ]]; then
+		(
+			policy_root=$(mktemp -d "${TMPDIR:-/tmp}/vitasdk-core-bin-policy.XXXXXXXX")
+			trap 'rm -rf -- "$policy_root"' EXIT
+			bsdtar -xf "$package" -C "$policy_root"
+			"$cmake_command" "-DDIRECTORY=$policy_root/bin" \
+				-P "$script_directory/../cmake/ValidateWindowsBin.cmake"
+		)
+	fi
 	grep -Eq '^bin/arm-vita-eabi-gcc(\.exe)?$' <<< "$archive_entries" || {
 		printf 'core package does not contain the Vita compiler driver\n' >&2
 		exit 1

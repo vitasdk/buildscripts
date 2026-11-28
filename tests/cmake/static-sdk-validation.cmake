@@ -23,10 +23,10 @@ file(WRITE "${target_lib}/libSceKernel_stub.a" "")
 # the product system must select the executable suffix explicitly.
 file(MAKE_DIRECTORY "${fixture}/bin")
 foreach(tool gcc g++ ld as ar ranlib strip objcopy objdump readelf nm gdb)
-    file(WRITE "${fixture}/bin/${target_triple}-${tool}.exe" "")
+    file(WRITE "${fixture}/bin/${target_triple}-${tool}.exe" "MZ${tool}")
 endforeach()
-file(WRITE "${fixture}/bin/pkgconf.exe" "")
-file(WRITE "${fixture}/bin/${target_triple}-pkg-config.exe" "")
+file(WRITE "${fixture}/bin/pkgconf.exe" "MZpkgconf")
+file(WRITE "${fixture}/bin/${target_triple}-pkg-config.exe" "MZwrapper")
 execute_process(
     COMMAND "${CMAKE_COMMAND}"
         -DSDK_DIR=${fixture}
